@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  altai_client_dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: altai_client_dashboard
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://optima.altaiweb.online/api/v1/client
+    networks:
+      - altai_network
+
+networks:
+  altai_network:
+    external: true
