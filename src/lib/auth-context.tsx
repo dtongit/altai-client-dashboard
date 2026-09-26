@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function initAuth() {
-      const { token: savedToken, tenantId: savedTenantId } = getStoredAuth();
+      const { token: savedToken } = getStoredAuth();
       if (savedToken) {
         setTokenState(savedToken);
         try {
@@ -33,26 +33,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (res.ok && res.user && res.tenant) {
             setUser(res.user);
             setTenant(res.tenant);
+          } else {
+            setAuthToken(null, null);
+            setUser(null);
+            setTenant(null);
+            setTokenState(null);
           }
         } catch {
-          // If offline / dev mode, use default Tallora client
-          const fallbackUser: User = {
-            id: "demo_usr_01",
-            username: "tallora_admin",
-            email: "director@tallora.ru",
-            is_admin: false,
-            role: "client_admin",
-            tenant_id: savedTenantId || "client_tallora",
-          };
-          const fallbackTenant: Tenant = {
-            id: savedTenantId || "client_tallora",
-            business_name: "Бренд обуви Tallora",
-            is_active: true,
-            crm_type: "amocrm",
-            llm_model: "deepseek/deepseek-chat",
-          };
-          setUser(fallbackUser);
-          setTenant(fallbackTenant);
+          setAuthToken(null, null);
+          setUser(null);
+          setTenant(null);
+          setTokenState(null);
         }
       }
       setLoading(false);

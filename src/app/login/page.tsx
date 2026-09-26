@@ -33,20 +33,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickDemo = async (demoUsername: string, demoPass: string) => {
-    setUsername(demoUsername);
-    setPassword(demoPass);
-    setLoading(true);
-    setError(null);
-    const ok = await login(demoUsername, demoPass);
-    if (ok) {
-      router.push("/");
-    } else {
-      setError("Не удалось войти с демо-аккаунтом");
-    }
-    setLoading(false);
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-950 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background glow effects */}
@@ -124,29 +110,6 @@ export default function LoginPage() {
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </form>
-
-          {/* Quick Demo Pre-fill */}
-          <div className="mt-8 pt-6 border-t border-zinc-800 text-center">
-            <p className="text-[11px] text-zinc-500 mb-3">
-              Быстрый вход для демонстрационных стендов:
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickDemo("admin", "admin123")}
-                className="px-3 py-2 rounded-lg bg-zinc-800/80 hover:bg-zinc-800 border border-zinc-700/60 text-[11px] text-zinc-300 transition-colors"
-              >
-                Администратор
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickDemo("tallora_manager", "password123")}
-                className="px-3 py-2 rounded-lg bg-zinc-800/80 hover:bg-zinc-800 border border-zinc-700/60 text-[11px] text-amber-400 transition-colors"
-              >
-                Клиент (Tallora)
-              </button>
-            </div>
-          </div>
         </div>
 
         <p className="mt-6 text-center text-[11px] text-zinc-500">

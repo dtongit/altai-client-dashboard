@@ -35,7 +35,22 @@ export default function OverviewPage() {
   const router = useRouter();
   const { user, tenant, loading: authLoading } = useAuth();
   const [data, setData] = useState<OverviewData | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.getOverview();
+      setData(res);
+    } catch (err) {
+      console.error("Failed to load overview data:", err);
+      setError(err instanceof Error ? err.message : "Не удалось загрузить данные с сервера");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -43,28 +58,39 @@ export default function OverviewPage() {
       return;
     }
 
-    async function loadData() {
-      try {
-        const res = await api.getOverview();
-        setData(res);
-      } catch (err) {
-        console.error("Failed to load overview data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     if (user) {
       loadData();
     }
   }, [user, authLoading, router]);
 
-  if (authLoading || loading || !data) {
+  if (authLoading || loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-12">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
           <span className="text-xs text-zinc-400">Загрузка показателей...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-12">
+        <div className="max-w-md w-full rounded-2xl border border-zinc-800 bg-zinc-900/80 p-6 text-center space-y-4">
+          <div className="mx-auto w-10 h-10 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center">
+            <Cpu className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-white">Не удалось загрузить данные</h3>
+            <p className="mt-1 text-xs text-zinc-400">{error || "Сервер временно недоступен"}</p>
+          </div>
+          <button
+            onClick={loadData}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold transition-colors"
+          >
+            Повторить попытку
+          </button>
         </div>
       </div>
     );
