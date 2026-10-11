@@ -11,7 +11,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=https://optima.altaiweb.online/api/v1/client
+      - NEXT_PUBLIC_API_URL=https://api.optima.altaiweb.online/api/v1/client
     networks:
       - altai_network
 

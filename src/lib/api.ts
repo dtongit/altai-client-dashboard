@@ -10,8 +10,14 @@ import {
   SimulatorHistoryResponse,
 } from "@/types";
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1/client";
+const rawApiUrl =
+  process.env.NEXT_PUBLIC_API_URL || "https://api.optima.altaiweb.online/api/v1/client";
+
+// Normalize to correct API backend domain if missing api. subdomain
+const API_BASE_URL = rawApiUrl.replace(
+  /^https?:\/\/optima\.altaiweb\.online/,
+  "https://api.optima.altaiweb.online"
+);
 
 // In-memory token storage (also mirrored in localStorage in browser)
 let authToken: string | null = null;
