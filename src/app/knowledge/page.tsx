@@ -10,8 +10,6 @@ import {
   DollarSign,
   HelpCircle,
   Send,
-  Sparkles,
-  RefreshCw,
 } from "lucide-react";
 
 export default function KnowledgePage() {
@@ -46,11 +44,11 @@ export default function KnowledgePage() {
     <div className="p-6 sm:p-8 space-y-8 max-w-5xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
-            <BookOpen className="h-6 w-6 text-amber-400" />
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2.5">
+            <BookOpen className="h-6 w-6 text-amber-500" />
             <span>База знаний ИИ-продавца</span>
           </h1>
-          <p className="mt-1 text-xs text-zinc-400">
+          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
             Информация, регламенты и материалы, на которых обучена и которыми оперирует Вера
           </p>
         </div>
@@ -59,7 +57,7 @@ export default function KnowledgePage() {
           href="https://t.me/altaioptima?text=Здравствуйте!%20Хочу%20внести%20обновления%20в%20базу%20знаний%20ИИ"
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-zinc-950 text-xs font-semibold shadow-lg shadow-amber-500/20 transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-zinc-950 text-xs font-semibold shadow-lg shadow-amber-500/20 transition-all hover:from-amber-400 hover:to-yellow-400"
         >
           <Send className="h-3.5 w-3.5" />
           <span>Предложить обновление</span>
@@ -67,7 +65,7 @@ export default function KnowledgePage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
+      <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -77,8 +75,8 @@ export default function KnowledgePage() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all ${
                 isActive
-                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/30 font-semibold"
-                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                  ? "bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-500/30 font-semibold"
+                  : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-900"
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -89,14 +87,14 @@ export default function KnowledgePage() {
       </div>
 
       {/* Content Card */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 sm:p-8 backdrop-blur-sm">
+      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 sm:p-8 backdrop-blur-sm shadow-sm dark:shadow-none transition-colors">
         {loading ? (
           <div className="py-12 text-center text-xs text-zinc-500">
             Загрузка базы знаний...
           </div>
         ) : (
-          <div className="prose prose-invert prose-xs max-w-none">
-            <pre className="font-sans whitespace-pre-wrap text-xs text-zinc-300 leading-relaxed bg-zinc-950/60 p-6 rounded-xl border border-zinc-800">
+          <div className="prose prose-zinc dark:prose-invert prose-xs max-w-none">
+            <pre className="font-sans whitespace-pre-wrap text-xs text-zinc-800 dark:text-zinc-300 leading-relaxed bg-zinc-50 dark:bg-zinc-950/60 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800">
               {data ? data[activeTab] || "Материалы раздела формируются..." : "Данные недоступны"}
             </pre>
           </div>

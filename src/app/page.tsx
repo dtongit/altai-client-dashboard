@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { useTheme } from "@/lib/theme-context";
 import { api } from "@/lib/api";
 import { OverviewData } from "@/types";
 import { MetricCard } from "@/components/metric-card";
@@ -13,12 +14,9 @@ import {
   Flame,
   Zap,
   PiggyBank,
-  CheckCircle2,
-  Clock,
   ArrowRight,
   TrendingUp,
   Cpu,
-  Layers,
   ShieldCheck,
 } from "lucide-react";
 import { formatCurrency, formatNumber } from "@/lib/utils";
@@ -33,7 +31,8 @@ import {
 
 export default function OverviewPage() {
   const router = useRouter();
-  const { user, tenant, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { resolvedTheme } = useTheme();
   const [data, setData] = useState<OverviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,7 +67,7 @@ export default function OverviewPage() {
       <div className="flex-1 flex items-center justify-center p-12">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
-          <span className="text-xs text-zinc-400">Загрузка показателей...</span>
+          <span className="text-xs text-zinc-600 dark:text-zinc-400">Загрузка показателей...</span>
         </div>
       </div>
     );
@@ -77,17 +76,17 @@ export default function OverviewPage() {
   if (error || !data) {
     return (
       <div className="flex-1 flex items-center justify-center p-12">
-        <div className="max-w-md w-full rounded-2xl border border-zinc-800 bg-zinc-900/80 p-6 text-center space-y-4">
-          <div className="mx-auto w-10 h-10 rounded-full bg-red-500/10 text-red-400 flex items-center justify-center">
+        <div className="max-w-md w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 p-6 text-center space-y-4 shadow-lg">
+          <div className="mx-auto w-10 h-10 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center">
             <Cpu className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white">Не удалось загрузить данные</h3>
-            <p className="mt-1 text-xs text-zinc-400">{error || "Сервер временно недоступен"}</p>
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Не удалось загрузить данные</h3>
+            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{error || "Сервер временно недоступен"}</p>
           </div>
           <button
             onClick={loadData}
-            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold transition-colors"
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold transition-colors shadow-md shadow-amber-500/20"
           >
             Повторить попытку
           </button>
@@ -99,23 +98,28 @@ export default function OverviewPage() {
   const { kpis, system_status, channel_breakdown, daily_timeline } = data;
   const isAiActive = system_status.is_active;
 
+  const tooltipBg = resolvedTheme === "dark" ? "#18181b" : "#ffffff";
+  const tooltipBorder = resolvedTheme === "dark" ? "#27272a" : "#e4e4e7";
+  const tooltipTextColor = resolvedTheme === "dark" ? "#ffffff" : "#09090b";
+  const axisColor = resolvedTheme === "dark" ? "#71717a" : "#a1a1aa";
+
   return (
     <div className="p-6 sm:p-8 space-y-8 max-w-7xl mx-auto">
       {/* Executive Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-zinc-800 bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-950 p-6 sm:p-8 shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-zinc-50 dark:from-zinc-900 dark:via-zinc-900/90 dark:to-zinc-950 p-6 sm:p-8 shadow-sm dark:shadow-xl transition-colors">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">
+              <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
                 Сводка эффективности
               </span>
-              <span className="text-zinc-600">•</span>
-              <span className="text-xs text-zinc-400">{data.business_name}</span>
+              <span className="text-zinc-400 dark:text-zinc-600">•</span>
+              <span className="text-xs text-zinc-600 dark:text-zinc-400">{data.business_name}</span>
             </div>
-            <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-white">
+            <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
               ИИ-продавец Вера на связи
             </h1>
-            <p className="mt-2 text-xs sm:text-sm text-zinc-400 max-w-2xl leading-relaxed">
+            <p className="mt-2 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-2xl leading-relaxed">
               Автономная квалификация входящего потока клиентов, мгновенные консультации по каталогу и автоматическая передача горячих лидов в вашу CRM.
             </p>
           </div>
@@ -133,7 +137,7 @@ export default function OverviewPage() {
         </div>
 
         {/* Ambient background accent */}
-        <div className="absolute right-0 top-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute right-0 top-0 w-96 h-96 bg-amber-500/10 dark:bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
       </div>
 
       {/* Primary KPI Grid */}
@@ -177,17 +181,17 @@ export default function OverviewPage() {
       {/* Analytics Charts & Channel Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Timeline Chart */}
-        <div className="lg:col-span-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 backdrop-blur-sm">
+        <div className="lg:col-span-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm shadow-sm dark:shadow-none transition-colors">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-sm font-semibold text-white">
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
                 Динамика обращений за 7 дней
               </h3>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
                 Количество сообщений и уникальных клиентских сессий
               </p>
             </div>
-            <div className="flex items-center gap-2 text-xs text-amber-400">
+            <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400 font-medium">
               <TrendingUp className="h-4 w-4" />
               <span>Стабильный поток</span>
             </div>
@@ -206,7 +210,7 @@ export default function OverviewPage() {
                   dataKey="date"
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fill: "#71717a", fontSize: 11 }}
+                  tick={{ fill: axisColor, fontSize: 11 }}
                   tickFormatter={(val) => {
                     const parts = val.split("-");
                     return `${parts[2]}.${parts[1]}`;
@@ -215,15 +219,16 @@ export default function OverviewPage() {
                 <YAxis
                   tickLine={false}
                   axisLine={false}
-                  tick={{ fill: "#71717a", fontSize: 11 }}
+                  tick={{ fill: axisColor, fontSize: 11 }}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#18181b",
-                    borderColor: "#27272a",
+                    backgroundColor: tooltipBg,
+                    borderColor: tooltipBorder,
                     borderRadius: "12px",
                     fontSize: "12px",
-                    color: "#ffffff",
+                    color: tooltipTextColor,
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                   }}
                 />
                 <Area
@@ -241,12 +246,12 @@ export default function OverviewPage() {
         </div>
 
         {/* Channels Breakdown */}
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 backdrop-blur-sm flex flex-col justify-between">
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm shadow-sm dark:shadow-none flex flex-col justify-between transition-colors">
           <div>
-            <h3 className="text-sm font-semibold text-white">
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
               Распределение по каналам
             </h3>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
               Активность входящих запросов в мессенджерах
             </p>
 
@@ -259,9 +264,9 @@ export default function OverviewPage() {
                   <div key={ch} className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <ChannelBadge channel={ch} />
-                      <span className="font-medium text-white">{count} сообщ. ({pct}%)</span>
+                      <span className="font-medium text-zinc-900 dark:text-white">{count} сообщ. ({pct}%)</span>
                     </div>
-                    <div className="h-2 w-full rounded-full bg-zinc-800 overflow-hidden">
+                    <div className="h-2 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-amber-500"
                         style={{ width: `${pct}%` }}
@@ -274,29 +279,29 @@ export default function OverviewPage() {
           </div>
 
           {/* Operational Quality Box */}
-          <div className="mt-6 pt-5 border-t border-zinc-800">
-            <div className="flex items-center justify-between text-xs text-zinc-400">
+          <div className="mt-6 pt-5 border-t border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center justify-between text-xs text-zinc-600 dark:text-zinc-400">
               <span className="flex items-center gap-1.5">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 Безопасность 152-ФЗ
               </span>
-              <span className="text-emerald-400 font-medium">100% защита</span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-semibold">100% защита</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* System Health Overview Strip */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-5 shadow-sm dark:shadow-none flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-xl ${isAiActive ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}>
+          <div className={`p-2.5 rounded-xl ${isAiActive ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-500/10 text-amber-700 dark:text-amber-400"}`}>
             <Cpu className="h-5 w-5" />
           </div>
           <div>
-            <div className="text-xs font-semibold text-white">
+            <div className="text-xs font-semibold text-zinc-900 dark:text-white">
               {isAiActive ? "ИИ-продавец в боевом режиме" : "ИИ-продавец приостановлен"}
             </div>
-            <div className="text-[11px] text-zinc-400">
+            <div className="text-[11px] text-zinc-600 dark:text-zinc-400">
               {system_status.paused_chats_count > 0
                 ? `${system_status.paused_chats_count} диалог(ов) на ручном перехвате оператором`
                 : "Все диалоги обрабатываются автономно"}
@@ -307,13 +312,13 @@ export default function OverviewPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/settings"
-            className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-zinc-300 transition-colors"
+            className="px-3.5 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-300 text-xs font-medium transition-colors"
           >
             Настройки каналов
           </Link>
           <Link
             href="/chats"
-            className="px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-medium text-amber-400 border border-amber-500/30 transition-colors"
+            className="px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-medium text-amber-800 dark:text-amber-400 border border-amber-500/30 transition-colors"
           >
             Перейти к диалогам
           </Link>

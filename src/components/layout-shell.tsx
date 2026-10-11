@@ -10,15 +10,21 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname === "/login";
 
   if (isLoginPage) {
-    return <div className="min-h-screen bg-zinc-950 text-zinc-100">{children}</div>;
+    return (
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
+        {children}
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-950 text-zinc-100">
+    <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
       <Navbar />
       <div className="flex-1 flex overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto bg-zinc-950/50">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-zinc-100/60 dark:bg-zinc-950/50">
+          {children}
+        </main>
       </div>
     </div>
   );
