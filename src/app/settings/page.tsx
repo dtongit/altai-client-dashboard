@@ -398,9 +398,9 @@ export default function SettingsPage() {
 
       {/* Staff Telegram Alert Setting & Recipients */}
       {statusData?.telegram_bot?.has_subscribers ? (
-        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 p-6 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm dark:shadow-none transition-colors">
+        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 p-5 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm dark:shadow-none transition-colors">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="h-5 w-5" />
             </div>
             <div>
@@ -414,7 +414,7 @@ export default function SettingsPage() {
           </div>
 
           <a
-            href="https://t.me/altai_optima_vera_bot"
+            href={`https://t.me/altai_optima_vera_bot?start=tenant_${tenant?.id || statusData?.tenant_id || "demo_amo"}`}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white text-xs font-medium border border-zinc-200 dark:border-zinc-700 transition-colors"
@@ -424,45 +424,22 @@ export default function SettingsPage() {
           </a>
         </div>
       ) : (
-        <div className="rounded-2xl border-2 border-amber-500 bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-950/30 dark:to-orange-950/20 p-6 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors">
-          <div className="flex items-start gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-500 text-zinc-950 shadow-sm flex-shrink-0">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-full bg-amber-500 text-zinc-950 text-[10px] font-black uppercase tracking-wider">
-                  Требуется действие
-                </span>
-                <h4 className="text-xs font-bold text-zinc-900 dark:text-white">
-                  Настроить получателей в Telegram
-                </h4>
-              </div>
-              <p className="text-[11px] text-zinc-700 dark:text-zinc-300 max-w-xl leading-relaxed">
-                Ни один сотрудник вашей компании еще не подключился к боту <span className="font-semibold text-amber-700 dark:text-amber-400">@altai_optima_vera_bot</span>. Чтобы получать мгновенные сигналы о клиентах, готовых к сделке, перейдите в бота и нажмите «Старт».
-              </p>
-            </div>
+        <div className="rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/20 px-5 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
+          <div className="flex items-center gap-3 text-center sm:text-left">
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+            <span className="text-xs sm:text-sm font-medium text-zinc-900 dark:text-white">
+              Напишите Вере в телеграм, чтобы вы были на связи
+            </span>
           </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <a
-              href="https://t.me/altai_optima_vera_bot"
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold shadow-md shadow-amber-500/20 transition-all"
-            >
-              <Send className="h-3.5 w-3.5" />
-              <span>Подключить бота</span>
-              <ExternalLink className="h-3 w-3 opacity-70" />
-            </a>
-            <button
-              onClick={loadStatus}
-              className="px-3 py-2.5 rounded-xl bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-medium transition-colors"
-              title="Проверить статус"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-            </button>
-          </div>
+          <a
+            href={`https://t.me/altai_optima_vera_bot?start=tenant_${tenant?.id || statusData?.tenant_id || "demo_amo"}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold shadow-sm transition-all flex-shrink-0"
+          >
+            <Send className="h-3.5 w-3.5" />
+            <span>Написать</span>
+          </a>
         </div>
       )}
     </div>

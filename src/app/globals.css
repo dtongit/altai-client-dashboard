@@ -23,3 +23,28 @@ body {
   background-color: var(--background);
   color: var(--foreground);
 }
+
+@keyframes brand-blue-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.brand-blue-animated-border {
+  background: linear-gradient(
+    120deg,
+    #020b33 0%,
+    #1d4ed8 25%,
+    #38bdf8 50%,
+    #1e40af 75%,
+    #020b33 100%
+  );
+  background-size: 300% 300%;
+  animation: brand-blue-flow 4.5s ease infinite;
+}

@@ -51,15 +51,17 @@ export function Sidebar() {
               В сети
             </span>
           </div>
-          <div className="mt-1 flex items-center gap-2">
-            <div className="h-6 w-6 rounded-lg bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center text-zinc-950 text-xs font-bold shadow-sm">
-              В
-            </div>
+          <div className="mt-1.5 flex items-center gap-2.5">
+            <img
+              src="/avatar_eva_face.webp"
+              alt="Вера"
+              className="h-8 w-8 rounded-full object-cover object-top border border-amber-500/40 shadow-sm flex-shrink-0"
+            />
             <div>
               <div className="text-xs font-bold text-zinc-900 dark:text-white leading-none">
                 Вера
               </div>
-              <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
+              <div className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
                 ИИ-продавец
               </div>
             </div>

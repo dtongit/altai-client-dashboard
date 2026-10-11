@@ -31,33 +31,26 @@ export function Navbar() {
     <>
       <header className="sticky top-0 z-40 w-full border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md transition-colors">
         <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Left: Brand & Business Name */}
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-200 text-zinc-950 shadow-lg shadow-amber-500/20">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <div>
-                <span className="font-semibold tracking-tight text-zinc-900 dark:text-white flex items-center gap-1.5 text-base">
-                  Altai Optima
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30">
-                    ИИ-Штат
-                  </span>
-                </span>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-none">
-                  Управление ИИ-штатом
-                </p>
-              </div>
+          {/* Left: Brand & Business Name Partnership */}
+          <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+            <Link href="/" className="flex items-center gap-2" title="Главная — Управление ИИ-штатом">
+              <img
+                src="/brand_logo.webp"
+                alt="ALTAI Optima"
+                className="h-6 sm:h-7 w-auto object-contain dark:brightness-110"
+              />
             </Link>
 
             {tenant && (
-              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-700 dark:text-zinc-300">
-                <Building2 className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
-                <span className="font-medium text-zinc-900 dark:text-white">
+              <div className="flex items-center gap-2.5">
+                <span className="text-zinc-400 dark:text-zinc-600 font-light select-none text-base sm:text-lg">
+                  ×
+                </span>
+                <span className="text-sm sm:text-base font-bold tracking-tight text-zinc-900 dark:text-white">
                   {tenant.business_name}
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 uppercase font-semibold">
-                  {tenant.crm_type}
+                <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">
+                  ИИ-Штат
                 </span>
               </div>
             )}

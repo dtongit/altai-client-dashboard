@@ -18,9 +18,6 @@ import {
   Cpu,
   Send,
   AlertTriangle,
-  CheckCircle2,
-  RefreshCw,
-  ExternalLink,
 } from "lucide-react";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import {
@@ -34,13 +31,11 @@ import {
 
 export default function VeraOverviewPage() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, tenant, loading: authLoading } = useAuth();
   const { resolvedTheme } = useTheme();
   const [data, setData] = useState<OverviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [checkingTg, setCheckingTg] = useState(false);
-  const [tgConnected, setTgConnected] = useState<boolean | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -48,41 +43,11 @@ export default function VeraOverviewPage() {
     try {
       const res = await api.getOverview();
       setData(res);
-      if (res.telegram_bot) {
-        setTgConnected(res.telegram_bot.has_subscribers);
-      }
     } catch (err) {
       console.error("Failed to load overview data:", err);
       setError(err instanceof Error ? err.message : "Не удалось загрузить данные с сервера");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCheckTelegram = async () => {
-    setCheckingTg(true);
-    try {
-      const res = await api.getTelegramStatus();
-      if (res.ok) {
-        setTgConnected(res.has_subscribers);
-        if (data) {
-          setData({
-            ...data,
-            telegram_bot: {
-              ...(data.telegram_bot || {
-                bot_username: "altai_optima_vera_bot",
-                bot_url: "https://t.me/altai_optima_vera_bot",
-              }),
-              has_subscribers: res.has_subscribers,
-              subscribers_count: res.subscribers_count,
-            },
-          });
-        }
-      }
-    } catch (e) {
-      console.error("Failed to check telegram status:", e);
-    } finally {
-      setCheckingTg(false);
     }
   };
 
@@ -131,11 +96,13 @@ export default function VeraOverviewPage() {
   }
 
   const { kpis, channel_breakdown, daily_timeline } = data;
-  const isTgSubscribed = tgConnected ?? (data.telegram_bot?.has_subscribers ?? false);
+  const tenantId = data.tenant_id || tenant?.id || "demo_amo";
+  const isTgSubscribed = data.telegram_bot?.has_subscribers ?? false;
 
-  // Exclude simulator and aitest from channel breakdown defensively
+  // Defensive filtering: strictly exclude simulators, demos, and testing channels
+  const excludedChannels = ["simulator", "web_simulator", "aitest", "landing_demo", "demo"];
   const filteredChannels = Object.entries(channel_breakdown).filter(
-    ([ch]) => !["simulator", "web_simulator", "aitest"].includes(ch.toLowerCase())
+    ([ch]) => !excludedChannels.includes(ch.toLowerCase())
   );
 
   const tooltipBg = resolvedTheme === "dark" ? "#18181b" : "#ffffff";
@@ -145,89 +112,45 @@ export default function VeraOverviewPage() {
 
   return (
     <div className="p-6 sm:p-8 space-y-8 max-w-7xl mx-auto">
-      {/* High-priority Action Banner: Telegram Bot Recipients Not Connected */}
+      {/* Simplified Telegram Alert */}
       {!isTgSubscribed && (
-        <div className="relative overflow-hidden rounded-3xl border-2 border-amber-500 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-orange-500/10 dark:from-amber-950/40 dark:via-zinc-900 dark:to-orange-950/30 p-6 sm:p-7 shadow-xl shadow-amber-500/10 animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-2xl bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/30 flex-shrink-0 animate-pulse">
-                <AlertTriangle className="h-6 w-6" />
-              </div>
-              <div className="space-y-1.5 max-w-2xl">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full bg-amber-500 text-zinc-950 text-[10px] font-black uppercase tracking-wider">
-                    Требуется действие
-                  </span>
-                  <span className="text-xs font-semibold text-amber-800 dark:text-amber-300">
-                    Настройка уведомлений
-                  </span>
-                </div>
-                <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white">
-                  Подключите Telegram-бота Веры для получения лидов
-                </h3>
-                <p className="text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                  К боту <span className="font-semibold text-amber-700 dark:text-amber-400">@altai_optima_vera_bot</span> еще не подключился ни один сотрудник вашей компании. Перейдите в бота и нажмите «Старт», чтобы мгновенно получать алерты о горячих клиентах и перехвате диалогов.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 lg:flex-shrink-0">
-              <a
-                href="https://t.me/altai_optima_vera_bot"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold shadow-lg shadow-amber-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <Send className="h-4 w-4" />
-                <span>Подключить @altai_optima_vera_bot</span>
-                <ExternalLink className="h-3.5 w-3.5 opacity-70" />
-              </a>
-              <button
-                onClick={handleCheckTelegram}
-                disabled={checkingTg}
-                className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold transition-colors"
-                title="Проверить, зарегистрировались ли сотрудники в боте"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${checkingTg ? "animate-spin" : ""}`} />
-                <span>Проверить подключение</span>
-              </button>
-            </div>
+        <div className="rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/20 px-5 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
+          <div className="flex items-center gap-3 text-center sm:text-left">
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+            <span className="text-xs sm:text-sm font-medium text-zinc-900 dark:text-white">
+              Напишите Вере в телеграм, чтобы вы были на связи
+            </span>
           </div>
+          <a
+            href={`https://t.me/altai_optima_vera_bot?start=tenant_${tenantId}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold shadow-sm transition-all flex-shrink-0"
+          >
+            <Send className="h-3.5 w-3.5" />
+            <span>Написать</span>
+          </a>
         </div>
       )}
 
-      {/* Executive Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-zinc-50 dark:from-zinc-900 dark:via-zinc-900/90 dark:to-zinc-950 p-6 sm:p-8 shadow-sm dark:shadow-xl transition-colors">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
-                Сводка эффективности
-              </span>
-              <span className="text-zinc-400 dark:text-zinc-600">•</span>
-              <span className="text-xs text-zinc-600 dark:text-zinc-400">{data.business_name}</span>
-            </div>
-            <h1 className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
-              ИИ-продавец Вера на связи
-            </h1>
-            <p className="mt-2 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-2xl leading-relaxed">
-              Автономная квалификация входящего потока клиентов, мгновенные консультации по каталогу и автоматическая передача горячих лидов в вашу CRM.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Link
-              href="/chats"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold shadow-lg shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <MessageSquare className="h-4 w-4" />
-              <span>Открыть живые диалоги</span>
-            </Link>
-          </div>
+      {/* Top Header without 'Сводка эффективности' banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
+            Вера — ИИ-продавец
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400">
+            Показатели эффективности, конверсия в заявку и аналитика обращений
+          </p>
         </div>
 
-        {/* Ambient background accent */}
-        <div className="absolute right-0 top-0 w-96 h-96 bg-amber-500/10 dark:bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+        <Link
+          href="/chats"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] self-start sm:self-auto"
+        >
+          <MessageSquare className="h-4 w-4" />
+          <span>Открыть живые диалоги</span>
+        </Link>
       </div>
 
       {/* Primary KPI Grid */}
@@ -270,7 +193,7 @@ export default function VeraOverviewPage() {
 
       {/* Analytics Charts & Channel Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Timeline Chart */}
+        {/* Main Timeline Chart - True Dialogues only */}
         <div className="lg:col-span-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm shadow-sm dark:shadow-none transition-colors">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -278,12 +201,12 @@ export default function VeraOverviewPage() {
                 Динамика обращений за 7 дней
               </h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                Количество сообщений и уникальных клиентских сессий
+                Количество реальных клиентских диалогов (без симулятора и тестов)
               </p>
             </div>
             <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400 font-medium">
               <TrendingUp className="h-4 w-4" />
-              <span>Стабильный поток</span>
+              <span>Живой трафик</span>
             </div>
           </div>
 
@@ -291,7 +214,7 @@ export default function VeraOverviewPage() {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={daily_timeline} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorMsgs" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="colorDialogues" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
                     <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                   </linearGradient>
@@ -310,6 +233,7 @@ export default function VeraOverviewPage() {
                   tickLine={false}
                   axisLine={false}
                   tick={{ fill: axisColor, fontSize: 11 }}
+                  allowDecimals={false}
                 />
                 <Tooltip
                   contentStyle={{
@@ -320,15 +244,17 @@ export default function VeraOverviewPage() {
                     color: tooltipTextColor,
                     boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                   }}
+                  formatter={(val: any) => [val, "Живых диалогов"]}
+                  labelFormatter={(lbl) => `Дата: ${lbl}`}
                 />
                 <Area
                   type="monotone"
-                  dataKey="messages"
-                  name="Сообщений"
+                  dataKey="conversations"
+                  name="Живых диалогов"
                   stroke="#f59e0b"
                   strokeWidth={2}
                   fillOpacity={1}
-                  fill="url(#colorMsgs)"
+                  fill="url(#colorDialogues)"
                 />
               </AreaChart>
             </ResponsiveContainer>
