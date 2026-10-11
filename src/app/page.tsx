@@ -89,9 +89,9 @@ export default function AIStaffManagementPage() {
       {/* Active Employee: Vera */}
       <Link
         href="/vera"
-        className="brand-blue-animated-border relative p-[2.5px] rounded-3xl block shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] group cursor-pointer"
+        className="floating-halo-card relative block rounded-3xl transition-transform duration-300 hover:-translate-y-1 group cursor-pointer"
       >
-        <div className="rounded-[22px] bg-white dark:bg-zinc-950 p-6 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-6 h-full transition-colors">
+        <div className="relative z-10 rounded-3xl border border-sky-400/25 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md p-6 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-6 h-full transition-all">
           <img
             src="/avatar_eva_corpse.webp"
             alt="Вера"
