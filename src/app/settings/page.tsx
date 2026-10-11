@@ -19,6 +19,7 @@ import {
   Monitor,
   Check,
   Palette,
+  ExternalLink,
 } from "lucide-react";
 
 export default function SettingsPage() {
@@ -55,6 +56,53 @@ export default function SettingsPage() {
   };
 
   const isActive = statusData?.is_active ?? tenant?.is_active ?? true;
+
+  const crmType = (statusData?.crm?.type || tenant?.crm_type || "excel").toLowerCase();
+  const isCrmConfigured = statusData?.crm?.configured ?? true;
+
+  let crmBadgeText = "CRM не настроена";
+  let crmBadgeStyle =
+    "bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700";
+
+  if (isCrmConfigured) {
+    if (crmType === "excel") {
+      crmBadgeText = "Excel (Яндекс Диск) подключен";
+      crmBadgeStyle =
+        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30";
+    } else if (crmType === "amocrm") {
+      crmBadgeText = "amoCRM v4 подключена";
+      crmBadgeStyle =
+        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30";
+    } else if (crmType === "bitrix24") {
+      crmBadgeText = "Битрикс24 подключен";
+      crmBadgeStyle =
+        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30";
+    } else if (crmType === "tg_topic") {
+      crmBadgeText = "Telegram-топик подключен";
+      crmBadgeStyle =
+        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30";
+    } else {
+      crmBadgeText = `${crmType.toUpperCase()} подключена`;
+      crmBadgeStyle =
+        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30";
+    }
+  }
+
+  const getCrmUrl = () => {
+    if (statusData?.crm?.url) return statusData.crm.url;
+    if (crmType === "excel") {
+      return "https://disk.yandex.ru/client/disk/CRM";
+    }
+    if (crmType === "amocrm") {
+      return "https://www.amocrm.ru";
+    }
+    if (crmType === "bitrix24") {
+      return "https://www.bitrix24.ru";
+    }
+    return "https://disk.yandex.ru/client/disk";
+  };
+
+  const crmUrl = getCrmUrl();
 
   const themeOptions: {
     id: Theme;
@@ -243,7 +291,7 @@ export default function SettingsPage() {
 
       {/* CRM Integration Card */}
       <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm shadow-sm dark:shadow-none transition-colors">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
               <Building2 className="h-4 w-4" />
@@ -251,29 +299,62 @@ export default function SettingsPage() {
             <div>
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Синхронизация с CRM</h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                Автоматическое создание сделок и прикрепление BANT-саммари
+                Автоматическое сохранение заявок и передача BANT-квалификации
               </p>
             </div>
           </div>
 
-          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-            amoCRM v4 подключена
-          </span>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${crmBadgeStyle}`}>
+              {crmBadgeText}
+            </span>
+
+            {crmUrl && (
+              <a
+                href={crmUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-sm shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                title="Открыть CRM в новой вкладке"
+              >
+                <span>Открыть CRM</span>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
+          </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-700 dark:text-zinc-300 space-y-2">
+        <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-700 dark:text-zinc-300 space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-zinc-500">Тип CRM:</span>
-            <span className="font-semibold uppercase text-zinc-900 dark:text-white">{statusData?.crm.type || "amoCRM"}</span>
+            <span className="font-semibold uppercase text-zinc-900 dark:text-white">
+              {crmType === "excel" ? "Excel (файл на Яндекс Диске)" : crmType.toUpperCase()}
+            </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-zinc-500">Режим создания лида:</span>
-            <span className="text-emerald-700 dark:text-emerald-400 font-medium">Complex Lead с передачей контакта и суммы</span>
+            <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+              {crmType === "excel"
+                ? "Автоматическая запись строк в онлайн-таблицу .xlsx"
+                : "Complex Lead с передачей контакта и суммы"}
+            </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-zinc-500">Передача истории переписки:</span>
-            <span className="text-zinc-700 dark:text-zinc-300">Автоматически в примечание сделки</span>
+            <span className="text-zinc-700 dark:text-zinc-300">
+              {crmType === "excel"
+                ? "Фиксация колонок: BANT-потребность, телефон, бюджет, резюме диалога"
+                : "Автоматически в примечание сделки"}
+            </span>
           </div>
+          {crmType === "excel" && (
+            <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60 dark:border-zinc-800/60">
+              <span className="text-zinc-500">Хранилище таблицы:</span>
+              <span className="text-zinc-700 dark:text-zinc-300">
+                Яндекс Диск (папка /CRM/leads.xlsx)
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

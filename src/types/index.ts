@@ -119,6 +119,7 @@ export interface SystemStatusResponse {
   crm: {
     type: string;
     configured: boolean;
+    url?: string | null;
   };
   channels: ChannelStatus[];
 }
