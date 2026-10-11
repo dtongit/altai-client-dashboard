@@ -95,7 +95,7 @@ export default function VeraOverviewPage() {
     );
   }
 
-  const { kpis, channel_breakdown, daily_timeline } = data;
+  const { kpis: rawKpis, channel_breakdown, daily_timeline: rawTimeline } = data;
   const tenantId = data.tenant_id || tenant?.id || "demo_amo";
   const isTgSubscribed = data.telegram_bot?.has_subscribers ?? false;
 
@@ -104,6 +104,22 @@ export default function VeraOverviewPage() {
   const filteredChannels = Object.entries(channel_breakdown).filter(
     ([ch]) => !excludedChannels.includes(ch.toLowerCase())
   );
+
+  // If there are zero live channel messages/conversations, ensure timeline reflects real live traffic only
+  const hasLiveTraffic = filteredChannels.length > 0;
+  const daily_timeline = hasLiveTraffic
+    ? rawTimeline
+    : rawTimeline.map((item) => ({ ...item, conversations: 0, messages: 0 }));
+
+  const kpis = hasLiveTraffic
+    ? rawKpis
+    : {
+        ...rawKpis,
+        total_conversations: 0,
+        today_conversations: 0,
+        qualified_leads: 0,
+        conversion_rate_pct: 0,
+      };
 
   const tooltipBg = resolvedTheme === "dark" ? "#18181b" : "#ffffff";
   const tooltipBorder = resolvedTheme === "dark" ? "#27272a" : "#e4e4e7";
@@ -114,18 +130,23 @@ export default function VeraOverviewPage() {
     <div className="p-6 sm:p-8 space-y-8 max-w-7xl mx-auto">
       {/* Simplified Telegram Alert */}
       {!isTgSubscribed && (
-        <div className="rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/20 px-5 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
-          <div className="flex items-center gap-3 text-center sm:text-left">
-            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-            <span className="text-xs sm:text-sm font-medium text-zinc-900 dark:text-white">
-              Напишите Вере в телеграм, чтобы вы были на связи
-            </span>
+        <div className="rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/20 px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
+          <div className="flex items-start sm:items-center gap-3 text-left">
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5 sm:mt-0" />
+            <div className="space-y-0.5">
+              <span className="block text-xs sm:text-sm font-semibold text-zinc-900 dark:text-white">
+                Напишите Вере в телеграм, чтобы быть с ней на связи
+              </span>
+              <p className="text-[11px] sm:text-xs text-zinc-600 dark:text-zinc-400 leading-snug">
+                Вы сможете обсуждать с Верой её задачи и статус. А если что-то случится, Вера сразу вам напишет
+              </p>
+            </div>
           </div>
           <a
             href={`https://t.me/altai_optima_vera_bot?start=tenant_${tenantId}`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold shadow-sm transition-all flex-shrink-0"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold shadow-sm transition-all flex-shrink-0 self-stretch sm:self-auto justify-center"
           >
             <Send className="h-3.5 w-3.5" />
             <span>Написать</span>
@@ -133,24 +154,14 @@ export default function VeraOverviewPage() {
         </div>
       )}
 
-      {/* Top Header without 'Сводка эффективности' banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
-            Вера — ИИ-продавец
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400">
-            Показатели эффективности, конверсия в заявку и аналитика обращений
-          </p>
-        </div>
-
-        <Link
-          href="/chats"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold shadow-md shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] self-start sm:self-auto"
-        >
-          <MessageSquare className="h-4 w-4" />
-          <span>Открыть живые диалоги</span>
-        </Link>
+      {/* Top Header */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
+          Вера — ИИ-продавец
+        </h1>
+        <p className="mt-1 text-xs sm:text-sm text-zinc-600 dark:text-zinc-400">
+          Показатели эффективности, конверсия в заявку и аналитика обращений
+        </p>
       </div>
 
       {/* Primary KPI Grid */}
@@ -201,7 +212,7 @@ export default function VeraOverviewPage() {
                 Динамика обращений за 7 дней
               </h3>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                Количество реальных клиентских диалогов (без симулятора и тестов)
+                Количество реальных клиентских диалогов
               </p>
             </div>
             <div className="flex items-center gap-2 text-xs text-amber-700 dark:text-amber-400 font-medium">

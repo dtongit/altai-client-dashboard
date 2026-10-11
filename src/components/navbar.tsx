@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -14,11 +15,13 @@ import {
 } from "lucide-react";
 
 export function Navbar() {
+  const pathname = usePathname();
   const { user, tenant, toggleActive, logout } = useAuth();
   const [isToggling, setIsToggling] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const isActive = tenant?.is_active ?? true;
+  const isVeraSelected = pathname !== "/" && pathname !== "/login";
 
   const handleToggle = async () => {
     setIsToggling(true);
@@ -58,37 +61,39 @@ export function Navbar() {
 
           {/* Right: Master Kill Switch, Theme Toggle & User Menu */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Global Master Pause/Resume Button */}
-            <button
-              onClick={() => setShowConfirm(true)}
-              disabled={isToggling}
-              className={`flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all shadow-sm ${
-                isActive
-                  ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300/80 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-600/40"
-                  : "bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300/80 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 dark:text-amber-400 dark:border-amber-600/40"
-              }`}
-              title="Нажмите для экстренной паузы или включения ИИ-продавца во всех каналах"
-            >
-              <Power
-                className={`h-3.5 w-3.5 ${
+            {/* Global Master Pause/Resume Button - only when Vera is selected */}
+            {isVeraSelected && (
+              <button
+                onClick={() => setShowConfirm(true)}
+                disabled={isToggling}
+                className={`flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all shadow-sm ${
                   isActive
-                    ? "text-emerald-700 dark:text-emerald-400"
-                    : "text-amber-700 dark:text-amber-400"
+                    ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300/80 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-600/40"
+                    : "bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300/80 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 dark:text-amber-400 dark:border-amber-600/40"
                 }`}
-              />
-              <span className="flex items-center gap-1.5">
-                <span
-                  className={`inline-block h-2 w-2 rounded-full ${
+                title="Нажмите для экстренной паузы или включения ИИ-продавца во всех каналах"
+              >
+                <Power
+                  className={`h-3.5 w-3.5 ${
                     isActive
-                      ? "bg-emerald-500 dark:bg-emerald-400 animate-pulse"
-                      : "bg-amber-500 dark:bg-amber-400"
+                      ? "text-emerald-700 dark:text-emerald-400"
+                      : "text-amber-700 dark:text-amber-400"
                   }`}
                 />
-                <span className="hidden sm:inline">
-                  {isActive ? "Вера активна" : "ИИ на паузе"}
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full ${
+                      isActive
+                        ? "bg-emerald-500 dark:bg-emerald-400 animate-pulse"
+                        : "bg-amber-500 dark:bg-amber-400"
+                    }`}
+                  />
+                  <span className="hidden sm:inline">
+                    {isActive ? "Вера активна" : "ИИ на паузе"}
+                  </span>
                 </span>
-              </span>
-            </button>
+              </button>
+            )}
 
             {/* Support Link */}
             <a
