@@ -44,7 +44,7 @@ export function Navbar() {
             {tenant && (
               <div className="flex items-center gap-2.5">
                 <span className="text-zinc-400 dark:text-zinc-600 font-light select-none text-base sm:text-lg">
-                  ×
+                  +
                 </span>
                 <span className="text-sm sm:text-base font-bold tracking-tight text-zinc-900 dark:text-white">
                   {tenant.business_name}
