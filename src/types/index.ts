@@ -34,11 +34,25 @@ export interface SystemStatus {
   paused_sessions: string[];
 }
 
+export interface TelegramBotInfo {
+  bot_username: string;
+  bot_url: string;
+  has_subscribers: boolean;
+  subscribers_count: number;
+  subscribers?: Array<{
+    chat_id?: string;
+    username?: string;
+    first_name?: string;
+    id?: string;
+  }>;
+}
+
 export interface OverviewData {
   ok: boolean;
   tenant_id: string;
   business_name: string;
   system_status: SystemStatus;
+  telegram_bot?: TelegramBotInfo;
   kpis: OverviewKPIs;
   channel_breakdown: Record<string, number>;
   daily_timeline: Array<{
@@ -122,6 +136,7 @@ export interface SystemStatusResponse {
     url?: string | null;
   };
   channels: ChannelStatus[];
+  telegram_bot?: TelegramBotInfo;
 }
 
 export interface KnowledgeResponse {

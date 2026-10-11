@@ -42,9 +42,22 @@ export default function ChatsPage() {
         channel: channelFilter || undefined,
       });
       if (res.ok) {
-        setChats(res.chats);
-        if (!selectedSessionId && res.chats.length > 0) {
-          setSelectedSessionId(res.chats[0].session_id);
+        const liveChats = (res.chats || []).filter((c) => {
+          const ch = (c.channel || "").toLowerCase();
+          const sess = (c.session_id || "").toLowerCase();
+          return (
+            ch !== "simulator" &&
+            ch !== "web_simulator" &&
+            ch !== "aitest" &&
+            !sess.includes(":simulator:") &&
+            !sess.includes(":aitest:") &&
+            !sess.startsWith("simulator:") &&
+            !sess.startsWith("aitest:")
+          );
+        });
+        setChats(liveChats);
+        if (!selectedSessionId && liveChats.length > 0) {
+          setSelectedSessionId(liveChats[0].session_id);
         }
       }
     } catch (e) {

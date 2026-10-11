@@ -174,4 +174,26 @@ export const api = {
       body: JSON.stringify({ session_id: sessionId }),
     });
   },
+
+  async getTelegramStatus(): Promise<{
+    ok: boolean;
+    bot_username: string;
+    bot_url: string;
+    has_subscribers: boolean;
+    subscribers_count: number;
+    subscribers: Array<{ chat_id?: string; username?: string; first_name?: string }>;
+  }> {
+    return request("/telegram/status");
+  },
+
+  async confirmTelegramSubscriber(chatId?: string, username?: string): Promise<{
+    ok: boolean;
+    message: string;
+    subscriber: any;
+  }> {
+    return request("/telegram/confirm", {
+      method: "POST",
+      body: JSON.stringify({ chat_id: chatId, username }),
+    });
+  },
 };

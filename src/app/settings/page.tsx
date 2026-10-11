@@ -20,6 +20,7 @@ import {
   Check,
   Palette,
   ExternalLink,
+  AlertTriangle,
 } from "lucide-react";
 
 export default function SettingsPage() {
@@ -251,7 +252,7 @@ export default function SettingsPage() {
               Подключенные каналы коммуникации
             </h3>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-              Статусы коннекторов мессенджеров для приема заявок
+              Статусы каналов связи Веры для приема заявок и консультации клиентов
             </p>
           </div>
           <button
@@ -263,8 +264,45 @@ export default function SettingsPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {statusData?.channels.map((ch) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {[
+            {
+              name: "Telegram",
+              type: "telegram",
+              configured: statusData?.channels?.find((c) => c.type === "telegram")?.configured ?? true,
+              detail: statusData?.channels?.find((c) => c.type === "telegram")?.detail ?? "Бот подключен и принимает входящие сообщения",
+            },
+            {
+              name: "WhatsApp",
+              type: "whatsapp",
+              configured: statusData?.channels?.find((c) => c.type === "whatsapp")?.configured ?? false,
+              detail: statusData?.channels?.find((c) => c.type === "whatsapp")?.detail ?? "Ожидает подключения бизнес-номера",
+            },
+            {
+              name: "MAX",
+              type: "max",
+              configured: statusData?.channels?.find((c) => c.type === "max")?.configured ?? false,
+              detail: statusData?.channels?.find((c) => c.type === "max")?.detail ?? "Корпоративный мессенджер не настроен",
+            },
+            {
+              name: "Instagram",
+              type: "instagram",
+              configured: statusData?.channels?.find((c) => c.type === "instagram")?.configured ?? false,
+              detail: statusData?.channels?.find((c) => c.type === "instagram")?.detail ?? "Direct-сообщения не настроены",
+            },
+            {
+              name: "Ваш сайт",
+              type: "web",
+              configured: statusData?.channels?.find((c) => c.type === "web")?.configured ?? true,
+              detail: statusData?.channels?.find((c) => c.type === "web")?.detail ?? "Интерактивный виджет на сайте активен",
+            },
+            {
+              name: "Email",
+              type: "email",
+              configured: statusData?.channels?.find((c) => c.type === "email")?.configured ?? false,
+              detail: statusData?.channels?.find((c) => c.type === "email")?.detail ?? "Корпоративная почта не настроена",
+            },
+          ].map((ch) => (
             <div
               key={ch.name}
               className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/60 p-4 space-y-3"
@@ -358,32 +396,75 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Staff Telegram Alert Setting */}
-      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm flex items-center justify-between gap-4 shadow-sm dark:shadow-none transition-colors">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-500">
-            <Bell className="h-5 w-5" />
+      {/* Staff Telegram Alert Setting & Recipients */}
+      {statusData?.telegram_bot?.has_subscribers ? (
+        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 p-6 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm dark:shadow-none transition-colors">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-semibold text-zinc-900 dark:text-white">
+                Telegram-оповещения настроены ({statusData.telegram_bot.subscribers_count} получатель(ей))
+              </h4>
+              <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                Сотрудники компании подключены к боту @altai_optima_vera_bot и получают уведомления о горячих лидах
+              </p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-xs font-semibold text-zinc-900 dark:text-white">
-              Мгновенные алерты команде в Telegram
-            </h4>
-            <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-              Оповещения директору и РОПу о горячих лидах, сбоях оплаты или ручном перехвате диалога
-            </p>
+
+          <a
+            href="https://t.me/altai_optima_vera_bot"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white text-xs font-medium border border-zinc-200 dark:border-zinc-700 transition-colors"
+          >
+            <Send className="h-3.5 w-3.5 text-sky-500" />
+            <span>Подключить еще сотрудника</span>
+          </a>
+        </div>
+      ) : (
+        <div className="rounded-2xl border-2 border-amber-500 bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-950/30 dark:to-orange-950/20 p-6 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-colors">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 rounded-xl bg-amber-500 text-zinc-950 shadow-sm flex-shrink-0">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full bg-amber-500 text-zinc-950 text-[10px] font-black uppercase tracking-wider">
+                  Требуется действие
+                </span>
+                <h4 className="text-xs font-bold text-zinc-900 dark:text-white">
+                  Настроить получателей в Telegram
+                </h4>
+              </div>
+              <p className="text-[11px] text-zinc-700 dark:text-zinc-300 max-w-xl leading-relaxed">
+                Ни один сотрудник вашей компании еще не подключился к боту <span className="font-semibold text-amber-700 dark:text-amber-400">@altai_optima_vera_bot</span>. Чтобы получать мгновенные сигналы о клиентах, готовых к сделке, перейдите в бота и нажмите «Старт».
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <a
+              href="https://t.me/altai_optima_vera_bot"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold shadow-md shadow-amber-500/20 transition-all"
+            >
+              <Send className="h-3.5 w-3.5" />
+              <span>Подключить бота</span>
+              <ExternalLink className="h-3 w-3 opacity-70" />
+            </a>
+            <button
+              onClick={loadStatus}
+              className="px-3 py-2.5 rounded-xl bg-white hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-xs font-medium transition-colors"
+              title="Проверить статус"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            </button>
           </div>
         </div>
-
-        <a
-          href="https://t.me/altaioptima"
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white text-xs font-medium transition-colors"
-        >
-          <Send className="h-3.5 w-3.5 text-sky-500" />
-          <span>Настроить получателей</span>
-        </a>
-      </div>
+      )}
     </div>
   );
 }

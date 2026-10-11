@@ -55,7 +55,7 @@ export default function LoginPage() {
             Altai Optima Workspace
           </h1>
           <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
-            Вход в персональный кабинет управления ИИ-продавцом Верой
+            Вход в персональный кабинет управления ИИ-штатом
           </p>
         </div>
 

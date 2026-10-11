@@ -41,11 +41,11 @@ export function Navbar() {
                 <span className="font-semibold tracking-tight text-zinc-900 dark:text-white flex items-center gap-1.5 text-base">
                   Altai Optima
                   <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30">
-                    Вера
+                    ИИ-Штат
                   </span>
                 </span>
                 <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-none">
-                  Кабинет управления ИИ-продавцом
+                  Управление ИИ-штатом
                 </p>
               </div>
             </Link>
