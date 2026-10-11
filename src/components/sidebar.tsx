@@ -11,11 +11,13 @@ import {
   Send,
   Headphones,
   CheckCircle2,
+  Bot,
 } from "lucide-react";
 
 const navigation = [
   { name: "Сводка и KPI", href: "/", icon: BarChart3 },
   { name: "Живые диалоги", href: "/chats", icon: MessageSquare },
+  { name: "Тренажер Веры", href: "/simulator", icon: Bot },
   { name: "Каналы и статус", href: "/settings", icon: Sliders },
   { name: "База знаний Веры", href: "/knowledge", icon: BookOpen },
 ];

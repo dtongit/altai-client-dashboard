@@ -6,6 +6,8 @@ import {
   SystemStatusResponse,
   User,
   Tenant,
+  SimulatorResponse,
+  SimulatorHistoryResponse,
 } from "@/types";
 
 const API_BASE_URL =
@@ -146,5 +148,24 @@ export const api = {
 
   async getKnowledge(): Promise<KnowledgeResponse> {
     return request<KnowledgeResponse>("/knowledge");
+  },
+
+  async sendSimulatorMessage(message: string, sessionId?: string): Promise<SimulatorResponse> {
+    return request<SimulatorResponse>("/simulator/message", {
+      method: "POST",
+      body: JSON.stringify({ message, session_id: sessionId }),
+    });
+  },
+
+  async getSimulatorHistory(sessionId?: string): Promise<SimulatorHistoryResponse> {
+    const query = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : "";
+    return request<SimulatorHistoryResponse>(`/simulator/history${query}`);
+  },
+
+  async resetSimulator(sessionId?: string): Promise<{ ok: boolean; message: string }> {
+    return request<{ ok: boolean; message: string }>("/simulator/reset", {
+      method: "POST",
+      body: JSON.stringify({ session_id: sessionId }),
+    });
   },
 };

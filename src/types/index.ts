@@ -130,3 +130,37 @@ export interface KnowledgeResponse {
   pricing: string;
   objections: string;
 }
+
+export interface SimulatorMessage {
+  id?: string;
+  role: "user" | "assistant";
+  text: string;
+  created_at?: string | null;
+  latency_ms?: number | null;
+}
+
+export interface SimulatorQualification {
+  client_name?: string | null;
+  client_phone?: string | null;
+  need_description?: string | null;
+  budget_rub?: number | null;
+  is_qualified?: boolean;
+  urgency?: string | null;
+}
+
+export interface SimulatorResponse {
+  ok: boolean;
+  session_id: string;
+  response: string;
+  latency_ms: number;
+  status: string;
+  qualification: SimulatorQualification;
+}
+
+export interface SimulatorHistoryResponse {
+  ok: boolean;
+  session_id: string;
+  messages: SimulatorMessage[];
+  qualification: SimulatorQualification;
+}
+
