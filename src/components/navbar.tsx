@@ -6,22 +6,22 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
-  Sparkles,
   Power,
   LogOut,
-  Building2,
   AlertCircle,
   HelpCircle,
+  Database,
+  ChevronDown,
 } from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, tenant, toggleActive, logout } = useAuth();
+  const { user, tenant, availableTenants, switchTenant, toggleActive, logout } = useAuth();
   const [isToggling, setIsToggling] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const isActive = tenant?.is_active ?? true;
-  const isVeraSelected = pathname !== "/" && pathname !== "/login";
+  const isVeraSelected = pathname !== "/" && pathname !== "/login" && !pathname.startsWith("/admin");
 
   const handleToggle = async () => {
     setIsToggling(true);
@@ -49,9 +49,32 @@ export function Navbar() {
                 <span className="text-zinc-400 dark:text-zinc-600 font-light select-none text-base sm:text-lg">
                   +
                 </span>
-                <span className="text-sm sm:text-base font-bold tracking-tight text-zinc-900 dark:text-white">
-                  {tenant.business_name}
-                </span>
+                {user?.is_admin && availableTenants.length > 1 ? (
+                  <div className="relative flex items-center">
+                    <select
+                      value={tenant.id}
+                      onChange={async (e) => {
+                        await switchTenant(e.target.value);
+                        if (typeof window !== "undefined") {
+                          window.location.reload();
+                        }
+                      }}
+                      className="appearance-none pr-6 pl-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm font-bold text-zinc-900 dark:text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      title="Переключить активного тенанта (Суперадмин)"
+                    >
+                      {availableTenants.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.business_name} ({t.id})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="h-3.5 w-3.5 text-zinc-500 pointer-events-none absolute right-2" />
+                  </div>
+                ) : (
+                  <span className="text-sm sm:text-base font-bold tracking-tight text-zinc-900 dark:text-white">
+                    {tenant.business_name}
+                  </span>
+                )}
                 <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">
                   ИИ-Штат
                 </span>
@@ -59,8 +82,24 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Right: Master Kill Switch, Theme Toggle & User Menu */}
+          {/* Right: Superadmin Console, Master Kill Switch, Theme Toggle & User Menu */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Superadmin Console Button (Replaces SQLAdmin) */}
+            {user?.is_admin && (
+              <Link
+                href="/admin"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                  pathname.startsWith("/admin")
+                    ? "bg-amber-500 text-zinc-950 border-amber-500 shadow-md shadow-amber-500/20"
+                    : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-200 dark:border-zinc-800"
+                }`}
+                title="Суперадмин-консоль БД и системы (SQLAdmin)"
+              >
+                <Database className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">СУПЕРАДМИН / БД</span>
+              </Link>
+            )}
+
             {/* Global Master Pause/Resume Button - only when Vera is selected */}
             {isVeraSelected && (
               <button
@@ -117,7 +156,11 @@ export function Navbar() {
                     {user.username}
                   </div>
                   <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                    {user.role === "client_admin" ? "Администратор" : "Оператор"}
+                    {user.is_admin
+                      ? "Суперадмин"
+                      : user.role === "client_admin"
+                      ? "Администратор"
+                      : "Оператор"}
                   </div>
                 </div>
                 <button

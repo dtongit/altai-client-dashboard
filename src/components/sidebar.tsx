@@ -19,7 +19,7 @@ const navigation = [
   { name: "Живые диалоги", href: "/chats", icon: MessageSquare },
   { name: "Тренажер Веры", href: "/simulator", icon: Bot },
   { name: "Каналы и статус", href: "/settings", icon: Sliders },
-  { name: "База знаний Веры", href: "/knowledge", icon: BookOpen },
+  { name: "Настройка и Код Веры", href: "/knowledge", icon: BookOpen },
 ];
 
 export function Sidebar() {

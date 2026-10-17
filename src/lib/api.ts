@@ -8,6 +8,12 @@ import {
   Tenant,
   SimulatorResponse,
   SimulatorHistoryResponse,
+  EmployeeConfigResponse,
+  ConfiguratorChatResponse,
+  CustomToolItem,
+  CustomToolVersionItem,
+  SandboxExecutionResult,
+  AdminCrudResourceSchema,
 } from "@/types";
 
 const rawApiUrl =
@@ -18,6 +24,8 @@ const API_BASE_URL = rawApiUrl.replace(
   /^https?:\/\/optima\.altaiweb\.online/,
   "https://api.optima.altaiweb.online"
 );
+
+const ADMIN_API_BASE_URL = API_BASE_URL.replace(/\/api\/v1\/client\/?$/, "/api/v1/admin");
 
 // In-memory token storage (also mirrored in localStorage in browser)
 let authToken: string | null = null;
@@ -37,6 +45,13 @@ export function setAuthToken(token: string | null, tenantId?: string | null) {
   }
 }
 
+export function setSelectedTenant(tenantId: string) {
+  currentTenantId = tenantId;
+  if (typeof window !== "undefined") {
+    localStorage.setItem("altai_tenant", tenantId);
+  }
+}
+
 export function getStoredAuth() {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("altai_token");
@@ -48,7 +63,11 @@ export function getStoredAuth() {
   return { token: authToken, tenantId: currentTenantId };
 }
 
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(
+  endpoint: string,
+  options: RequestInit = {},
+  baseUrl: string = API_BASE_URL
+): Promise<T> {
   const { token, tenantId } = getStoredAuth();
 
   const headers: Record<string, string> = {
@@ -63,7 +82,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers["X-Tenant-ID"] = tenantId;
   }
 
-  const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const res = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
     headers,
   });
@@ -83,6 +102,7 @@ export const api = {
       token: string;
       user: User;
       tenant: Tenant;
+      available_tenants?: Array<{ id: string; business_name: string; is_active: boolean }>;
     }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ username_or_email, password, tenant_id }),
@@ -92,7 +112,12 @@ export const api = {
   },
 
   async getMe() {
-    return request<{ ok: boolean; user: User; tenant: Tenant }>("/auth/me");
+    return request<{
+      ok: boolean;
+      user: User;
+      tenant: Tenant;
+      available_tenants?: Array<{ id: string; business_name: string; is_active: boolean }>;
+    }>("/auth/me");
   },
 
   async getOverview(): Promise<OverviewData> {
@@ -156,6 +181,19 @@ export const api = {
     return request<KnowledgeResponse>("/knowledge");
   },
 
+  async updateKnowledge(params: {
+    raw_markdown?: string;
+    company_info?: string;
+    pricing_policies?: string;
+    faq_and_objections?: string;
+    change_description?: string;
+  }): Promise<{ ok: boolean; version: number; message: string }> {
+    return request<{ ok: boolean; version: number; message: string }>("/knowledge", {
+      method: "PUT",
+      body: JSON.stringify(params),
+    });
+  },
+
   async sendSimulatorMessage(message: string, sessionId?: string): Promise<SimulatorResponse> {
     return request<SimulatorResponse>("/simulator/message", {
       method: "POST",
@@ -195,5 +233,189 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ chat_id: chatId, username }),
     });
+  },
+
+  // ==========================================================================
+  // Employee Configurator & Custom JS Sandbox Tools Studio
+  // ==========================================================================
+
+  async getEmployeeConfig(employeeId: string = "vera"): Promise<EmployeeConfigResponse> {
+    return request<EmployeeConfigResponse>(`/employees/${encodeURIComponent(employeeId)}/config`);
+  },
+
+  async sendConfiguratorChat(
+    employeeId: string,
+    message: string,
+    history: Array<{ role: string; content: string }> = []
+  ): Promise<ConfiguratorChatResponse> {
+    return request<ConfiguratorChatResponse>(
+      `/employees/${encodeURIComponent(employeeId)}/configurator/chat`,
+      {
+        method: "POST",
+        body: JSON.stringify({ message, history }),
+      }
+    );
+  },
+
+  async rollbackEmployeePrompt(
+    employeeId: string,
+    targetVersion: number
+  ): Promise<{ ok: boolean; current_version: number; content: string; message: string }> {
+    return request(`/employees/${encodeURIComponent(employeeId)}/prompts/rollback`, {
+      method: "POST",
+      body: JSON.stringify({ target_version: targetVersion }),
+    });
+  },
+
+  async upsertEmployeeTool(
+    employeeId: string,
+    payload: {
+      name: string;
+      description: string;
+      parameters_schema: Record<string, any>;
+      code: string;
+      is_active?: boolean;
+      change_description?: string;
+      test_payload?: Record<string, any>;
+    }
+  ): Promise<{ ok: boolean; tool: CustomToolItem; sandbox_test: SandboxExecutionResult }> {
+    return request(`/employees/${encodeURIComponent(employeeId)}/tools`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async testEmployeeTool(
+    employeeId: string,
+    toolId: string,
+    payload: Record<string, any>,
+    code?: string
+  ): Promise<{ ok: boolean; sandbox_test: SandboxExecutionResult }> {
+    return request(
+      `/employees/${encodeURIComponent(employeeId)}/tools/${encodeURIComponent(toolId)}/test`,
+      {
+        method: "POST",
+        body: JSON.stringify({ code, payload }),
+      }
+    );
+  },
+
+  async toggleEmployeeTool(
+    employeeId: string,
+    toolId: string,
+    isActive: boolean
+  ): Promise<{ ok: boolean; id: string; is_active: boolean }> {
+    return request(
+      `/employees/${encodeURIComponent(employeeId)}/tools/${encodeURIComponent(toolId)}/toggle`,
+      {
+        method: "POST",
+        body: JSON.stringify({ is_active: isActive }),
+      }
+    );
+  },
+
+  async getEmployeeToolVersions(
+    employeeId: string,
+    toolId: string
+  ): Promise<{ ok: boolean; versions: CustomToolVersionItem[] }> {
+    return request(
+      `/employees/${encodeURIComponent(employeeId)}/tools/${encodeURIComponent(toolId)}/versions`
+    );
+  },
+
+  async deleteEmployeeTool(
+    employeeId: string,
+    toolId: string
+  ): Promise<{ ok: boolean; message: string }> {
+    return request(
+      `/employees/${encodeURIComponent(employeeId)}/tools/${encodeURIComponent(toolId)}`,
+      { method: "DELETE" }
+    );
+  },
+
+  async upsertEmployeeSecret(
+    employeeId: string,
+    keyName: string,
+    value: string
+  ): Promise<{ ok: boolean; key_name: string; message: string }> {
+    return request(`/employees/${encodeURIComponent(employeeId)}/secrets`, {
+      method: "POST",
+      body: JSON.stringify({ key_name: keyName, value }),
+    });
+  },
+
+  async deleteEmployeeSecret(
+    employeeId: string,
+    keyName: string
+  ): Promise<{ ok: boolean; message: string }> {
+    return request(
+      `/employees/${encodeURIComponent(employeeId)}/secrets/${encodeURIComponent(keyName)}`,
+      { method: "DELETE" }
+    );
+  },
+
+  // ==========================================================================
+  // Superadmin Console CRUD (SQLAdmin Replacement)
+  // ==========================================================================
+
+  async getAdminCrudSchema(): Promise<{ ok: boolean; resources: AdminCrudResourceSchema[] }> {
+    return request("/crud/schema", {}, ADMIN_API_BASE_URL);
+  },
+
+  async listAdminCrud(
+    resource: string,
+    params: { search?: string; limit?: number; offset?: number } = {}
+  ): Promise<{ ok: boolean; resource: string; total: number; items: Record<string, any>[] }> {
+    const q = new URLSearchParams();
+    if (params.search) q.append("search", params.search);
+    if (params.limit) q.append("limit", String(params.limit));
+    if (params.offset) q.append("offset", String(params.offset));
+    const qs = q.toString() ? `?${q.toString()}` : "";
+    return request(`/crud/${encodeURIComponent(resource)}${qs}`, {}, ADMIN_API_BASE_URL);
+  },
+
+  async createAdminCrud(
+    resource: string,
+    body: Record<string, any>
+  ): Promise<{ ok: boolean; item: Record<string, any> }> {
+    return request(
+      `/crud/${encodeURIComponent(resource)}`,
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      },
+      ADMIN_API_BASE_URL
+    );
+  },
+
+  async updateAdminCrud(
+    resource: string,
+    id: string | number,
+    body: Record<string, any>
+  ): Promise<{ ok: boolean; item: Record<string, any> }> {
+    return request(
+      `/crud/${encodeURIComponent(resource)}/${encodeURIComponent(String(id))}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(body),
+      },
+      ADMIN_API_BASE_URL
+    );
+  },
+
+  async deleteAdminCrud(
+    resource: string,
+    id: string | number
+  ): Promise<{ ok: boolean; deleted: string }> {
+    return request(
+      `/crud/${encodeURIComponent(resource)}/${encodeURIComponent(String(id))}`,
+      { method: "DELETE" },
+      ADMIN_API_BASE_URL
+    );
+  },
+
+  async getAdminStats(tenantId?: string): Promise<Record<string, any>> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/stats${qs}`, {}, ADMIN_API_BASE_URL);
   },
 };

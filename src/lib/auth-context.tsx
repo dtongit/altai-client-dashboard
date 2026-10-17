@@ -2,16 +2,24 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Tenant } from "@/types";
-import { api, getStoredAuth, setAuthToken } from "@/lib/api";
+import { api, getStoredAuth, setAuthToken, setSelectedTenant } from "@/lib/api";
+
+interface AvailableTenant {
+  id: string;
+  business_name: string;
+  is_active: boolean;
+}
 
 interface AuthContextType {
   user: User | null;
   tenant: Tenant | null;
+  availableTenants: AvailableTenant[];
   token: string | null;
   loading: boolean;
   login: (username: string, password: string, tenantId?: string) => Promise<boolean>;
   logout: () => void;
   refreshTenant: () => Promise<void>;
+  switchTenant: (tenantId: string) => Promise<void>;
   toggleActive: (isActive?: boolean) => Promise<boolean>;
 }
 
@@ -20,6 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [availableTenants, setAvailableTenants] = useState<AvailableTenant[]>([]);
   const [token, setTokenState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,6 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (res.ok && res.user && res.tenant) {
             setUser(res.user);
             setTenant(res.tenant);
+            if (res.available_tenants) {
+              setAvailableTenants(res.available_tenants);
+            }
           } else {
             setAuthToken(null, null);
             setUser(null);
@@ -58,6 +70,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(res.user);
         setTenant(res.tenant);
         setTokenState(res.token);
+        if (res.available_tenants) {
+          setAvailableTenants(res.available_tenants);
+        }
         return true;
       }
       return false;
@@ -70,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAuthToken(null, null);
     setUser(null);
     setTenant(null);
+    setAvailableTenants([]);
     setTokenState(null);
     if (typeof window !== "undefined") {
       window.location.href = "/login";
@@ -81,9 +97,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await api.getMe();
       if (res.ok && res.tenant) {
         setTenant(res.tenant);
+        if (res.available_tenants) {
+          setAvailableTenants(res.available_tenants);
+        }
       }
     } catch (e) {
       console.error("Failed to refresh tenant", e);
+    }
+  };
+
+  const switchTenant = async (newTenantId: string) => {
+    setSelectedTenant(newTenantId);
+    try {
+      const res = await api.getMe();
+      if (res.ok && res.tenant) {
+        setTenant(res.tenant);
+        if (res.available_tenants) {
+          setAvailableTenants(res.available_tenants);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to switch tenant", e);
     }
   };
 
@@ -106,11 +140,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         tenant,
+        availableTenants,
         token,
         loading,
         login,
         logout,
         refreshTenant,
+        switchTenant,
         toggleActive,
       }}
     >

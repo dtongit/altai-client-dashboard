@@ -9,7 +9,8 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLoginPage = pathname === "/login";
   const isStartPage = pathname === "/";
-  const showSidebar = !isLoginPage && !isStartPage;
+  const isAdminPage = pathname.startsWith("/admin");
+  const showSidebar = !isLoginPage && !isStartPage && !isAdminPage;
 
   if (isLoginPage) {
     return (

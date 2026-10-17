@@ -145,6 +145,8 @@ export interface KnowledgeResponse {
   profile: string;
   pricing: string;
   objections: string;
+  raw_markdown?: string;
+  versions?: PromptVersionItem[];
 }
 
 export interface SimulatorMessage {
@@ -180,3 +182,112 @@ export interface SimulatorHistoryResponse {
   qualification: SimulatorQualification;
 }
 
+// ============================================================================
+// Employee Configurator & Custom JS Sandbox Tools Types
+// ============================================================================
+
+export interface PromptVersionItem {
+  version: number;
+  content?: string;
+  author: string;
+  change_description: string;
+  created_at: string | null;
+}
+
+export interface CustomToolItem {
+  id: string;
+  tenant_id: string;
+  employee_id: string;
+  name: string;
+  description: string;
+  parameters_schema: Record<string, any>;
+  runtime: string;
+  code: string;
+  version?: number;
+  current_version?: number;
+  is_active: boolean;
+  timeout_ms?: number;
+  last_test_status?: string | null;
+  last_test_output?: SandboxExecutionResult | null;
+  updated_at?: string | null;
+  created_at?: string | null;
+}
+
+export interface CustomToolVersionItem {
+  id: number;
+  tool_id: string;
+  version: number;
+  code: string;
+  parameters_schema: Record<string, any>;
+  author?: string | null;
+  change_description?: string | null;
+  created_at?: string | null;
+}
+
+export interface TenantSecretItem {
+  id: number;
+  key_name: string;
+  masked_value: string;
+  updated_at?: string | null;
+}
+
+export interface SandboxExecutionResult {
+  ok: boolean;
+  result?: any;
+  logs?: string[];
+  duration_ms?: number;
+  memory_kb?: number;
+  error?: string | null;
+  sandbox_mode?: string;
+}
+
+export interface EmployeeConfigResponse {
+  ok: boolean;
+  tenant_id: string;
+  business_name: string;
+  employee: {
+    id: string;
+    name: string;
+    role: string;
+    is_active: boolean;
+    llm_model: string;
+  };
+  prompt: {
+    raw_markdown: string;
+    versions: PromptVersionItem[];
+  };
+  custom_tools: CustomToolItem[];
+  secrets: TenantSecretItem[];
+}
+
+export interface ConfiguratorActionResult {
+  action: "update_prompt" | "upsert_custom_tool" | "run_sandbox_test" | string;
+  status?: string;
+  new_version?: number;
+  change_description?: string;
+  diff?: string;
+  tool_name?: string;
+  tool_id?: string;
+  sandbox_test?: SandboxExecutionResult;
+}
+
+export interface ConfiguratorChatResponse {
+  ok: boolean;
+  reply: string;
+  actions_executed: ConfiguratorActionResult[];
+  prompt_updated: boolean;
+  tools_updated: boolean;
+}
+
+// ============================================================================
+// Superadmin CRUD Console (SQLAdmin Replacement) Types
+// ============================================================================
+
+export interface AdminCrudResourceSchema {
+  resource: string;
+  label: string;
+  icon: string;
+  primary_key: string;
+  read_only?: boolean;
+  columns: string[];
+}
