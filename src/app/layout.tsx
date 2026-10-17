@@ -37,6 +37,11 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
+                  if (typeof window !== 'undefined' && (window.location.hostname === 'dtongit.github.io' || window.location.hostname.endsWith('.github.io'))) {
+                    var newPath = window.location.pathname.replace(/^\\/altai-client-dashboard/, '') || '/';
+                    window.location.replace('https://my.altaiweb.online' + newPath + window.location.search + window.location.hash);
+                    return;
+                  }
                   var stored = localStorage.getItem('theme');
                   var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                   var isDark = stored === 'dark' || ((!stored || stored === 'system') && prefersDark);
