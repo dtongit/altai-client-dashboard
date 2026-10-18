@@ -261,22 +261,31 @@ export interface EmployeeConfigResponse {
 }
 
 export interface ConfiguratorActionResult {
-  action: "update_prompt" | "upsert_custom_tool" | "run_sandbox_test" | string;
+  action: "update_prompt" | "upsert_custom_tool" | "toggle_custom_tool" | "upsert_secret" | "run_sandbox_test" | string;
+  action_type?: string;
   status?: string;
+  title?: string;
+  summary?: string;
   new_version?: number;
+  version?: number;
   change_description?: string;
   diff?: string;
+  diff_preview?: string;
   tool_name?: string;
   tool_id?: string;
+  key_name?: string;
   sandbox_test?: SandboxExecutionResult;
 }
 
 export interface ConfiguratorChatResponse {
   ok: boolean;
-  reply: string;
-  actions_executed: ConfiguratorActionResult[];
-  prompt_updated: boolean;
-  tools_updated: boolean;
+  reply?: string;
+  response?: string;
+  actions_executed?: ConfiguratorActionResult[];
+  actions?: ConfiguratorActionResult[];
+  prompt_updated?: boolean;
+  tools_updated?: boolean;
+  secrets_updated?: boolean;
 }
 
 // ============================================================================

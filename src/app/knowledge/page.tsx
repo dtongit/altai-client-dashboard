@@ -228,20 +228,25 @@ export default function EmployeeStudioPage() {
       }));
       const res = await api.sendConfiguratorChat(employeeId, text, historyPayload);
 
+      const replyText = res.reply || res.response || "";
+      const actionsList = res.actions_executed || res.actions || [];
+
       const assistantMsg: StudioChatMessage = {
         id: `a-${Date.now()}`,
         role: "assistant",
-        text: res.reply,
+        text: replyText,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        actions: res.actions_executed || [],
+        actions: actionsList,
       };
       setChatMessages((prev) => [...prev, assistantMsg]);
 
-      if (res.prompt_updated || res.tools_updated) {
+      if (res.prompt_updated || res.tools_updated || res.secrets_updated) {
         await loadConfig(false);
         showToast(
           "success",
-          res.tools_updated
+          res.secrets_updated
+            ? "ИИ-Архитектор сохранил секретный ключ в защищенное хранилище!"
+            : res.tools_updated
             ? "ИИ-Архитектор обновил и протестировал кастомный код в песочнице!"
             : "ИИ-Архитектор обновил системный промпт Веры!"
         );
@@ -640,99 +645,166 @@ export default function EmployeeStudioPage() {
                     {/* Action Cards executed by the Configurator Agent */}
                     {msg.actions && msg.actions.length > 0 && (
                       <div className="pl-10 space-y-3">
-                        {msg.actions.map((act, idx) => (
-                          <div
-                            key={idx}
-                            className="rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/20 p-4 space-y-2.5 text-xs"
-                          >
-                            {act.action === "update_prompt" && (
-                              <>
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-300">
-                                    <FileText className="h-4 w-4" />
-                                    <span>
-                                      Системный промпт обновлен (версия v{act.new_version})
-                                    </span>
-                                  </div>
-                                  <button
-                                    onClick={() => setActiveTab("prompt")}
-                                    className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
-                                  >
-                                    Открыть промпт →
-                                  </button>
-                                </div>
-                                {act.change_description && (
-                                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                                    {act.change_description}
-                                  </p>
-                                )}
-                                {act.diff && (
-                                  <pre className="p-3 rounded-xl bg-zinc-950 text-zinc-200 font-mono text-[11px] overflow-x-auto max-h-48">
-                                    {act.diff}
-                                  </pre>
-                                )}
-                              </>
-                            )}
+                        {msg.actions.map((act, idx) => {
+                          const isPromptUpdate =
+                            act.action === "update_prompt" ||
+                            (act as any).action_type === "prompt_updated";
+                          const isToolUpdate =
+                            act.action === "upsert_custom_tool" ||
+                            (act as any).action_type === "code_updated";
+                          const isToolToggle =
+                            act.action === "toggle_custom_tool" ||
+                            (act as any).action_type === "tool_toggled";
+                          const isSecretSaved =
+                            act.action === "upsert_secret" ||
+                            (act as any).action_type === "secret_saved";
+                          const isSandboxTest = act.action === "run_sandbox_test";
 
-                            {act.action === "upsert_custom_tool" && (
-                              <>
+                          return (
+                            <div
+                              key={idx}
+                              className="rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/20 p-4 space-y-2.5 text-xs"
+                            >
+                              {isPromptUpdate && (
+                                <>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-300">
+                                      <FileText className="h-4 w-4" />
+                                      <span>
+                                        {act.title ||
+                                          `Системный промпт обновлен (версия v${
+                                            act.new_version || act.version || 1
+                                          })`}
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() => setActiveTab("prompt")}
+                                      className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+                                    >
+                                      Открыть промпт →
+                                    </button>
+                                  </div>
+                                  {(act.change_description || act.summary) && (
+                                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                                      {act.change_description || act.summary}
+                                    </p>
+                                  )}
+                                  {(act.diff || act.diff_preview) && (
+                                    <pre className="p-3 rounded-xl bg-zinc-950 text-zinc-200 font-mono text-[11px] overflow-x-auto max-h-48">
+                                      {act.diff || act.diff_preview}
+                                    </pre>
+                                  )}
+                                </>
+                              )}
+
+                              {isToolUpdate && (
+                                <>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 font-bold text-emerald-800 dark:text-emerald-300">
+                                      <Code2 className="h-4 w-4" />
+                                      <span>
+                                        {act.title ||
+                                          `Кастомный JS-навык: ${act.tool_name} (v${
+                                            act.new_version || act.version || 1
+                                          })`}
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() => setActiveTab("code")}
+                                      className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+                                    >
+                                      Открыть в IDE →
+                                    </button>
+                                  </div>
+                                  {(act.change_description || act.summary) && (
+                                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                                      {act.change_description || act.summary}
+                                    </p>
+                                  )}
+                                  {act.sandbox_test && (
+                                    <div className="p-3 rounded-xl bg-zinc-950 text-zinc-200 font-mono text-[11px] space-y-1">
+                                      <div className="flex items-center justify-between text-[10px]">
+                                        <span
+                                          className={
+                                            act.sandbox_test.ok
+                                              ? "text-emerald-400 font-bold"
+                                              : "text-red-400 font-bold"
+                                          }
+                                        >
+                                          {act.sandbox_test.ok
+                                            ? "✓ SANDBOX TEST PASSED"
+                                            : "✗ SANDBOX TEST FAILED"}
+                                        </span>
+                                        <span className="text-zinc-400">
+                                          {act.sandbox_test.duration_ms || 0} ms
+                                        </span>
+                                      </div>
+                                      <pre className="overflow-x-auto text-emerald-300">
+                                        {JSON.stringify(
+                                          act.sandbox_test.result ?? act.sandbox_test.error,
+                                          null,
+                                          2
+                                        )}
+                                      </pre>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+
+                              {isToolToggle && (
                                 <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2 font-bold text-emerald-800 dark:text-emerald-300">
-                                    <Code2 className="h-4 w-4" />
-                                    <span>
-                                      Кастомный JS-навык: {act.tool_name} (v{act.new_version})
-                                    </span>
+                                  <div className="flex items-center gap-2 font-bold text-zinc-800 dark:text-zinc-200">
+                                    <Layers className="h-4 w-4 text-amber-500" />
+                                    <span>{act.title || `Навык ${act.tool_name}`}</span>
                                   </div>
                                   <button
                                     onClick={() => setActiveTab("code")}
                                     className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
                                   >
-                                    Открыть в IDE →
+                                    Перейти к навыкам →
                                   </button>
                                 </div>
-                                {act.sandbox_test && (
-                                  <div className="p-3 rounded-xl bg-zinc-950 text-zinc-200 font-mono text-[11px] space-y-1">
-                                    <div className="flex items-center justify-between text-[10px]">
-                                      <span
-                                        className={
-                                          act.sandbox_test.ok
-                                            ? "text-emerald-400 font-bold"
-                                            : "text-red-400 font-bold"
-                                        }
-                                      >
-                                        {act.sandbox_test.ok
-                                          ? "✓ SANDBOX TEST PASSED"
-                                          : "✗ SANDBOX TEST FAILED"}
-                                      </span>
-                                      <span className="text-zinc-400">
-                                        {act.sandbox_test.duration_ms || 0} ms
+                              )}
+
+                              {isSecretSaved && (
+                                <>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 font-bold text-blue-700 dark:text-blue-400">
+                                      <KeyRound className="h-4 w-4" />
+                                      <span>
+                                        {act.title || `Секретный ключ сохранен (${act.key_name || "API_KEY"})`}
                                       </span>
                                     </div>
-                                    <pre className="overflow-x-auto text-emerald-300">
-                                      {JSON.stringify(
-                                        act.sandbox_test.result ?? act.sandbox_test.error,
-                                        null,
-                                        2
-                                      )}
-                                    </pre>
+                                    <button
+                                      onClick={() => setActiveTab("secrets")}
+                                      className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+                                    >
+                                      Открыть секреты →
+                                    </button>
                                   </div>
-                                )}
-                              </>
-                            )}
+                                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                                    {act.summary ||
+                                      `Секрет защищен и доступен в JS-навыках через ctx.secrets.${
+                                        act.key_name || "API_KEY"
+                                      }`}
+                                  </p>
+                                </>
+                              )}
 
-                            {act.action === "run_sandbox_test" && act.sandbox_test && (
-                              <div className="space-y-1.5">
-                                <div className="font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-                                  <Terminal className="h-4 w-4 text-amber-500" />
-                                  <span>Тестовый запуск в песочнице: {act.tool_name}</span>
+                              {isSandboxTest && act.sandbox_test && (
+                                <div className="space-y-1.5">
+                                  <div className="font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
+                                    <Terminal className="h-4 w-4 text-amber-500" />
+                                    <span>Тестовый запуск в песочнице: {act.tool_name}</span>
+                                  </div>
+                                  <pre className="p-3 rounded-xl bg-zinc-950 text-emerald-300 font-mono text-[11px] overflow-x-auto">
+                                    {JSON.stringify(act.sandbox_test, null, 2)}
+                                  </pre>
                                 </div>
-                                <pre className="p-3 rounded-xl bg-zinc-950 text-emerald-300 font-mono text-[11px] overflow-x-auto">
-                                  {JSON.stringify(act.sandbox_test, null, 2)}
-                                </pre>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
