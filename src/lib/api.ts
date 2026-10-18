@@ -14,6 +14,7 @@ import {
   CustomToolVersionItem,
   SandboxExecutionResult,
   AdminCrudResourceSchema,
+  InstagramStatus,
 } from "@/types";
 
 const rawApiUrl =
@@ -232,6 +233,36 @@ export const api = {
     return request("/telegram/confirm", {
       method: "POST",
       body: JSON.stringify({ chat_id: chatId, username }),
+    });
+  },
+
+  async getInstagramStatus(): Promise<InstagramStatus> {
+    return request<InstagramStatus>("/instagram/status");
+  },
+
+  async connectInstagramUmnico(apiToken: string, replyToComments: boolean = false): Promise<{
+    ok: boolean;
+    message: string;
+    user_id?: number;
+    user_name?: string;
+    instagram_login?: string;
+    webhook_id?: number;
+    enabled: boolean;
+  }> {
+    return request("/instagram/connect", {
+      method: "POST",
+      body: JSON.stringify({ api_token: apiToken, reply_to_comments: replyToComments }),
+    });
+  },
+
+  async toggleInstagram(enabled: boolean): Promise<{
+    ok: boolean;
+    enabled: boolean;
+    message: string;
+  }> {
+    return request("/instagram/toggle", {
+      method: "POST",
+      body: JSON.stringify({ enabled }),
     });
   },
 

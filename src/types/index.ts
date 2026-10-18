@@ -47,6 +47,21 @@ export interface TelegramBotInfo {
   }>;
 }
 
+export interface InstagramStatus {
+  ok: boolean;
+  tenant_id: string;
+  configured: boolean;
+  enabled: boolean;
+  has_token: boolean;
+  masked_token?: string;
+  user_id?: number;
+  user_name?: string;
+  instagram_login?: string;
+  reply_to_comments?: boolean;
+  webhook_url: string;
+  webhook_id?: number;
+}
+
 export interface OverviewData {
   ok: boolean;
   tenant_id: string;
