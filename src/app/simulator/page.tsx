@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { SimulatorMessage, SimulatorQualification } from "@/types";
@@ -20,6 +21,8 @@ import {
   Copy,
   Check,
   Building2,
+  Cpu,
+  ArrowRight,
 } from "lucide-react";
 
 const QUICK_PROMPTS = [
@@ -31,7 +34,8 @@ const QUICK_PROMPTS = [
 ];
 
 export default function SimulatorPage() {
-  const { tenant } = useAuth();
+  const { user, tenant } = useAuth();
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<SimulatorMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -59,6 +63,9 @@ export default function SimulatorPage() {
         const res = await api.getSimulatorHistory();
         if (res && res.ok) {
           setMessages(res.messages || []);
+          if (res.session_id) {
+            setSessionId(res.session_id);
+          }
           if (res.qualification) {
             setQualification(res.qualification);
           }
@@ -90,6 +97,9 @@ export default function SimulatorPage() {
     try {
       const res = await api.sendSimulatorMessage(text);
       if (res && res.ok) {
+        if (res.session_id) {
+          setSessionId(res.session_id);
+        }
         const botMsg: SimulatorMessage = {
           id: `a_${Date.now()}`,
           role: "assistant",
@@ -145,6 +155,12 @@ export default function SimulatorPage() {
   const isBantQualified = Boolean(qualification?.is_qualified);
   const companyTitle = tenant?.business_name || "Онлайн-школа Фоксфорд";
 
+  const effectiveSessionId =
+    sessionId ||
+    (tenant?.id
+      ? `${tenant.id}:web_simulator:client_sim_${user?.username || "admin"}`
+      : "demo_amo:web_simulator:client_sim_admin");
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto flex flex-col h-[calc(100vh-4rem)]">
       {/* Page Header */}
@@ -161,7 +177,22 @@ export default function SimulatorPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {/* Admin Tech Trace Breakdown Button */}
+          {user?.is_admin && (
+            <Link
+              href={`/admin/chats/?session_id=${encodeURIComponent(effectiveSessionId)}`}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-amber-900 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all shadow-sm"
+              title="Открыть технический разбор этого учебного диалога (LLM промпты, токены, ответы, вызовы инструментов)"
+            >
+              <Cpu className="h-4 w-4 text-amber-500" />
+              <span>Разбор диалога</span>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300">
+                Трейс
+              </span>
+            </Link>
+          )}
+
           {/* Company badge */}
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-700 dark:text-zinc-300">
             <Building2 className="h-3.5 w-3.5 text-amber-500" />
@@ -186,14 +217,24 @@ export default function SimulatorPage() {
         {/* Left Column: Interactive Chat Window (8 cols) */}
         <div className="lg:col-span-8 flex flex-col rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/60 backdrop-blur-xl overflow-hidden shadow-sm dark:shadow-2xl transition-colors">
           {/* Chat Header Status Bar */}
-          <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/70 flex items-center justify-between text-xs">
+          <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/70 flex items-center justify-between text-xs flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <span className="flex h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
               <span className="text-zinc-700 dark:text-zinc-300 font-medium">Вера онлайн</span>
-              <span className="text-zinc-500 dark:text-zinc-500 text-[11px]">• Режим живой симуляции покупателя</span>
+              <span className="text-zinc-500 dark:text-zinc-500 text-[11px] hidden sm:inline">• Режим симуляции покупателя</span>
             </div>
-            <div className="text-[11px] text-zinc-500">
-              {messages.length > 0 ? `${messages.length} сообщений` : "Диалог не начат"}
+            <div className="flex items-center gap-3 text-[11px] text-zinc-500">
+              <span>{messages.length > 0 ? `${messages.length} сообщений` : "Диалог не начат"}</span>
+              {user?.is_admin && (
+                <Link
+                  href={`/admin/chats/?session_id=${encodeURIComponent(effectiveSessionId)}`}
+                  className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold hover:underline"
+                  title="Открыть детальный технический разбор этого диалога в админке"
+                >
+                  <Cpu className="h-3 w-3" />
+                  <span>Трейс диалога</span>
+                </Link>
+              )}
             </div>
           </div>
 
@@ -424,6 +465,34 @@ export default function SimulatorPage() {
               </div>
             </div>
           </div>
+
+          {/* Admin Tech Audit Card */}
+          {user?.is_admin && (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/20 p-5 backdrop-blur-xl space-y-3 shadow-sm transition-colors">
+              <div className="flex items-center justify-between pb-2 border-b border-amber-500/20">
+                <div className="flex items-center gap-2">
+                  <Cpu className="h-4 w-4 text-amber-500" />
+                  <h3 className="text-xs font-semibold text-amber-900 dark:text-amber-300 uppercase tracking-wider">
+                    Технический аудит
+                  </h3>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-500/20">
+                  Админ
+                </span>
+              </div>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                Пошаговый разбор учебного диалога: системные промпты базы знаний, сырые ответы модели, токены и параметры вызова кастомных инструментов.
+              </p>
+              <Link
+                href={`/admin/chats/?session_id=${encodeURIComponent(effectiveSessionId)}`}
+                className="flex items-center justify-center gap-1.5 w-full py-2.5 px-3 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-md shadow-amber-500/20 transition-all"
+              >
+                <Cpu className="h-4 w-4" />
+                <span>Открыть разбор диалога</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          )}
 
           {/* Test Strategy Checklist */}
           <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 backdrop-blur-xl space-y-3 shadow-sm dark:shadow-xl transition-colors">

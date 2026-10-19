@@ -237,6 +237,13 @@ function AdminChatsContent() {
                 </Link>
                 <span className="text-zinc-300 dark:text-zinc-700">/</span>
                 <Link
+                  href="/simulator"
+                  className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors py-1 px-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                >
+                  <span>Тренажер (/simulator)</span>
+                </Link>
+                <span className="text-zinc-300 dark:text-zinc-700">/</span>
+                <Link
                   href="/admin/chats"
                   className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors py-1 px-2.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 >
@@ -326,17 +333,38 @@ function AdminChatsContent() {
 
           {/* Error Banner */}
           {traceError && (
-            <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-700 dark:text-red-400 text-xs flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                <span>{traceError}</span>
+            <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-zinc-900 dark:text-zinc-100 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2.5 text-xs">
+                  <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-amber-900 dark:text-amber-300">
+                      {traceError}
+                    </p>
+                    <p className="text-zinc-600 dark:text-zinc-400 mt-1">
+                      {selectedSessionId.includes("web_simulator")
+                        ? "В этой учебной сессии пока нет сообщений. Отправьте хотя бы одну реплику в тренажере, чтобы сформировался технический трейс."
+                        : "Проверьте идентификатор сессии или вернитесь к общему списку диалогов."}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => loadTrace(selectedSessionId)}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-300 transition-colors flex-shrink-0"
+                >
+                  Повторить
+                </button>
               </div>
-              <button
-                onClick={() => loadTrace(selectedSessionId)}
-                className="underline font-semibold hover:text-red-800 dark:hover:text-red-300"
-              >
-                Повторить
-              </button>
+              {selectedSessionId.includes("web_simulator") && (
+                <div className="pt-2 border-t border-amber-500/15 flex gap-2">
+                  <Link
+                    href="/simulator"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 transition-colors shadow-sm"
+                  >
+                    <span>Перейти в тренажер</span>
+                  </Link>
+                </div>
+              )}
             </div>
           )}
 
