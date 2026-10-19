@@ -341,6 +341,16 @@ export default function SuperadminConsolePage() {
             );
           })}
         </nav>
+
+        <div className="pt-3 mt-2 border-t border-zinc-200 dark:border-zinc-800">
+          <Link
+            href="/admin/chats"
+            className="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-all border border-amber-500/25"
+          >
+            <Cpu className="h-4 w-4 text-amber-500" />
+            <span>Трейсы диалогов LLM</span>
+          </Link>
+        </div>
       </aside>
 
       {/* Main Content Area */}
@@ -522,6 +532,16 @@ export default function SuperadminConsolePage() {
                         ))}
                         <td className="py-3 px-4 text-right whitespace-nowrap">
                           <div className="inline-flex items-center gap-1.5">
+                            {selectedResource === "interaction-logs" && row.session_id && (
+                              <Link
+                                href={`/admin/chats/?session_id=${encodeURIComponent(row.session_id)}`}
+                                className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500 hover:text-zinc-950 text-amber-700 dark:text-amber-400 text-[11px] font-semibold transition-colors inline-flex items-center gap-1 border border-amber-500/30"
+                                title="Открыть технический трейс диалога"
+                              >
+                                <Cpu className="h-3 w-3 text-amber-500" />
+                                <span>Трейс диалога</span>
+                              </Link>
+                            )}
                             <button
                               onClick={() => openEditModal(row)}
                               className="px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-amber-500 hover:text-zinc-950 dark:bg-zinc-800 dark:hover:bg-amber-500 dark:hover:text-zinc-950 text-[11px] font-semibold transition-colors inline-flex items-center gap-1"

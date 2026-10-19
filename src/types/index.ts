@@ -315,3 +315,66 @@ export interface AdminCrudResourceSchema {
   read_only?: boolean;
   columns: string[];
 }
+
+export interface AdminLLMStep {
+  step: string;
+  model?: string;
+  provider?: string;
+  ttft_ms?: number;
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  has_tool_calls?: boolean;
+  content_preview?: string;
+  request_messages?: Array<{
+    role: string;
+    content: string;
+    [key: string]: any;
+  }>;
+  response_content?: string;
+}
+
+export interface AdminToolExecution {
+  tool: string;
+  mode?: string;
+  arguments: Record<string, any> | any;
+  output: Record<string, any> | any;
+}
+
+export interface AdminInteractionLogTurn {
+  id: string;
+  tenant_id: string;
+  session_id: string;
+  channel: string;
+  user_id: string;
+  user_message: string | null;
+  assistant_response: string | null;
+  status: string;
+  llm_provider: string;
+  llm_model: string;
+  total_latency_ms: number | null;
+  ttft_ms: number | null;
+  prompt_tokens: number;
+  completion_tokens: number;
+  estimated_cost_rub: number;
+  tools_executed: AdminToolExecution[];
+  llm_steps: AdminLLMStep[];
+  error_type?: string | null;
+  error_message?: string | null;
+  stack_trace?: string | null;
+  created_at: string;
+}
+
+export interface AdminChatTraceResponse {
+  ok: boolean;
+  session_id: string;
+  tenant_id: string;
+  tenant_business_name?: string;
+  channel: string;
+  user_id: string;
+  turn_count: number;
+  total_prompt_tokens: number;
+  total_completion_tokens: number;
+  total_cost_rub: number;
+  turns: AdminInteractionLogTurn[];
+}
+

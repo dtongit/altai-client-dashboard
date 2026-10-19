@@ -15,6 +15,7 @@ import {
   SandboxExecutionResult,
   AdminCrudResourceSchema,
   InstagramStatus,
+  AdminChatTraceResponse,
 } from "@/types";
 
 const rawApiUrl =
@@ -448,5 +449,24 @@ export const api = {
   async getAdminStats(tenantId?: string): Promise<Record<string, any>> {
     const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
     return request(`/stats${qs}`, {}, ADMIN_API_BASE_URL);
+  },
+
+  async listAdminChats(params?: {
+    search?: string;
+    tenant_id?: string;
+    channel?: string;
+    limit?: number;
+  }): Promise<{ total_sessions: number; sessions: any[] }> {
+    const q = new URLSearchParams();
+    if (params?.search) q.append("search", params.search);
+    if (params?.tenant_id) q.append("tenant_id", params.tenant_id);
+    if (params?.channel) q.append("channel", params.channel);
+    if (params?.limit) q.append("limit", String(params.limit));
+    const qs = q.toString() ? `?${q.toString()}` : "";
+    return request(`/chats${qs}`, {}, ADMIN_API_BASE_URL);
+  },
+
+  async getAdminChatTrace(sessionId: string): Promise<AdminChatTraceResponse> {
+    return request(`/chats/${encodeURIComponent(sessionId)}`, {}, ADMIN_API_BASE_URL);
   },
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { ChatDetail, ChatSessionItem } from "@/types";
@@ -16,6 +17,7 @@ import {
   Flame,
   MessageSquare,
   RefreshCw,
+  Cpu,
 } from "lucide-react";
 import { formatRelativeTime, formatDateTime } from "@/lib/utils";
 
@@ -290,8 +292,22 @@ export default function ChatsPage() {
                 </div>
               </div>
 
-              {/* Pause / Takeover Button */}
-              <div className="flex items-center gap-3">
+              {/* Action Buttons: Admin Technical Details & Pause/Takeover */}
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                {user?.is_admin && (
+                  <Link
+                    href={`/admin/chats/?session_id=${encodeURIComponent(chatDetail.session_id)}`}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-amber-900 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all shadow-sm"
+                    title="Открыть технические детали диалога в админке (LLM запросы, ответы, вызовы инструментов)"
+                  >
+                    <Cpu className="h-4 w-4 text-amber-500" />
+                    <span>Технические детали</span>
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-800 dark:text-amber-300">
+                      Админ
+                    </span>
+                  </Link>
+                )}
+
                 <button
                   onClick={handleTogglePause}
                   disabled={actionLoading}
