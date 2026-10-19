@@ -43,6 +43,143 @@ import {
 
 type FilterMode = "all" | "chat_only" | "tech_only";
 
+interface TimelineItem {
+  id: string;
+  type: "user_message" | "llm_step" | "tools" | "assistant_response" | "error";
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  llmStep?: AdminLLMStep;
+  tools?: AdminToolExecution[];
+  text?: string;
+  error?: { message: string; type?: string };
+}
+
+function buildTurnTimeline(
+  turn: AdminInteractionLogTurn,
+  filterMode: FilterMode
+): TimelineItem[] {
+  const items: TimelineItem[] = [];
+  const toolsList = (turn.tools_executed as AdminToolExecution[]) || [];
+  const llmStepsList = (turn.llm_steps as AdminLLMStep[]) || [];
+
+  // 1. Client message
+  if (turn.user_message && filterMode !== "tech_only") {
+    items.push({
+      id: `${turn.id}_user_msg`,
+      type: "user_message",
+      title: "Сообщение клиента",
+      subtitle: `(${turn.user_id} через ${turn.channel})`,
+      text: turn.user_message,
+    });
+  }
+
+  // 2. LLM Phase 1 (Initial intent analysis and tool decision)
+  const phase1Step = llmStepsList.find((s) => s.step === "dialog_agent_phase1");
+  const phase2Step = llmStepsList.find((s) => s.step === "dialog_agent_phase2");
+  const bantStep = llmStepsList.find((s) => s.step === "qualification_extraction");
+  const otherLlmSteps = llmStepsList.filter(
+    (s) =>
+      s.step !== "dialog_agent_phase1" &&
+      s.step !== "dialog_agent_phase2" &&
+      s.step !== "qualification_extraction"
+  );
+
+  const initialLlmStep =
+    phase1Step ||
+    (llmStepsList.length > 0 && llmStepsList[0] !== bantStep ? llmStepsList[0] : null);
+
+  if (initialLlmStep && filterMode !== "chat_only") {
+    items.push({
+      id: `${turn.id}_llm_phase1`,
+      type: "llm_step",
+      title:
+        toolsList.length > 0
+          ? "Запрос к LLM (Фаза 1: Первичный анализ и выбор инструментов)"
+          : "Запрос к LLM (Фаза 1: Анализ и генерация ответа)",
+      badge: initialLlmStep.model || turn.llm_model,
+      llmStep: initialLlmStep,
+    });
+  } else if (llmStepsList.length === 0 && filterMode !== "chat_only") {
+    items.push({
+      id: `${turn.id}_llm_legacy`,
+      type: "llm_step",
+      title: `Запрос и ответ LLM (${turn.llm_model})`,
+      badge: turn.llm_model,
+    });
+  }
+
+  // 3. Tools Execution (strictly executed AFTER Phase 1 decision, BEFORE Phase 2 synthesis!)
+  if (toolsList.length > 0 && filterMode !== "chat_only") {
+    items.push({
+      id: `${turn.id}_tools`,
+      type: "tools",
+      title: `Исполнение инструментов (${toolsList.length})`,
+      subtitle: toolsList.map((t) => t.tool).filter(Boolean).join(", "),
+      tools: toolsList,
+    });
+  }
+
+  // 4. LLM Phase 2 (Synthesis of response using tool facts)
+  if (phase2Step && filterMode !== "chat_only") {
+    items.push({
+      id: `${turn.id}_llm_phase2`,
+      type: "llm_step",
+      title: "Запрос к LLM (Фаза 2: Синтез ответа с учетом данных инструментов)",
+      badge: phase2Step.model || turn.llm_model,
+      llmStep: phase2Step,
+    });
+  }
+
+  // Intermediate other LLM steps if any
+  if (otherLlmSteps.length > 0 && filterMode !== "chat_only") {
+    otherLlmSteps.forEach((s, idx) => {
+      if (s !== initialLlmStep) {
+        items.push({
+          id: `${turn.id}_llm_other_${idx}`,
+          type: "llm_step",
+          title: `Дополнительный шаг LLM (${s.step || idx + 1})`,
+          badge: s.model || turn.llm_model,
+          llmStep: s,
+        });
+      }
+    });
+  }
+
+  // 5. Vera's Customer-Facing Message
+  if (turn.assistant_response && filterMode !== "tech_only") {
+    items.push({
+      id: `${turn.id}_assistant_msg`,
+      type: "assistant_response",
+      title: "Сообщение Веры (Отправлено клиенту)",
+      text: turn.assistant_response,
+    });
+  }
+
+  // 6. BANT Qualification (post-reply background analysis)
+  if (bantStep && filterMode !== "chat_only") {
+    items.push({
+      id: `${turn.id}_llm_bant`,
+      type: "llm_step",
+      title: "Квалификация BANT: Скоринг лида (LLM)",
+      badge: bantStep.model || turn.llm_model,
+      llmStep: bantStep,
+    });
+  }
+
+  // 7. Error if any
+  if (turn.error_message) {
+    items.push({
+      id: `${turn.id}_error`,
+      type: "error",
+      title: `Ошибка в ходе: ${turn.error_type || "Error"}`,
+      error: { message: turn.error_message, type: turn.error_type || undefined },
+    });
+  }
+
+  return items;
+}
+
 export default function AdminChatsPage() {
   return (
     <Suspense
@@ -158,11 +295,14 @@ function AdminChatsContent() {
     const allSteps: Record<string, boolean> = {};
     trace.turns.forEach((turn, idx) => {
       allTurns[idx] = true;
-      (turn.llm_steps || []).forEach((_, sIdx) => {
-        allSteps[`${turn.id}_llm_${sIdx}`] = true;
-      });
-      (turn.tools_executed || []).forEach((_, tIdx) => {
-        allSteps[`${turn.id}_tool_${tIdx}`] = true;
+      const items = buildTurnTimeline(turn, "all");
+      items.forEach((item) => {
+        allSteps[item.id] = true;
+        if (item.tools) {
+          item.tools.forEach((_, tIdx) => {
+            allSteps[`${item.id}_tool_${tIdx}`] = true;
+          });
+        }
       });
     });
     setExpandedTurns(allTurns);
@@ -588,388 +728,415 @@ function AdminChatsContent() {
                         {/* Turn Expanded Content: Strictly Chronological */}
                         {isTurnExpanded && (
                           <div className="p-5 sm:p-6 space-y-5">
-                            {/* 1. Client Message */}
-                            {filterMode !== "tech_only" && turn.user_message && (
-                              <div className="relative pl-6 border-l-2 border-blue-500/60 dark:border-blue-500/40 space-y-2">
-                                <div className="flex items-center justify-between gap-3 flex-wrap">
-                                  <div className="flex items-center gap-2">
-                                    <div className="h-6 w-6 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                                      <User className="h-3.5 w-3.5" />
-                                    </div>
-                                    <span className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">
-                                      1. Сообщение клиента
-                                    </span>
-                                    <span className="text-[11px] font-mono text-zinc-400">
-                                      ({turn.user_id} через {turn.channel})
-                                    </span>
+                            {(() => {
+                              const timelineItems = buildTurnTimeline(turn, filterMode);
+
+                              if (timelineItems.length === 0) {
+                                return (
+                                  <div className="py-6 text-center text-xs text-zinc-400 italic">
+                                    Нет событий для отображения в выбранном режиме фильтра.
                                   </div>
-                                  <button
-                                    onClick={() =>
-                                      copyToClipboard(turn.user_message || "", `user_msg_${tIdx}`)
-                                    }
-                                    className="text-[11px] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 inline-flex items-center gap-1 transition-colors"
-                                    title="Копировать текст сообщения"
-                                  >
-                                    {copiedKey === `user_msg_${tIdx}` ? (
-                                      <Check className="h-3 w-3 text-emerald-500" />
-                                    ) : (
-                                      <Copy className="h-3 w-3" />
-                                    )}
-                                    <span>Копировать</span>
-                                  </button>
-                                </div>
+                                );
+                              }
 
-                                <div className="p-3.5 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 text-xs text-zinc-900 dark:text-zinc-100 leading-relaxed">
-                                  {turn.user_message}
-                                </div>
-                              </div>
-                            )}
+                              return timelineItems.map((item, itemIdx) => {
+                                const stepNumber = itemIdx + 1;
 
-                            {/* 2. LLM Request & Response Steps */}
-                            {filterMode !== "chat_only" && (
-                              <>
-                                {llmStepsList.length > 0 ? (
-                                  llmStepsList.map((step, sIdx) => {
-                                    const stepKey = `${turn.id}_llm_${sIdx}`;
-                                    const isStepExpanded = expandedSteps[stepKey] ?? false;
-                                    const isPhase1 = step.step === "dialog_agent_phase1";
-                                    const isPhase2 = step.step === "dialog_agent_phase2";
-                                    const isQual = step.step === "qualification_extraction";
+                                // 1. Client User Message
+                                if (item.type === "user_message") {
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      className="relative pl-6 border-l-2 border-blue-500/60 dark:border-blue-500/40 space-y-2"
+                                    >
+                                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                                        <div className="flex items-center gap-2">
+                                          <div className="h-6 w-6 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                            <User className="h-3.5 w-3.5" />
+                                          </div>
+                                          <span className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">
+                                            {stepNumber}. {item.title}
+                                          </span>
+                                          {item.subtitle && (
+                                            <span className="text-[11px] font-mono text-zinc-400">
+                                              {item.subtitle}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <button
+                                          onClick={() =>
+                                            copyToClipboard(item.text || "", `user_msg_${tIdx}`)
+                                          }
+                                          className="text-[11px] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 inline-flex items-center gap-1 transition-colors"
+                                          title="Копировать текст сообщения"
+                                        >
+                                          {copiedKey === `user_msg_${tIdx}` ? (
+                                            <Check className="h-3 w-3 text-emerald-500" />
+                                          ) : (
+                                            <Copy className="h-3 w-3" />
+                                          )}
+                                          <span>Копировать</span>
+                                        </button>
+                                      </div>
 
-                                    let stepLabel = `Запрос к LLM (Шаг ${sIdx + 1})`;
-                                    if (isPhase1)
-                                      stepLabel = "2. Запрос к LLM (Фаза 1: Первичный анализ)";
-                                    if (isPhase2)
-                                      stepLabel =
-                                        "5. Запрос к LLM (Фаза 2: Синтез ответа с учетом фактов)";
-                                    if (isQual) stepLabel = "Квалификация BANT: LLM Запрос";
+                                      <div className="p-3.5 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40 text-xs text-zinc-900 dark:text-zinc-100 leading-relaxed">
+                                        {item.text}
+                                      </div>
+                                    </div>
+                                  );
+                                }
 
+                                // 2. LLM Request & Response Step
+                                if (item.type === "llm_step") {
+                                  const stepKey = item.id;
+                                  const isStepExpanded = expandedSteps[stepKey] ?? false;
+                                  const step = item.llmStep;
+
+                                  if (!step) {
                                     return (
                                       <div
-                                        key={sIdx}
-                                        className="relative pl-6 border-l-2 border-purple-500/60 dark:border-purple-500/40 space-y-3"
+                                        key={item.id}
+                                        className="relative pl-6 border-l-2 border-purple-500/60 dark:border-purple-500/40 space-y-2"
                                       >
-                                        <div className="flex items-center justify-between gap-3 flex-wrap">
-                                          <div className="flex items-center gap-2">
-                                            <div className="h-6 w-6 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                                              <Sparkles className="h-3.5 w-3.5" />
-                                            </div>
-                                            <span className="text-xs font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">
-                                              {stepLabel}
-                                            </span>
-                                            <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-300 font-mono text-[11px]">
-                                              {step.model || turn.llm_model}
-                                            </span>
-                                          </div>
+                                        <div className="flex items-center gap-2">
+                                          <Sparkles className="h-4 w-4 text-purple-500" />
+                                          <span className="text-xs font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">
+                                            {stepNumber}. {item.title}
+                                          </span>
+                                        </div>
+                                        <div className="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 italic">
+                                          Лог промежуточных фаз LLM не был зафиксирован для этой архивной записи.
+                                        </div>
+                                      </div>
+                                    );
+                                  }
 
-                                          <div className="flex items-center gap-3 text-xs">
-                                            {step.ttft_ms && (
-                                              <span className="font-mono text-zinc-400 text-[11px]">
-                                                TTFT: {step.ttft_ms} ms
-                                              </span>
-                                            )}
-                                            {step.prompt_tokens && (
-                                              <span className="font-mono text-zinc-400 text-[11px]">
-                                                {step.prompt_tokens} in / {step.completion_tokens} out
-                                              </span>
-                                            )}
-                                            <button
-                                              onClick={() => toggleStep(stepKey)}
-                                              className="px-2 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-[11px] font-medium flex items-center gap-1 transition-colors"
-                                            >
-                                              {isStepExpanded ? (
-                                                <>
-                                                  <ChevronDown className="h-3 w-3" />
-                                                  <span>Свернуть детали</span>
-                                                </>
-                                              ) : (
-                                                <>
-                                                  <ChevronRight className="h-3 w-3" />
-                                                  <span>Показать запрос и ответ</span>
-                                                </>
-                                              )}
-                                            </button>
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      className="relative pl-6 border-l-2 border-purple-500/60 dark:border-purple-500/40 space-y-3"
+                                    >
+                                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                                        <div className="flex items-center gap-2">
+                                          <div className="h-6 w-6 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                                            <Sparkles className="h-3.5 w-3.5" />
                                           </div>
+                                          <span className="text-xs font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">
+                                            {stepNumber}. {item.title}
+                                          </span>
+                                          {item.badge && (
+                                            <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-300 font-mono text-[11px]">
+                                              {item.badge}
+                                            </span>
+                                          )}
                                         </div>
 
-                                        {isStepExpanded ? (
-                                          <div className="space-y-3 pt-1">
-                                            {/* LLM Input / Request Messages */}
-                                            {step.request_messages &&
-                                              step.request_messages.length > 0 && (
-                                                <div className="space-y-1.5">
-                                                  <div className="flex items-center justify-between text-[11px] text-zinc-500 font-medium">
-                                                    <span>
-                                                      Запрос, переданный в LLM (Промпт и контекст):
-                                                    </span>
-                                                    <button
-                                                      onClick={() =>
-                                                        copyToClipboard(
-                                                          JSON.stringify(
-                                                            step.request_messages,
-                                                            null,
-                                                            2
-                                                          ),
-                                                          `prompt_${stepKey}`
-                                                        )
-                                                      }
-                                                      className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 inline-flex items-center gap-1"
-                                                    >
-                                                      {copiedKey === `prompt_${stepKey}` ? (
-                                                        <Check className="h-3 w-3 text-emerald-500" />
-                                                      ) : (
-                                                        <Copy className="h-3 w-3" />
-                                                      )}
-                                                      <span>Копировать промпт</span>
-                                                    </button>
-                                                  </div>
+                                        <div className="flex items-center gap-3 text-xs">
+                                          {step.ttft_ms && (
+                                            <span className="font-mono text-zinc-400 text-[11px]">
+                                              TTFT: {step.ttft_ms} ms
+                                            </span>
+                                          )}
+                                          {step.prompt_tokens && (
+                                            <span className="font-mono text-zinc-400 text-[11px]">
+                                              {step.prompt_tokens} in / {step.completion_tokens} out
+                                            </span>
+                                          )}
+                                          <button
+                                            onClick={() => toggleStep(stepKey)}
+                                            className="px-2 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-[11px] font-medium flex items-center gap-1 transition-colors"
+                                          >
+                                            {isStepExpanded ? (
+                                              <>
+                                                <ChevronDown className="h-3 w-3" />
+                                                <span>Свернуть детали</span>
+                                              </>
+                                            ) : (
+                                              <>
+                                                <ChevronRight className="h-3 w-3" />
+                                                <span>Показать запрос и ответ</span>
+                                              </>
+                                            )}
+                                          </button>
+                                        </div>
+                                      </div>
 
-                                                  <div className="space-y-2 max-h-96 overflow-y-auto p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-mono">
-                                                    {step.request_messages.map((msg, mIdx) => (
-                                                      <div
-                                                        key={mIdx}
-                                                        className="p-2.5 rounded-xl bg-white/70 dark:bg-zinc-900/70 border border-zinc-200/50 dark:border-zinc-800/50 space-y-1"
-                                                      >
-                                                        <div className="flex items-center gap-2">
-                                                          <span
-                                                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                                              msg.role === "system"
-                                                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
-                                                                : msg.role === "user"
-                                                                ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
-                                                                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                                                            }`}
-                                                          >
-                                                            {msg.role}
-                                                          </span>
-                                                        </div>
-                                                        <pre className="text-[11px] text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed">
-                                                          {msg.content}
-                                                        </pre>
-                                                      </div>
-                                                    ))}
-                                                  </div>
-                                                </div>
-                                              )}
-
-                                            {/* LLM Output / Raw Response */}
+                                      {isStepExpanded ? (
+                                        <div className="space-y-3 pt-1">
+                                          {/* LLM Input / Request Messages */}
+                                          {step.request_messages && step.request_messages.length > 0 && (
                                             <div className="space-y-1.5">
                                               <div className="flex items-center justify-between text-[11px] text-zinc-500 font-medium">
-                                                <span>Сырой ответ модели (LLM Output):</span>
+                                                <span>Запрос, переданный в LLM (Промпт и контекст):</span>
                                                 <button
                                                   onClick={() =>
                                                     copyToClipboard(
-                                                      step.response_content ||
-                                                        step.content_preview ||
-                                                        "",
-                                                      `resp_${stepKey}`
+                                                      JSON.stringify(step.request_messages, null, 2),
+                                                      `prompt_${stepKey}`
                                                     )
                                                   }
                                                   className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 inline-flex items-center gap-1"
                                                 >
-                                                  {copiedKey === `resp_${stepKey}` ? (
+                                                  {copiedKey === `prompt_${stepKey}` ? (
                                                     <Check className="h-3 w-3 text-emerald-500" />
                                                   ) : (
                                                     <Copy className="h-3 w-3" />
                                                   )}
-                                                  <span>Копировать ответ</span>
+                                                  <span>Копировать промпт</span>
                                                 </button>
                                               </div>
 
-                                              <div className="p-3.5 rounded-2xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40 text-xs font-mono text-zinc-800 dark:text-zinc-200 whitespace-pre-wrap leading-relaxed">
-                                                {step.response_content ||
-                                                  step.content_preview ||
-                                                  "—"}
+                                              <div className="space-y-2 max-h-96 overflow-y-auto p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs font-mono">
+                                                {step.request_messages.map((msg, mIdx) => (
+                                                  <div
+                                                    key={mIdx}
+                                                    className="p-2.5 rounded-xl bg-white/70 dark:bg-zinc-900/70 border border-zinc-200/50 dark:border-zinc-800/50 space-y-1"
+                                                  >
+                                                    <div className="flex items-center gap-2">
+                                                      <span
+                                                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                                          msg.role === "system"
+                                                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                                                            : msg.role === "user"
+                                                            ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                                                            : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                                        }`}
+                                                      >
+                                                        {msg.role}
+                                                      </span>
+                                                    </div>
+                                                    <pre className="text-[11px] text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap font-mono leading-relaxed">
+                                                      {msg.content}
+                                                    </pre>
+                                                  </div>
+                                                ))}
                                               </div>
                                             </div>
+                                          )}
+
+                                          {/* LLM Output / Raw Response */}
+                                          <div className="space-y-1.5">
+                                            <div className="flex items-center justify-between text-[11px] text-zinc-500 font-medium">
+                                              <span>Сырой ответ модели (LLM Output):</span>
+                                              <button
+                                                onClick={() =>
+                                                  copyToClipboard(
+                                                    step.response_content || step.content_preview || "",
+                                                    `resp_${stepKey}`
+                                                  )
+                                                }
+                                                className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 inline-flex items-center gap-1"
+                                              >
+                                                {copiedKey === `resp_${stepKey}` ? (
+                                                  <Check className="h-3 w-3 text-emerald-500" />
+                                                ) : (
+                                                  <Copy className="h-3 w-3" />
+                                                )}
+                                                <span>Копировать ответ</span>
+                                              </button>
+                                            </div>
+
+                                            <div className="p-3.5 rounded-2xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40 text-xs font-mono text-zinc-800 dark:text-zinc-200 whitespace-pre-wrap leading-relaxed">
+                                              {step.response_content || step.content_preview || "—"}
+                                            </div>
                                           </div>
-                                        ) : (
-                                          <div className="p-2.5 rounded-xl bg-purple-50/30 dark:bg-purple-950/10 border border-purple-200/40 dark:border-purple-900/30 text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 font-mono">
-                                            {step.response_content || step.content_preview || "—"}
-                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="p-2.5 rounded-xl bg-purple-50/30 dark:bg-purple-950/10 border border-purple-200/40 dark:border-purple-900/30 text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2 font-mono">
+                                          {step.response_content || step.content_preview || "—"}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                }
+
+                                // 3. Executed Custom Tools
+                                if (item.type === "tools") {
+                                  const tools = item.tools || [];
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      className="relative pl-6 border-l-2 border-amber-500/70 dark:border-amber-500/50 space-y-4"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <div className="h-6 w-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                          <Wrench className="h-3.5 w-3.5" />
+                                        </div>
+                                        <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                                          {stepNumber}. {item.title}
+                                        </span>
+                                        {item.subtitle && (
+                                          <span className="text-[11px] font-mono text-zinc-400">
+                                            [{item.subtitle}]
+                                          </span>
                                         )}
                                       </div>
-                                    );
-                                  })
-                                ) : (
-                                  <div className="relative pl-6 border-l-2 border-purple-500/60 dark:border-purple-500/40 space-y-2">
-                                    <div className="flex items-center gap-2">
-                                      <Sparkles className="h-4 w-4 text-purple-500" />
-                                      <span className="text-xs font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wide">
-                                        Запрос и ответ LLM ({turn.llm_model})
-                                      </span>
+
+                                      <div className="space-y-3">
+                                        {tools.map((tExec, tIdx2) => {
+                                          const toolKey = `${item.id}_tool_${tIdx2}`;
+                                          const isToolExpanded = expandedSteps[toolKey] ?? true;
+
+                                          return (
+                                            <div
+                                              key={tIdx2}
+                                              className="rounded-2xl border border-amber-500/30 dark:border-amber-500/20 bg-amber-500/5 dark:bg-amber-950/15 overflow-hidden"
+                                            >
+                                              <div
+                                                onClick={() => toggleStep(toolKey)}
+                                                className="px-4 py-2.5 bg-amber-500/10 dark:bg-amber-500/15 border-b border-amber-500/20 flex items-center justify-between gap-2 cursor-pointer select-none"
+                                              >
+                                                <div className="flex items-center gap-2">
+                                                  {isToolExpanded ? (
+                                                    <ChevronDown className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                                                  ) : (
+                                                    <ChevronRight className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                                                  )}
+                                                  <span className="font-mono text-xs font-bold text-amber-900 dark:text-amber-200">
+                                                    {tExec.tool || "unnamed_tool"}
+                                                  </span>
+                                                  {tExec.mode && (
+                                                    <span className="text-[10px] text-zinc-400 font-mono">
+                                                      [{tExec.mode}]
+                                                    </span>
+                                                  )}
+                                                </div>
+
+                                                <span className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold">
+                                                  {isToolExpanded ? "Скрыть" : "Показать параметры и ответ"}
+                                                </span>
+                                              </div>
+
+                                              {isToolExpanded && (
+                                                <div className="p-4 space-y-3 text-xs">
+                                                  {/* Arguments */}
+                                                  <div className="space-y-1.5">
+                                                    <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+                                                      <span>Входные параметры (Arguments):</span>
+                                                      <button
+                                                        onClick={() =>
+                                                          copyToClipboard(
+                                                            JSON.stringify(tExec.arguments, null, 2),
+                                                            `tool_args_${toolKey}`
+                                                          )
+                                                        }
+                                                        className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 inline-flex items-center gap-1 font-normal"
+                                                      >
+                                                        {copiedKey === `tool_args_${toolKey}` ? (
+                                                          <Check className="h-3 w-3 text-emerald-500" />
+                                                        ) : (
+                                                          <Copy className="h-3 w-3" />
+                                                        )}
+                                                        <span>Копировать параметры</span>
+                                                      </button>
+                                                    </div>
+                                                    <pre className="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono text-zinc-800 dark:text-zinc-200 overflow-x-auto whitespace-pre-wrap">
+                                                      {JSON.stringify(tExec.arguments, null, 2)}
+                                                    </pre>
+                                                  </div>
+
+                                                  {/* Tool Output */}
+                                                  <div className="space-y-1.5">
+                                                    <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
+                                                      <span>Результат исполнения (Tool Output):</span>
+                                                      <button
+                                                        onClick={() =>
+                                                          copyToClipboard(
+                                                            JSON.stringify(tExec.output, null, 2),
+                                                            `tool_out_${toolKey}`
+                                                          )
+                                                        }
+                                                        className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 inline-flex items-center gap-1 font-normal"
+                                                      >
+                                                        {copiedKey === `tool_out_${toolKey}` ? (
+                                                          <Check className="h-3 w-3 text-emerald-500" />
+                                                        ) : (
+                                                          <Copy className="h-3 w-3" />
+                                                        )}
+                                                        <span>Копировать результат</span>
+                                                      </button>
+                                                    </div>
+                                                    <pre className="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono text-zinc-800 dark:text-zinc-200 overflow-x-auto whitespace-pre-wrap">
+                                                      {typeof tExec.output === "string"
+                                                        ? tExec.output
+                                                        : JSON.stringify(tExec.output, null, 2)}
+                                                    </pre>
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
-                                    <div className="p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 italic">
-                                      Лог промежуточных фаз LLM не был зафиксирован для этой
-                                      архивной записи.
-                                    </div>
-                                  </div>
-                                )}
-                              </>
-                            )}
+                                  );
+                                }
 
-                            {/* 3. Used Tools */}
-                            {filterMode !== "chat_only" && toolsList.length > 0 && (
-                              <div className="relative pl-6 border-l-2 border-amber-500/70 dark:border-amber-500/50 space-y-4">
-                                <div className="flex items-center gap-2">
-                                  <div className="h-6 w-6 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                                    <Wrench className="h-3.5 w-3.5" />
-                                  </div>
-                                  <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
-                                    4. Использованные инструменты ({toolsList.length})
-                                  </span>
-                                </div>
-
-                                <div className="space-y-3">
-                                  {toolsList.map((tExec, tIdx2) => {
-                                    const toolKey = `${turn.id}_tool_${tIdx2}`;
-                                    const isToolExpanded = expandedSteps[toolKey] ?? true;
-
-                                    return (
-                                      <div
-                                        key={tIdx2}
-                                        className="rounded-2xl border border-amber-500/30 dark:border-amber-500/20 bg-amber-500/5 dark:bg-amber-950/15 overflow-hidden"
-                                      >
-                                        <div
-                                          onClick={() => toggleStep(toolKey)}
-                                          className="px-4 py-2.5 bg-amber-500/10 dark:bg-amber-500/15 border-b border-amber-500/20 flex items-center justify-between gap-2 cursor-pointer select-none"
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            {isToolExpanded ? (
-                                              <ChevronDown className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                                            ) : (
-                                              <ChevronRight className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                                            )}
-                                            <span className="font-mono text-xs font-bold text-amber-900 dark:text-amber-200">
-                                              {tExec.tool || "unnamed_tool"}
-                                            </span>
-                                            {tExec.mode && (
-                                              <span className="text-[10px] text-zinc-400 font-mono">
-                                                [{tExec.mode}]
-                                              </span>
-                                            )}
+                                // 4. Vera's Message
+                                if (item.type === "assistant_response") {
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      className="relative pl-6 border-l-2 border-emerald-500/70 dark:border-emerald-500/50 space-y-2"
+                                    >
+                                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                                        <div className="flex items-center gap-2">
+                                          <div className="h-6 w-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                            <Bot className="h-3.5 w-3.5" />
                                           </div>
-
-                                          <span className="text-[11px] text-amber-700 dark:text-amber-400 font-semibold">
-                                            {isToolExpanded ? "Скрыть" : "Показать параметры и ответ"}
+                                          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
+                                            {stepNumber}. {item.title}
                                           </span>
                                         </div>
-
-                                        {isToolExpanded && (
-                                          <div className="p-4 space-y-3 text-xs">
-                                            {/* Arguments */}
-                                            <div className="space-y-1.5">
-                                              <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
-                                                <span>Входные параметры (Arguments):</span>
-                                                <button
-                                                  onClick={() =>
-                                                    copyToClipboard(
-                                                      JSON.stringify(tExec.arguments, null, 2),
-                                                      `tool_args_${toolKey}`
-                                                    )
-                                                  }
-                                                  className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 inline-flex items-center gap-1 font-normal"
-                                                >
-                                                  {copiedKey === `tool_args_${toolKey}` ? (
-                                                    <Check className="h-3 w-3 text-emerald-500" />
-                                                  ) : (
-                                                    <Copy className="h-3 w-3" />
-                                                  )}
-                                                  <span>Копировать параметры</span>
-                                                </button>
-                                              </div>
-                                              <pre className="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono text-zinc-800 dark:text-zinc-200 overflow-x-auto whitespace-pre-wrap">
-                                                {JSON.stringify(tExec.arguments, null, 2)}
-                                              </pre>
-                                            </div>
-
-                                            {/* Tool Output */}
-                                            <div className="space-y-1.5">
-                                              <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-600 dark:text-zinc-400">
-                                                <span>Результат исполнения (Tool Output):</span>
-                                                <button
-                                                  onClick={() =>
-                                                    copyToClipboard(
-                                                      JSON.stringify(tExec.output, null, 2),
-                                                      `tool_out_${toolKey}`
-                                                    )
-                                                  }
-                                                  className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 inline-flex items-center gap-1 font-normal"
-                                                >
-                                                  {copiedKey === `tool_out_${toolKey}` ? (
-                                                    <Check className="h-3 w-3 text-emerald-500" />
-                                                  ) : (
-                                                    <Copy className="h-3 w-3" />
-                                                  )}
-                                                  <span>Копировать результат</span>
-                                                </button>
-                                              </div>
-                                              <pre className="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 text-[11px] font-mono text-zinc-800 dark:text-zinc-200 overflow-x-auto whitespace-pre-wrap">
-                                                {typeof tExec.output === "string"
-                                                  ? tExec.output
-                                                  : JSON.stringify(tExec.output, null, 2)}
-                                              </pre>
-                                            </div>
-                                          </div>
-                                        )}
+                                        <button
+                                          onClick={() =>
+                                            copyToClipboard(
+                                              item.text || "",
+                                              `vera_msg_${tIdx}`
+                                            )
+                                          }
+                                          className="text-[11px] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 inline-flex items-center gap-1 transition-colors"
+                                          title="Копировать ответ Веры"
+                                        >
+                                          {copiedKey === `vera_msg_${tIdx}` ? (
+                                            <Check className="h-3 w-3 text-emerald-500" />
+                                          ) : (
+                                            <Copy className="h-3 w-3" />
+                                          )}
+                                          <span>Копировать</span>
+                                        </button>
                                       </div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
 
-                            {/* 4. Vera's Customer-Facing Message */}
-                            {filterMode !== "tech_only" && turn.assistant_response && (
-                              <div className="relative pl-6 border-l-2 border-emerald-500/70 dark:border-emerald-500/50 space-y-2">
-                                <div className="flex items-center justify-between gap-3 flex-wrap">
-                                  <div className="flex items-center gap-2">
-                                    <div className="h-6 w-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                                      <Bot className="h-3.5 w-3.5" />
+                                      <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 text-xs text-zinc-900 dark:text-zinc-100 leading-relaxed whitespace-pre-wrap">
+                                        {item.text}
+                                      </div>
                                     </div>
-                                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
-                                      7. Сообщение Веры (Отправлено клиенту)
-                                    </span>
-                                  </div>
-                                  <button
-                                    onClick={() =>
-                                      copyToClipboard(
-                                        turn.assistant_response || "",
-                                        `vera_msg_${tIdx}`
-                                      )
-                                    }
-                                    className="text-[11px] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 inline-flex items-center gap-1 transition-colors"
-                                    title="Копировать ответ Веры"
-                                  >
-                                    {copiedKey === `vera_msg_${tIdx}` ? (
-                                      <Check className="h-3 w-3 text-emerald-500" />
-                                    ) : (
-                                      <Copy className="h-3 w-3" />
-                                    )}
-                                    <span>Копировать</span>
-                                  </button>
-                                </div>
+                                  );
+                                }
 
-                                <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 text-xs text-zinc-900 dark:text-zinc-100 leading-relaxed whitespace-pre-wrap">
-                                  {turn.assistant_response}
-                                </div>
-                              </div>
-                            )}
+                                // 5. Turn Error if any
+                                if (item.type === "error") {
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs text-red-700 dark:text-red-400 space-y-1"
+                                    >
+                                      <div className="flex items-center gap-1.5 font-bold">
+                                        <AlertTriangle className="h-4 w-4" />
+                                        <span>
+                                          {stepNumber}. {item.title}
+                                        </span>
+                                      </div>
+                                      <p className="font-mono text-[11px] leading-relaxed">
+                                        {item.error?.message}
+                                      </p>
+                                    </div>
+                                  );
+                                }
 
-                            {/* Error if present */}
-                            {turn.error_message && (
-                              <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs text-red-700 dark:text-red-400 space-y-1">
-                                <div className="flex items-center gap-1.5 font-bold">
-                                  <AlertTriangle className="h-4 w-4" />
-                                  <span>
-                                    Ошибка в ходе #{tIdx + 1}: {turn.error_type || "Error"}
-                                  </span>
-                                </div>
-                                <p className="font-mono text-[11px] leading-relaxed">
-                                  {turn.error_message}
-                                </p>
-                              </div>
-                            )}
+                                return null;
+                              });
+                            })()}
                           </div>
                         )}
                       </div>
