@@ -2,11 +2,11 @@ name: Deploy to Cloudflare Pages
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "stage"]
   workflow_dispatch:
 
 concurrency:
-  group: "pages"
+  group: "pages-${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
@@ -25,15 +25,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build with Next.js
+      - name: Build with Next.js (Prod)
+        if: github.ref == 'refs/heads/main'
         run: npm run build
         env:
           NEXT_PUBLIC_API_URL: https://api.optima.altaiweb.online/api/v1/client
           NEXT_PUBLIC_APP_DOMAIN: my.altaiweb.online
 
-      - name: Deploy to Cloudflare Pages
+      - name: Build with Next.js (Stage)
+        if: github.ref == 'refs/heads/stage'
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://stage-api.optima.altaiweb.online/api/v1/client
+          NEXT_PUBLIC_APP_DOMAIN: stage.optima.altaiweb.online
+
+      - name: Deploy Prod to Cloudflare Pages
+        if: github.ref == 'refs/heads/main'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy ./out --project-name=altai-client-dashboard --commit-dirty=true
+
+      - name: Deploy Stage to Cloudflare Pages
+        if: github.ref == 'refs/heads/stage'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ./out --project-name=altai-stage-dashboard --branch=stage --commit-dirty=true
