@@ -18,6 +18,7 @@ import {
   MessageSquare,
   RefreshCw,
   Cpu,
+  Mic,
 } from "lucide-react";
 import { formatRelativeTime, formatDateTime } from "@/lib/utils";
 
@@ -365,11 +366,21 @@ export default function ChatsPage() {
                     {turn.user_message && (
                       <div className="flex items-start gap-3 max-w-xl">
                         <div className="flex-shrink-0 h-8 w-8 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-400 text-xs font-semibold shadow-sm">
-                          <User className="h-4 w-4" />
+                          {turn.user_message.startsWith("[Голосовое сообщение]:") ? (
+                            <Mic className="h-4 w-4 text-indigo-500" />
+                          ) : (
+                            <User className="h-4 w-4" />
+                          )}
                         </div>
                         <div className="space-y-1">
+                          {turn.user_message.startsWith("[Голосовое сообщение]:") && (
+                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/40 text-[10px] font-medium">
+                              <Mic className="h-2.5 w-2.5" />
+                              <span>Голосовое сообщение</span>
+                            </div>
+                          )}
                           <div className="rounded-2xl rounded-tl-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 px-4 py-3 text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed shadow-sm">
-                            {turn.user_message}
+                            {turn.user_message.replace(/^\[Голосовое сообщение\]:\s*/, "")}
                           </div>
                           <div className="text-[10px] text-zinc-400 dark:text-zinc-500 pl-1">
                             {formatDateTime(turn.created_at)}

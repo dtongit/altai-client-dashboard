@@ -39,6 +39,7 @@ import {
   Layers,
   ArrowRight,
   ExternalLink,
+  Mic,
 } from "lucide-react";
 
 type FilterMode = "all" | "chat_only" | "tech_only";
@@ -751,11 +752,27 @@ function AdminChatsContent() {
                                     >
                                       <div className="flex items-center justify-between gap-3 flex-wrap">
                                         <div className="flex items-center gap-2">
-                                          <div className="h-6 w-6 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                                            <User className="h-3.5 w-3.5" />
+                                          <div
+                                            className={`h-6 w-6 rounded-lg ${
+                                              item.text?.startsWith("[Голосовое сообщение]:")
+                                                ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+                                                : "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                                            } flex items-center justify-center`}
+                                          >
+                                            {item.text?.startsWith("[Голосовое сообщение]:") ? (
+                                              <Mic className="h-3.5 w-3.5" />
+                                            ) : (
+                                              <User className="h-3.5 w-3.5" />
+                                            )}
                                           </div>
-                                          <span className="text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wide">
-                                            {stepNumber}. {item.title}
+                                          <span
+                                            className={`text-xs font-bold ${
+                                              item.text?.startsWith("[Голосовое сообщение]:")
+                                                ? "text-indigo-700 dark:text-indigo-400"
+                                                : "text-blue-700 dark:text-blue-400"
+                                            } uppercase tracking-wide`}
+                                          >
+                                            {stepNumber}. {item.text?.startsWith("[Голосовое сообщение]:") ? "Голосовое сообщение" : item.title}
                                           </span>
                                           {item.subtitle && (
                                             <span className="text-[11px] font-mono text-zinc-400">
