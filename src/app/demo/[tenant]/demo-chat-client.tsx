@@ -90,21 +90,6 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
           setBusinessName(tenantId === "kostis" ? "ООО «КОСТИС»" : tenantId);
         }
 
-        const welcomeText =
-          config?.welcome_message ||
-          (tenantId === "kostis"
-            ? "Здравствуйте! Меня зовут Вера, я ваш персональный AI-консультант в КОСТИС. Рада помочь вам с выбором фуршетных наборов, расчетом сметы или условиями доставки. Чем могу помочь?"
-            : `Здравствуйте! Я Вера, ваш персональный AI-менеджер. Чем могу помочь?`);
-
-        setMessages([
-          {
-            id: "welcome",
-            sender: "assistant",
-            text: welcomeText,
-            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          },
-        ]);
-
         if (DEFAULT_SUGGESTIONS[tenantId]) {
           setSuggestions(DEFAULT_SUGGESTIONS[tenantId]);
         } else if (config?.suggested_questions?.length) {
@@ -113,17 +98,6 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
       } catch (err) {
         console.warn("Could not fetch remote demo config, using offline fallback:", err);
         setBusinessName(tenantId === "kostis" ? "ООО «КОСТИС»" : tenantId);
-        setMessages([
-          {
-            id: "welcome",
-            sender: "assistant",
-            text:
-              tenantId === "kostis"
-                ? "Здравствуйте! Меня зовут Вера, я ваш персональный AI-консультант в КОСТИС. Рада помочь вам с выбором фуршетных наборов, расчетом сметы или условиями доставки. Чем могу помочь?"
-                : "Здравствуйте! Я ваш персональный AI-менеджер. Чем могу помочь?",
-            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          },
-        ]);
       }
     }
 
@@ -188,17 +162,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
     if (typeof window !== "undefined") {
       localStorage.setItem(`altai_demo_session_${tenantId}`, newSession);
     }
-    setMessages([
-      {
-        id: "welcome_reset",
-        sender: "assistant",
-        text:
-          tenantId === "kostis"
-            ? "Диалог обновлен. Здравствуйте! Меня зовут Вера, я ваш персональный AI-консультант в КОСТИС. Какой у вас повод или вопрос по меню?"
-            : "Диалог обновлен. Здравствуйте! Я Вера, чем могу помочь?",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      },
-    ]);
+    setMessages([]);
   };
 
   return (
@@ -223,12 +187,8 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
             </Link>
             <span className="text-zinc-300 dark:text-zinc-700 font-light select-none">/</span>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate max-w-[180px] sm:max-w-[280px]">
+              <span className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate max-w-[200px] sm:max-w-[320px]">
                 {businessName}
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Вера в сети
               </span>
             </div>
           </div>
@@ -241,7 +201,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
               rel="noopener noreferrer"
               className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
             >
-              <span>О платформе</span>
+              <span>Наш сайт</span>
               <ExternalLink className="w-3.5 h-3.5 opacity-60" />
             </Link>
 
@@ -270,19 +230,15 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
                   alt="Вера"
                   className="w-10 h-10 rounded-full object-cover ring-2 ring-amber-500/30"
                 />
-                <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-900" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-sm sm:text-base font-bold text-zinc-900 dark:text-white">
                     Вера
                   </h1>
-                  <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                    AI SDR
-                  </span>
                 </div>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Цифровой сотрудник {businessName} • Консультации и продажи 24/7
+                  {businessName}
                 </p>
               </div>
             </div>
@@ -299,6 +255,11 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
 
           {/* Messages list */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+            {messages.length === 0 && !loading && (
+              <div className="h-full min-h-[180px] flex flex-col items-center justify-center text-center px-4 text-zinc-400 dark:text-zinc-500 select-none">
+                <p className="text-sm">Задайте вопрос или выберите тему ниже</p>
+              </div>
+            )}
             {messages.map((m) => {
               const isAssistant = m.sender === "assistant";
               return (
