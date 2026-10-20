@@ -24,23 +24,24 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   const cleanPath = rawPath.replace(/\/+$/, "") || "/";
 
   const isLoginPage = cleanPath === "/login" || cleanPath.startsWith("/login");
+  const isDemoPage = cleanPath === "/demo" || cleanPath.startsWith("/demo");
   const isStartPage =
     cleanPath === "/" || cleanPath === "" || cleanPath === "/index.html";
   const isAdminPage = cleanPath.startsWith("/admin");
-  const showSidebar = !isLoginPage && !isStartPage && !isAdminPage;
+  const showSidebar = !isLoginPage && !isStartPage && !isAdminPage && !isDemoPage;
 
   useEffect(() => {
     if (!loading && mounted) {
-      if (!user && !isLoginPage) {
+      if (!user && !isLoginPage && !isDemoPage) {
         router.replace("/login");
       } else if (user && isLoginPage) {
         router.replace("/");
       }
     }
-  }, [loading, mounted, user, isLoginPage, router]);
+  }, [loading, mounted, user, isLoginPage, isDemoPage, router]);
 
-  // If on login page, ALWAYS render login page directly without blocking
-  if (isLoginPage) {
+  // If on login or public demo page, render directly without blocking auth
+  if (isLoginPage || isDemoPage) {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
         {children}

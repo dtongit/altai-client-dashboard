@@ -28,6 +28,7 @@ const API_BASE_URL = rawApiUrl.replace(
 );
 
 const ADMIN_API_BASE_URL = API_BASE_URL.replace(/\/api\/v1\/client\/?$/, "/api/v1/admin");
+const DEMO_API_BASE_URL = API_BASE_URL.replace(/\/api\/v1\/client\/?$/, "/api/v1/demo");
 
 // In-memory token storage (also mirrored in localStorage in browser)
 let authToken: string | null = null;
@@ -468,5 +469,47 @@ export const api = {
 
   async getAdminChatTrace(sessionId: string): Promise<AdminChatTraceResponse> {
     return request(`/chats/${encodeURIComponent(sessionId)}`, {}, ADMIN_API_BASE_URL);
+  },
+
+  async getDemoConfig(tenantId: string): Promise<{
+    tenant_id: string;
+    business_name: string;
+    welcome_message: string;
+    suggested_questions: string[];
+    max_message_length: number;
+  }> {
+    const res = await fetch(
+      `${DEMO_API_BASE_URL}/config?tenant_id=${encodeURIComponent(tenantId)}`
+    );
+    if (!res.ok) {
+      throw new Error("Не удалось загрузить настройки демо");
+    }
+    return res.json();
+  },
+
+  async sendDemoChat(payload: {
+    tenant_id: string;
+    message: string;
+    session_id?: string;
+  }): Promise<{
+    ok: boolean;
+    session_id: string;
+    tenant_id: string;
+    assistant_response: string;
+    latency_ms: number;
+    waited_seconds: number;
+    status: string;
+    error?: string | null;
+  }> {
+    const res = await fetch(`${DEMO_API_BASE_URL}/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Ошибка при отправке сообщения");
+    }
+    return res.json();
   },
 };
