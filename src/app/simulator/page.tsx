@@ -26,11 +26,11 @@ import {
 } from "lucide-react";
 
 const QUICK_PROMPTS = [
-  "Здравствуйте! Сколько стоят занятия с репетитором?",
-  "Ребёнок в 7 классе, нужно подтянуть математику к контрольным",
-  "Это слишком дорого, на Авито репетиторы по 500 рублей!",
-  "А аттестат в онлайн-школе настоящий? Его примут в университете?",
-  "Хочу записаться на пробный урок, зовут Марина, телефон +7 (916) 123-45-67",
+  "Здравствуйте! Сколько стоят ваши услуги и какие тарифы есть?",
+  "Расскажите подробнее о вашей компании и условиях сотрудничества",
+  "Это слишком дорого, у конкурентов есть предложения дешевле!",
+  "Какие гарантии вы предоставляете и как начать работу?",
+  "Хочу записаться на консультацию, зовут Марина, телефон +7 (916) 123-45-67",
 ];
 
 export default function SimulatorPage() {
@@ -153,7 +153,7 @@ export default function SimulatorPage() {
   };
 
   const isBantQualified = Boolean(qualification?.is_qualified);
-  const companyTitle = tenant?.business_name || "Онлайн-школа Фоксфорд";
+  const companyTitle = tenant?.business_name || "ALTAI Optima";
 
   const effectiveSessionId =
     sessionId ||
@@ -377,7 +377,7 @@ export default function SimulatorPage() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Напишите реплику от лица клиента (например: «Сколько стоят репетиторы?»)..."
+              placeholder="Напишите реплику от лица клиента (например: «Здравствуйте, подскажите стоимость ваших услуг?»)..."
               disabled={loading}
               className="flex-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/90 px-4 py-2.5 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/40 transition-colors disabled:opacity-50"
             />
@@ -506,19 +506,19 @@ export default function SimulatorPage() {
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
                 <span>
-                  <strong>Цены и тарифы:</strong> Спросите про стоимость уроков («от 1 386 ₽»), скидки до 40% и маткапитал.
+                  <strong>Цены и тарифы:</strong> Спросите про стоимость услуг, пакеты и специальные предложения.
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
                 <span>
-                  <strong>Возражение по цене:</strong> Напишите <em>«Дорого, у других дешевле»</em> — Вера обоснует экспертность преподавателей и возврат 13% НДФЛ.
+                  <strong>Возражение по цене:</strong> Напишите <em>«Дорого, у других дешевле»</em> — проверьте отработку возражений и обоснование ценности.
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-3.5 w-3.5 text-amber-500 flex-shrink-0 mt-0.5" />
                 <span>
-                  <strong>Закрытие на шаг:</strong> Проверьте, закрывает ли Вера на бесплатный вводный урок-диагностику.
+                  <strong>Закрытие на шаг:</strong> Проверьте, закрывает ли Вера на целевое действие (консультация, КП или звонок).
                 </span>
               </li>
             </ul>

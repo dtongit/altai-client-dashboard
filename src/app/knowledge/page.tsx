@@ -9,6 +9,7 @@ import {
   ConfiguratorActionResult,
   SandboxExecutionResult,
   CustomToolVersionItem,
+  PromptVersionItem,
 } from "@/types";
 import {
   Sparkles,
@@ -17,20 +18,27 @@ import {
   Bot,
   User,
   CheckCircle2,
-  Code2,
   FileText,
   History,
   KeyRound,
   Play,
-  Plus,
   Trash2,
-  Save,
-  Terminal,
   AlertTriangle,
   Check,
   Layers,
   Cpu,
   ShieldCheck,
+  Eye,
+  Lock,
+  Copy,
+  Info,
+  ArrowRight,
+  Sliders,
+  CheckCircle,
+  HelpCircle,
+  Calculator,
+  Truck,
+  Database,
 } from "lucide-react";
 
 interface StudioChatMessage {
@@ -41,47 +49,167 @@ interface StudioChatMessage {
   actions?: ConfiguratorActionResult[];
 }
 
-const DEFAULT_TOOL_CODE = `// Кастомный навык ИИ-сотрудника (выполняется в изолированной песочнице altai-sandboxd)
-// args — аргументы, переданные нейросетью при вызове инструмента
-// ctx.secrets — ваши секретные ключи (например, ctx.secrets.CRM_TOKEN)
-// safeFetch(url, options) — безопасный HTTP-клиент с защитой от SSRF
+interface ToolExplanation {
+  title: string;
+  badge: string;
+  purpose: string;
+  trigger: string;
+  parameters: Array<{
+    key: string;
+    name: string;
+    type: string;
+    required: boolean;
+    description: string;
+    example: string;
+    source: string;
+  }>;
+  algorithmSteps: string[];
+  outputSummary: string;
+  defaultInputs: Record<string, any>;
+}
 
-async function execute(args, ctx) {
-  const qty = Number(args.quantity || 1);
-  const basePrice = Number(args.unit_price || 1500);
-  const discountPct = qty >= 100 ? 15 : qty >= 20 ? 7 : 0;
-  const finalTotal = Math.round(qty * basePrice * (1 - discountPct / 100));
+// Generate rich, human-readable business explanation for any tool without exposing raw code
+function getToolExplanation(tool: CustomToolItem): ToolExplanation {
+  const name = tool.name.toLowerCase();
 
-  console.log(\`Расчет партии: qty=\${qty}, скидка=\${discountPct}%\`);
+  if (name.includes("wholesale") || name.includes("discount") || name.includes("quote")) {
+    return {
+      title: "Калькулятор оптовой стоимости и ступенчатых скидок",
+      badge: "Ценообразование",
+      purpose:
+        "Автоматический мгновенный расчет точной стоимости оптовых заказов прямо во время диалога с покупателем. Применяет корпоративную сетку скидок в зависимости от объема партии без задержек и без привлечения старшего менеджера.",
+      trigger:
+        "Вера автоматически обращается к навыку, когда клиент интересуется оптовыми условиями, спрашивает про скидки от объема партии («сколько будет стоить 50 штук?», «какая цена при заказе партии?»).",
+      parameters: [
+        {
+          key: "quantity",
+          name: "Объем партии",
+          type: "Число (шт.)",
+          required: true,
+          description: "Количество единиц товара, необходимое клиенту",
+          example: "50 шт.",
+          source: "Вера автоматически определяет из реплики клиента в диалоге",
+        },
+        {
+          key: "unit_price",
+          name: "Базовая цена за единицу",
+          type: "Сумма в рублях (₽)",
+          required: false,
+          description: "Прайсовая стоимость единицы товара без скидки",
+          example: "1 500 ₽",
+          source: "Берется из утвержденного прайс-листа базы знаний",
+        },
+      ],
+      algorithmSteps: [
+        "Анализ реплики клиента и определение запрашиваемого объема продукции.",
+        "Сопоставление объема со шкалой оптовых скидок: до 20 шт — базовый тариф (0%), от 20 до 99 шт — скидка 7%, от 100 шт — максимальная оптовая скидка 15%.",
+        "Расчет итоговой стоимости партии за вычетом положенной скидки и округление суммы до целых рублей.",
+        "Формирование структурированного коммерческого ответа с указанием точной суммы экономии клиента.",
+      ],
+      outputSummary:
+        "Вера получает точную итоговую сумму заказа, процент скидки и сумму экономии клиента, после чего тепло и вежливо озвучивает расчет в диалоге и предлагает оформить счет или зафиксировать бронь.",
+      defaultInputs: { quantity: 50, unit_price: 1500 },
+    };
+  }
+
+  if (name.includes("shipping") || name.includes("delivery") || name.includes("доставк")) {
+    return {
+      title: "Калькулятор сроков и стоимости доставки",
+      badge: "Логистика",
+      purpose:
+        "Быстрый расчет ориентировочной стоимости курьерской доставки и сроков прибытия заказа в город покупателя прямо в момент переписки.",
+      trigger:
+        "Срабатывает, когда клиент уточняет условия транспортировки («сколько стоит доставка в Казань?», «как быстро доедет до Екатеринбурга?»).",
+      parameters: [
+        {
+          key: "city",
+          name: "Город назначения",
+          type: "Текст (название города)",
+          required: true,
+          description: "Населенный пункт получения заказа",
+          example: "г. Казань",
+          source: "Вера извлекает город из вопроса или адреса покупателя",
+        },
+        {
+          key: "weight_kg",
+          name: "Примерный вес посылки",
+          type: "Число (кг)",
+          required: false,
+          description: "Расчетная масса отправления",
+          example: "2.5 кг",
+          source: "Определяется по спецификации выбранных товаров",
+        },
+      ],
+      algorithmSteps: [
+        "Определение тарифной зоны логистического оператора по указанному городу.",
+        "Расчет базовой стоимости курьерской доставки или доставки до пункта выдачи (ПВЗ).",
+        "Определение расчетного времени в пути в рабочих днях.",
+        "Формирование итоговых условий доставки с предложением удобного варианта получения.",
+      ],
+      outputSummary:
+        "Вера информирует клиента о сроках доставки в его город, стоимости отправления и предлагает удобный способ получения.",
+      defaultInputs: { city: "Казань", weight_kg: 3 },
+    };
+  }
+
+  // Generic dynamic explanation for custom tools
+  const props = tool.parameters_schema?.properties || {};
+  const requiredList: string[] = tool.parameters_schema?.required || [];
+  const parsedParams = Object.keys(props).map((k) => {
+    const p = props[k];
+    const isNum = p.type === "number" || p.type === "integer";
+    const isBool = p.type === "boolean";
+    const typeLabel = isNum ? "Число" : isBool ? "Логический флаг" : "Текст";
+    return {
+      key: k,
+      name: p.title || k.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
+      type: typeLabel,
+      required: requiredList.includes(k),
+      description: p.description || "Параметр, передаваемый для вычислений",
+      example: p.default !== undefined ? String(p.default) : isNum ? "100" : "Пример значения",
+      source: "Автоматически извлекается Верой из диалога",
+    };
+  });
+
+  const defaultInputs: Record<string, any> = {};
+  for (const p of parsedParams) {
+    if (p.type.includes("Число")) {
+      defaultInputs[p.key] = 50;
+    } else if (p.type.includes("Флаг")) {
+      defaultInputs[p.key] = true;
+    } else {
+      defaultInputs[p.key] = "Тестовые данные";
+    }
+  }
 
   return {
-    quantity: qty,
-    unit_price_rub: basePrice,
-    discount_pct: discountPct,
-    total_rub: finalTotal,
-    currency: "RUB",
-    note: discountPct > 0 ? \`Применена оптовая скидка \${discountPct}%\` : "Базовый тариф"
+    title: tool.description?.slice(0, 50) || tool.name.replace(/_/g, " "),
+    badge: "Цифровой навык",
+    purpose: tool.description || "Специализированный расчет для задач клиента.",
+    trigger:
+      "Вера применяет этот навык автоматически, когда в диалоге возникает необходимость выполнить действие или расчет в соответствии с назначением инструмента.",
+    parameters: parsedParams.length > 0 ? parsedParams : [
+      {
+        key: "context",
+        name: "Контекст диалога",
+        type: "Текст",
+        required: false,
+        description: "Параметры текущей переписки",
+        example: "Данные заказа",
+        source: "Автоматически формируется Верой",
+      },
+    ],
+    algorithmSteps: [
+      "Распознавание входных данных из сообщений клиента во время живой переписки.",
+      "Безопасная передача параметров в изолированную среду altai-sandboxd с нулевым хранением данных на диске.",
+      "Выполнение формулы или запроса с защитой от сбоев и контролем таймаута (1.5 сек).",
+      "Возврат проверенных цифр Вере для включения в естественный ответ покупателю.",
+    ],
+    outputSummary:
+      "Формирует готовый структурированный результат, на основе которого Вера формулирует вежливый, аргументированный ответ покупателю.",
+    defaultInputs,
   };
-}`;
-
-const DEFAULT_PARAMS_SCHEMA = JSON.stringify(
-  {
-    type: "object",
-    properties: {
-      quantity: {
-        type: "number",
-        description: "Количество единиц товара",
-      },
-      unit_price: {
-        type: "number",
-        description: "Базовая цена за единицу в рублях",
-      },
-    },
-    required: ["quantity"],
-  },
-  null,
-  2
-);
+}
 
 export default function EmployeeStudioPage() {
   const { tenant } = useAuth();
@@ -89,7 +217,7 @@ export default function EmployeeStudioPage() {
 
   const [config, setConfig] = useState<EmployeeConfigResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"architect" | "prompt" | "code" | "secrets">(
+  const [activeTab, setActiveTab] = useState<"architect" | "prompt" | "tools" | "secrets">(
     "architect"
   );
   const [statusBanner, setStatusBanner] = useState<{
@@ -102,7 +230,7 @@ export default function EmployeeStudioPage() {
     {
       id: "welcome",
       role: "assistant",
-      text: "Здравствуйте! Я ИИ-Архитектор поведения и кода Веры.\n\nВы можете поручить мне:\n• Изменить правила, прайс-лист, скрипт квалификации или отработку возражений в системном промпте Веры;\n• Написать и протестировать новый кастомный JS-инструмент (например, калькулятор доставки, расчет оптовой скидки или интеграцию с внешним API через песочницу `altai-sandboxd`).\n\nЧто настроим?",
+      text: "Здравствуйте! Я ИИ-Архитектор поведения и навыков Веры.\n\nВы можете поручить мне:\n• Скорректировать корпоративные правила, прайс-лист, скрипт квалификации или отработку возражений в системном регламенте Веры;\n• Настроить новый расчетный навык (например, калькулятор скидок, доставку или интеграцию с вашей CRM);\n• Обновить алгоритм любого существующего инструмента.\n\nЧто настроим для Веры?",
       time: "Сейчас",
     },
   ]);
@@ -110,26 +238,15 @@ export default function EmployeeStudioPage() {
   const [isSendingChat, setIsSendingChat] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 2. Prompt & Knowledge Editor state
-  const [promptMarkdown, setPromptMarkdown] = useState("");
-  const [promptCommitMsg, setPromptCommitMsg] = useState("Обновление регламента через Студию");
-  const [isSavingPrompt, setIsSavingPrompt] = useState(false);
+  // 2. Read-only Prompt & Version Preview state
+  const [viewingVersion, setViewingVersion] = useState<PromptVersionItem | null>(null);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
 
-  // 3. Custom Code Tools (JS Sandbox) IDE state
+  // 3. Human-Readable Tools state
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
-  const [toolName, setToolName] = useState("calculate_wholesale_quote");
-  const [toolDesc, setToolDesc] = useState(
-    "Рассчитывает стоимость оптового заказа со скидкой от объема"
-  );
-  const [toolSchemaText, setToolSchemaText] = useState(DEFAULT_PARAMS_SCHEMA);
-  const [toolCode, setToolCode] = useState(DEFAULT_TOOL_CODE);
-  const [toolIsActive, setToolIsActive] = useState(true);
-  const [testPayloadText, setTestPayloadText] = useState(
-    JSON.stringify({ quantity: 50, unit_price: 1200 }, null, 2)
-  );
+  const [testFormInputs, setTestFormInputs] = useState<Record<string, any>>({});
   const [sandboxOutput, setSandboxOutput] = useState<SandboxExecutionResult | null>(null);
   const [toolVersions, setToolVersions] = useState<CustomToolVersionItem[]>([]);
-  const [isSavingTool, setIsSavingTool] = useState(false);
   const [isRunningTest, setIsRunningTest] = useState(false);
 
   // 4. Secrets state
@@ -148,14 +265,14 @@ export default function EmployeeStudioPage() {
     try {
       const res = await api.getEmployeeConfig(employeeId);
       setConfig(res);
-      setPromptMarkdown(res.prompt?.raw_markdown || "");
 
       if (res.custom_tools && res.custom_tools.length > 0) {
         if (!keepSelectedTool || !selectedToolId) {
-          selectToolIntoEditor(res.custom_tools[0]);
+          selectToolForView(res.custom_tools[0]);
         } else {
           const found = res.custom_tools.find((t) => t.id === selectedToolId);
-          if (found) selectToolIntoEditor(found);
+          if (found) selectToolForView(found);
+          else selectToolForView(res.custom_tools[0]);
         }
       }
     } catch (e: any) {
@@ -174,13 +291,10 @@ export default function EmployeeStudioPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages, isSendingChat]);
 
-  const selectToolIntoEditor = async (tool: CustomToolItem) => {
+  const selectToolForView = async (tool: CustomToolItem) => {
     setSelectedToolId(tool.id);
-    setToolName(tool.name);
-    setToolDesc(tool.description);
-    setToolSchemaText(JSON.stringify(tool.parameters_schema || {}, null, 2));
-    setToolCode(tool.code);
-    setToolIsActive(tool.is_active);
+    const explanation = getToolExplanation(tool);
+    setTestFormInputs(explanation.defaultInputs);
     setSandboxOutput(tool.last_test_output || null);
     try {
       const vRes = await api.getEmployeeToolVersions(employeeId, tool.id);
@@ -190,21 +304,75 @@ export default function EmployeeStudioPage() {
     }
   };
 
-  const startNewTool = () => {
-    setSelectedToolId(null);
-    setToolName("custom_price_calculator");
-    setToolDesc("Кастомный расчет стоимости и условий доставки для клиента");
-    setToolSchemaText(DEFAULT_PARAMS_SCHEMA);
-    setToolCode(DEFAULT_TOOL_CODE);
-    setToolIsActive(true);
-    setSandboxOutput(null);
-    setToolVersions([]);
+  // Copy prompt text to clipboard
+  const handleCopyPrompt = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 2000);
   };
 
-  // ==========================================================================
-  // Handlers: Architect Chat
-  // ==========================================================================
+  // Rollback prompt to previous version
+  const handleRollbackPrompt = async (version: number) => {
+    try {
+      const res = await api.rollbackEmployeePrompt(employeeId, version);
+      await loadConfig(true);
+      setViewingVersion(null);
+      showToast("success", res.message || `Регламент откачен к версии v${version}`);
+    } catch (err: any) {
+      showToast("error", err?.message || "Не удалось восстановить версию регламента");
+    }
+  };
 
+  // Toggle tool active status
+  const handleToggleTool = async (tool: CustomToolItem) => {
+    try {
+      await api.toggleEmployeeTool(employeeId, tool.id, !tool.is_active);
+      await loadConfig(true);
+      showToast(
+        "success",
+        `Навык «${tool.name}» ${!tool.is_active ? "активирован" : "приостановлен"}`
+      );
+    } catch (err: any) {
+      showToast("error", err?.message || "Не удалось изменить статус инструмента");
+    }
+  };
+
+  // Delete tool
+  const handleDeleteTool = async (toolId: string) => {
+    if (!confirm("Вы уверены, что хотите удалить этот навык?")) return;
+    try {
+      await api.deleteEmployeeTool(employeeId, toolId);
+      setSelectedToolId(null);
+      await loadConfig(false);
+      showToast("success", "Навык успешно удален");
+    } catch (err: any) {
+      showToast("error", err?.message || "Не удалось удалить инструмент");
+    }
+  };
+
+  // Test tool in isolated sandbox without raw code
+  const handleRunToolTest = async () => {
+    if (!selectedToolId) return;
+    setIsRunningTest(true);
+    try {
+      const res = await api.testEmployeeTool(employeeId, selectedToolId, testFormInputs);
+      setSandboxOutput(res.sandbox_test);
+      if (res.sandbox_test?.ok) {
+        showToast(
+          "success",
+          `Навык успешно протестирован в песочнице (${res.sandbox_test.duration_ms || 0} мс)`
+        );
+      } else {
+        showToast("error", `Ошибка теста: ${res.sandbox_test?.error || "Проверьте параметры"}`);
+      }
+    } catch (err: any) {
+      showToast("error", err?.message || "Ошибка запуска проверки в песочнице");
+    } finally {
+      setIsRunningTest(false);
+    }
+  };
+
+  // Send message to AI Architect
   const handleSendChat = async (e?: React.FormEvent, preset?: string) => {
     if (e) e.preventDefault();
     const text = (preset || chatInput).trim();
@@ -245,10 +413,10 @@ export default function EmployeeStudioPage() {
         showToast(
           "success",
           res.secrets_updated
-            ? "ИИ-Архитектор сохранил секретный ключ в защищенное хранилище!"
+            ? "ИИ-Архитектор сохранил ключ интеграции!"
             : res.tools_updated
-            ? "ИИ-Архитектор обновил и протестировал кастомный код в песочнице!"
-            : "ИИ-Архитектор обновил системный промпт Веры!"
+            ? "ИИ-Архитектор обновил навык и проверил расчет в песочнице!"
+            : "ИИ-Архитектор обновил системный регламент Веры!"
         );
       }
     } catch (err: any) {
@@ -266,151 +434,7 @@ export default function EmployeeStudioPage() {
     }
   };
 
-  // ==========================================================================
-  // Handlers: Prompt & Rollback
-  // ==========================================================================
-
-  const handleSavePrompt = async () => {
-    if (!promptMarkdown.trim() || isSavingPrompt) return;
-    setIsSavingPrompt(true);
-    try {
-      const res = await api.updateKnowledge({
-        raw_markdown: promptMarkdown,
-        change_description: promptCommitMsg || "Ручное обновление промпта",
-      });
-      await loadConfig(true);
-      showToast("success", `Сохранена версия v${res.version}: ${res.message}`);
-    } catch (err: any) {
-      showToast("error", err?.message || "Ошибка сохранения промпта");
-    } finally {
-      setIsSavingPrompt(false);
-    }
-  };
-
-  const handleRollbackPrompt = async (version: number) => {
-    try {
-      const res = await api.rollbackEmployeePrompt(employeeId, version);
-      await loadConfig(true);
-      showToast("success", res.message);
-    } catch (err: any) {
-      showToast("error", err?.message || "Не удалось откатить версию промпта");
-    }
-  };
-
-  // ==========================================================================
-  // Handlers: Custom JS Tools & Sandbox
-  // ==========================================================================
-
-  const handleSaveAndTestTool = async () => {
-    if (!toolName.trim() || !toolCode.trim() || isSavingTool) return;
-    setIsSavingTool(true);
-    try {
-      let parsedSchema: Record<string, any> = { type: "object", properties: {} };
-      try {
-        parsedSchema = JSON.parse(toolSchemaText);
-      } catch {
-        showToast("error", "Некорректный JSON в схеме параметров (Parameters Schema)");
-        setIsSavingTool(false);
-        return;
-      }
-
-      let parsedTestPayload: Record<string, any> = {};
-      try {
-        parsedTestPayload = JSON.parse(testPayloadText || "{}");
-      } catch {
-        parsedTestPayload = {};
-      }
-
-      const res = await api.upsertEmployeeTool(employeeId, {
-        name: toolName.trim(),
-        description: toolDesc.trim(),
-        parameters_schema: parsedSchema,
-        code: toolCode,
-        is_active: toolIsActive,
-        change_description: "Сохранено и протестировано в IDE",
-        test_payload: parsedTestPayload,
-      });
-
-      setSandboxOutput(res.sandbox_test);
-      setSelectedToolId(res.tool.id);
-      await loadConfig(true);
-      const vRes = await api.getEmployeeToolVersions(employeeId, res.tool.id);
-      setToolVersions(vRes.versions || []);
-
-      if (res.sandbox_test?.ok) {
-        showToast(
-          "success",
-          `Инструмент ${res.tool.name} (v${res.tool.version || res.tool.current_version || 1}) сохранен и успешно прошел тест в песочнице (${res.sandbox_test.duration_ms || 0} мс)!`
-        );
-      } else {
-        showToast(
-          "error",
-          `Инструмент сохранен, но тест в песочнице вернул ошибку: ${res.sandbox_test?.error}`
-        );
-      }
-    } catch (err: any) {
-      showToast("error", err?.message || "Ошибка сохранения инструмента");
-    } finally {
-      setIsSavingTool(false);
-    }
-  };
-
-  const handleRunSandboxOnly = async () => {
-    if (!selectedToolId) {
-      await handleSaveAndTestTool();
-      return;
-    }
-    setIsRunningTest(true);
-    try {
-      let parsedPayload: Record<string, any> = {};
-      try {
-        parsedPayload = JSON.parse(testPayloadText || "{}");
-      } catch {
-        showToast("error", "Некорректный JSON в тестовых аргументах (Test Payload)");
-        setIsRunningTest(false);
-        return;
-      }
-      const res = await api.testEmployeeTool(employeeId, selectedToolId, parsedPayload, toolCode);
-      setSandboxOutput(res.sandbox_test);
-      if (res.sandbox_test?.ok) {
-        showToast(
-          "success",
-          `Код выполнен в altai-sandboxd за ${res.sandbox_test.duration_ms || 0} мс`
-        );
-      } else {
-        showToast("error", `Ошибка выполнения: ${res.sandbox_test?.error}`);
-      }
-    } catch (err: any) {
-      showToast("error", err?.message || "Ошибка запуска в песочнице");
-    } finally {
-      setIsRunningTest(false);
-    }
-  };
-
-  const handleToggleTool = async (tool: CustomToolItem) => {
-    try {
-      await api.toggleEmployeeTool(employeeId, tool.id, !tool.is_active);
-      await loadConfig(true);
-    } catch (err: any) {
-      showToast("error", err?.message || "Не удалось изменить статус инструмента");
-    }
-  };
-
-  const handleDeleteTool = async (toolId: string) => {
-    try {
-      await api.deleteEmployeeTool(employeeId, toolId);
-      setSelectedToolId(null);
-      await loadConfig(false);
-      showToast("success", "Инструмент удален");
-    } catch (err: any) {
-      showToast("error", err?.message || "Не удалось удалить инструмент");
-    }
-  };
-
-  // ==========================================================================
-  // Handlers: Secrets
-  // ==========================================================================
-
+  // Save integration secret
   const handleSaveSecret = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSecretKey.trim() || !newSecretVal.trim() || isSavingSecret) return;
@@ -428,11 +452,13 @@ export default function EmployeeStudioPage() {
     }
   };
 
+  // Delete integration secret
   const handleDeleteSecret = async (keyName: string) => {
+    if (!confirm(`Удалить ключ ${keyName}?`)) return;
     try {
       await api.deleteEmployeeSecret(employeeId, keyName);
       await loadConfig(true);
-      showToast("success", `Секрет ${keyName} удален`);
+      showToast("success", `Ключ ${keyName} удален`);
     } catch (err: any) {
       showToast("error", err?.message || "Не удалось удалить секрет");
     }
@@ -440,10 +466,16 @@ export default function EmployeeStudioPage() {
 
   const quickArchitectPrompts = [
     "Добавь в регламент скидку 10% при заказе от 300 000 руб.",
-    "Создай JS-инструмент calculate_shipping для расчета доставки по весу и городу",
+    "Настрой навык расчета курьерской доставки по весу и городу",
     "Усиль отработку возражения «Дорого» с акцентом на окупаемость",
-    "Напиши JS-инструмент roi_calculator для расчета экономии ФОТ клиента",
+    "Добавь в регламент квалификации вопрос про сроки запуска проекта",
   ];
+
+  const selectedTool = config?.custom_tools?.find((t) => t.id === selectedToolId) || null;
+  const toolExplanation = selectedTool ? getToolExplanation(selectedTool) : null;
+  const currentPromptText = viewingVersion
+    ? viewingVersion.content || ""
+    : config?.prompt?.raw_markdown || "";
 
   return (
     <div className="p-6 sm:p-8 space-y-6 max-w-7xl mx-auto">
@@ -456,13 +488,13 @@ export default function EmployeeStudioPage() {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-                <span>Студия настройки и кода: Вера</span>
+                <span>База знаний и Навыки: Вера</span>
                 <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-                  Rust Core + JS Sandbox
+                  Стандарт Ritz-Carlton
                 </span>
               </h1>
               <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                Управляйте промптами, версиями базы знаний и изолированными JS-навыками сотрудника через диалог с ИИ-Архитектором или напрямую в IDE
+                Зафиксированный регламент общения, стандарты сервиса и подробное описание цифровых навыков сотрудника
               </p>
             </div>
           </div>
@@ -491,25 +523,25 @@ export default function EmployeeStudioPage() {
             }`}
           >
             <FileText className="h-3.5 w-3.5" />
-            <span>Промпт и Версии</span>
+            <span>Регламент (Промпт)</span>
             {config?.prompt?.versions?.length ? (
-              <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-black/10 dark:bg-white/10">
+              <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-black/10 dark:bg-white/10 font-mono">
                 v{config.prompt.versions[0]?.version || 1}
               </span>
             ) : null}
           </button>
 
           <button
-            onClick={() => setActiveTab("code")}
+            onClick={() => setActiveTab("tools")}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === "code"
+              activeTab === "tools"
                 ? "bg-amber-500 text-zinc-950 shadow-sm"
                 : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
             }`}
           >
-            <Code2 className="h-3.5 w-3.5" />
-            <span>JS-Навыки (Песочница)</span>
-            <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-black/10 dark:bg-white/10">
+            <Layers className="h-3.5 w-3.5" />
+            <span>Навыки и Инструменты</span>
+            <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-black/10 dark:bg-white/10 font-bold">
               {config?.custom_tools?.length || 0}
             </span>
           </button>
@@ -523,7 +555,7 @@ export default function EmployeeStudioPage() {
             }`}
           >
             <KeyRound className="h-3.5 w-3.5" />
-            <span>Секреты ({config?.secrets?.length || 0})</span>
+            <span>Ключи интеграций ({config?.secrets?.length || 0})</span>
           </button>
         </div>
       </div>
@@ -573,11 +605,11 @@ export default function EmployeeStudioPage() {
                       Чат с ИИ-Архитектором Веры
                     </h2>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
-                      Прямой доступ к Промпту и JS-Песочнице
+                      Автоматическая настройка логики
                     </span>
                   </div>
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    Опишите задачу обычным языком — Архитектор сам внесет правки в промпт или напишет код инструмента
+                    Опишите бизнес-задачу обычным языком — Архитектор скорректирует регламент или подключит нужный расчет
                   </p>
                 </div>
               </div>
@@ -587,13 +619,13 @@ export default function EmployeeStudioPage() {
                     {
                       id: "welcome",
                       role: "assistant",
-                      text: "Диалог очищен. Напишите, какие изменения внести в промпт или какой JS-инструмент создать для Веры!",
+                      text: "Диалог очищен. Напишите, какие изменения внести в регламент или какой расчет настроить для Веры!",
                       time: "Сейчас",
                     },
                   ])
                 }
                 className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                title="Очистить историю чата"
+                title="Очистить историю диалога"
               >
                 <RotateCcw className="h-4 w-4" />
               </button>
@@ -617,11 +649,7 @@ export default function EmployeeStudioPage() {
                             : "bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900"
                         }`}
                       >
-                        {isAssistant ? (
-                          <Bot className="h-4 w-4" />
-                        ) : (
-                          <User className="h-4 w-4" />
-                        )}
+                        {isAssistant ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
                       </div>
 
                       <div
@@ -642,7 +670,7 @@ export default function EmployeeStudioPage() {
                       </div>
                     </div>
 
-                    {/* Action Cards executed by the Configurator Agent */}
+                    {/* Action Cards executed by Configurator */}
                     {msg.actions && msg.actions.length > 0 && (
                       <div className="pl-10 space-y-3">
                         {msg.actions.map((act, idx) => {
@@ -652,13 +680,6 @@ export default function EmployeeStudioPage() {
                           const isToolUpdate =
                             act.action === "upsert_custom_tool" ||
                             (act as any).action_type === "code_updated";
-                          const isToolToggle =
-                            act.action === "toggle_custom_tool" ||
-                            (act as any).action_type === "tool_toggled";
-                          const isSecretSaved =
-                            act.action === "upsert_secret" ||
-                            (act as any).action_type === "secret_saved";
-                          const isSandboxTest = act.action === "run_sandbox_test";
 
                           return (
                             <div
@@ -666,22 +687,23 @@ export default function EmployeeStudioPage() {
                               className="rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/20 p-4 space-y-2.5 text-xs"
                             >
                               {isPromptUpdate && (
-                                <>
+                                <div className="space-y-2">
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-300">
                                       <FileText className="h-4 w-4" />
                                       <span>
                                         {act.title ||
-                                          `Системный промпт обновлен (версия v${
+                                          `Регламент обновлен (версия v${
                                             act.new_version || act.version || 1
                                           })`}
                                       </span>
                                     </div>
                                     <button
                                       onClick={() => setActiveTab("prompt")}
-                                      className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+                                      className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
                                     >
-                                      Открыть промпт →
+                                      <span>Открыть регламент</span>
+                                      <ArrowRight className="h-3 w-3" />
                                     </button>
                                   </div>
                                   {(act.change_description || act.summary) && (
@@ -689,117 +711,35 @@ export default function EmployeeStudioPage() {
                                       {act.change_description || act.summary}
                                     </p>
                                   )}
-                                  {(act.diff || act.diff_preview) && (
-                                    <pre className="p-3 rounded-xl bg-zinc-950 text-zinc-200 font-mono text-[11px] overflow-x-auto max-h-48">
-                                      {act.diff || act.diff_preview}
-                                    </pre>
-                                  )}
-                                </>
-                              )}
-
-                              {isToolUpdate && (
-                                <>
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 font-bold text-emerald-800 dark:text-emerald-300">
-                                      <Code2 className="h-4 w-4" />
-                                      <span>
-                                        {act.title ||
-                                          `Кастомный JS-навык: ${act.tool_name} (v${
-                                            act.new_version || act.version || 1
-                                          })`}
-                                      </span>
-                                    </div>
-                                    <button
-                                      onClick={() => setActiveTab("code")}
-                                      className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
-                                    >
-                                      Открыть в IDE →
-                                    </button>
-                                  </div>
-                                  {(act.change_description || act.summary) && (
-                                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                                      {act.change_description || act.summary}
-                                    </p>
-                                  )}
-                                  {act.sandbox_test && (
-                                    <div className="p-3 rounded-xl bg-zinc-950 text-zinc-200 font-mono text-[11px] space-y-1">
-                                      <div className="flex items-center justify-between text-[10px]">
-                                        <span
-                                          className={
-                                            act.sandbox_test.ok
-                                              ? "text-emerald-400 font-bold"
-                                              : "text-red-400 font-bold"
-                                          }
-                                        >
-                                          {act.sandbox_test.ok
-                                            ? "✓ SANDBOX TEST PASSED"
-                                            : "✗ SANDBOX TEST FAILED"}
-                                        </span>
-                                        <span className="text-zinc-400">
-                                          {act.sandbox_test.duration_ms || 0} ms
-                                        </span>
-                                      </div>
-                                      <pre className="overflow-x-auto text-emerald-300">
-                                        {JSON.stringify(
-                                          act.sandbox_test.result ?? act.sandbox_test.error,
-                                          null,
-                                          2
-                                        )}
-                                      </pre>
-                                    </div>
-                                  )}
-                                </>
-                              )}
-
-                              {isToolToggle && (
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2 font-bold text-zinc-800 dark:text-zinc-200">
-                                    <Layers className="h-4 w-4 text-amber-500" />
-                                    <span>{act.title || `Навык ${act.tool_name}`}</span>
-                                  </div>
-                                  <button
-                                    onClick={() => setActiveTab("code")}
-                                    className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
-                                  >
-                                    Перейти к навыкам →
-                                  </button>
                                 </div>
                               )}
 
-                              {isSecretSaved && (
-                                <>
+                              {isToolUpdate && (
+                                <div className="space-y-2">
                                   <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 font-bold text-blue-700 dark:text-blue-400">
-                                      <KeyRound className="h-4 w-4" />
+                                    <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-300">
+                                      <Layers className="h-4 w-4" />
                                       <span>
-                                        {act.title || `Секретный ключ сохранен (${act.key_name || "API_KEY"})`}
+                                        Навык настроен: {act.tool_name || "Калькулятор"}
                                       </span>
                                     </div>
                                     <button
-                                      onClick={() => setActiveTab("secrets")}
-                                      className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+                                      onClick={() => setActiveTab("tools")}
+                                      className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
                                     >
-                                      Открыть секреты →
+                                      <span>Перейти к описанию навыка</span>
+                                      <ArrowRight className="h-3 w-3" />
                                     </button>
                                   </div>
-                                  <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                                    {act.summary ||
-                                      `Секрет защищен и доступен в JS-навыках через ctx.secrets.${
-                                        act.key_name || "API_KEY"
-                                      }`}
-                                  </p>
-                                </>
-                              )}
-
-                              {isSandboxTest && act.sandbox_test && (
-                                <div className="space-y-1.5">
-                                  <div className="font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-                                    <Terminal className="h-4 w-4 text-amber-500" />
-                                    <span>Тестовый запуск в песочнице: {act.tool_name}</span>
+                                  {(act.summary || act.change_description) && (
+                                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                                      {act.summary || act.change_description}
+                                    </p>
+                                  )}
+                                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[11px] font-medium border border-emerald-500/20">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    <span>Успешно проверен в изолированной песочнице</span>
                                   </div>
-                                  <pre className="p-3 rounded-xl bg-zinc-950 text-emerald-300 font-mono text-[11px] overflow-x-auto">
-                                    {JSON.stringify(act.sandbox_test, null, 2)}
-                                  </pre>
                                 </div>
                               )}
                             </div>
@@ -818,9 +758,7 @@ export default function EmployeeStudioPage() {
                   </div>
                   <div className="rounded-2xl bg-white dark:bg-zinc-800/90 border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-xs text-zinc-500 flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
-                    <span>
-                      Архитектор анализирует конфигурацию и тестирует изменения в песочнице...
-                    </span>
+                    <span>Архитектор обновляет логику и проверяет настройки...</span>
                   </div>
                 </div>
               )}
@@ -851,7 +789,7 @@ export default function EmployeeStudioPage() {
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Например: «Добавь в прайс новую услугу...» или «Напиши JS-калькулятор доставки...»"
+                placeholder="Например: «Добавь в регламент скидку 10% при заказе от 50 шт...»"
                 disabled={isSendingChat}
                 className="flex-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-3 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-amber-500 focus:outline-none"
               />
@@ -861,104 +799,98 @@ export default function EmployeeStudioPage() {
                 className="px-4 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-zinc-950 transition-all font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20"
               >
                 <Send className="h-4 w-4" />
-                <span className="hidden sm:inline">Выполнить</span>
+                <span className="hidden sm:inline">Поручить</span>
               </button>
             </form>
           </div>
 
-          {/* Right 4 cols: Live Employee Snapshot (Active Tools + Recent Prompt Versions) */}
+          {/* Right 4 cols: Active Skills & Prompt Version Overview */}
           <div className="lg:col-span-4 space-y-5">
-            {/* Active Custom Tools Card */}
+            {/* Active Skills Card */}
             <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Code2 className="h-4 w-4 text-amber-500" />
+                  <Layers className="h-4 w-4 text-amber-500" />
                   <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
-                    Активные JS-Навыки ({config?.custom_tools?.length || 0})
+                    Активные навыки Веры ({config?.custom_tools?.length || 0})
                   </h3>
                 </div>
                 <button
-                  onClick={() => {
-                    startNewTool();
-                    setActiveTab("code");
-                  }}
+                  onClick={() => setActiveTab("tools")}
                   className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
                 >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Создать</span>
+                  <span>Все навыки</span>
+                  <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
 
               {config?.custom_tools && config.custom_tools.length > 0 ? (
                 <div className="space-y-2.5">
-                  {config.custom_tools.map((t) => (
-                    <div
-                      key={t.id}
-                      onClick={() => {
-                        selectToolIntoEditor(t);
-                        setActiveTab("code");
-                      }}
-                      className="p-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-amber-500/50 bg-zinc-50/70 dark:bg-zinc-950/50 cursor-pointer transition-all space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs font-bold text-zinc-900 dark:text-white">
-                          {t.name}()
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
-                            v{t.version || t.current_version || 1}
+                  {config.custom_tools.map((t) => {
+                    const exp = getToolExplanation(t);
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={() => {
+                          selectToolForView(t);
+                          setActiveTab("tools");
+                        }}
+                        className="p-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-amber-500/50 bg-zinc-50/70 dark:bg-zinc-950/50 cursor-pointer transition-all space-y-1.5"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-zinc-900 dark:text-white">
+                            {exp.title}
                           </span>
                           <span
                             className={`h-2 w-2 rounded-full ${
                               t.is_active ? "bg-emerald-500" : "bg-zinc-400"
                             }`}
+                            title={t.is_active ? "Навык активен" : "Навык приостановлен"}
                           />
                         </div>
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2">
+                          {exp.purpose}
+                        </p>
+                        <div className="flex items-center justify-between pt-1 text-[10px] text-zinc-400">
+                          <span className="font-mono">{t.name}</span>
+                          <span className="font-medium text-amber-600 dark:text-amber-400">
+                            Подробнее →
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2">
-                        {t.description}
-                      </p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 p-4 text-center space-y-2">
-                  <p className="text-xs text-zinc-500">
-                    У Веры пока нет кастомных JS-инструментов
+                  <p className="text-xs text-zinc-500">У Веры пока нет специализированных навыков</p>
+                  <p className="text-[11px] text-zinc-400">
+                    Напишите задачу Архитектору в чате слева, чтобы создать калькулятор или интеграцию
                   </p>
-                  <button
-                    onClick={() => {
-                      startNewTool();
-                      setActiveTab("code");
-                    }}
-                    className="px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-semibold"
-                  >
-                    Открыть песочницу кода
-                  </button>
                 </div>
               )}
             </div>
 
-            {/* Recent Prompt Versions Card */}
+            {/* Prompt Versions Card */}
             <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <History className="h-4 w-4 text-amber-500" />
                   <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
-                    История версий промпта
+                    Журнал версий регламента
                   </h3>
                 </div>
                 <button
                   onClick={() => setActiveTab("prompt")}
                   className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
                 >
-                  Редактор →
+                  Регламент →
                 </button>
               </div>
 
               <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                 {config?.prompt?.versions && config.prompt.versions.length > 0 ? (
-                  config.prompt.versions.slice(0, 6).map((v) => (
+                  config.prompt.versions.slice(0, 5).map((v) => (
                     <div
                       key={v.version}
                       className="p-2.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-2 text-xs"
@@ -969,41 +901,39 @@ export default function EmployeeStudioPage() {
                             v{v.version}
                           </span>
                           <span className="text-zinc-700 dark:text-zinc-300 truncate">
-                            {v.change_description}
+                            {v.change_description || "Обновление регламента"}
                           </span>
                         </div>
-                        <div className="text-[10px] text-zinc-400">
-                          Автор: {v.author}
+                        <div className="text-[10px] text-zinc-400 mt-0.5">
+                          {v.created_at ? new Date(v.created_at).toLocaleDateString("ru-RU") : "Активна"}
                         </div>
                       </div>
                       <button
-                        onClick={() => handleRollbackPrompt(v.version)}
+                        onClick={() => {
+                          setViewingVersion(v);
+                          setActiveTab("prompt");
+                        }}
                         className="px-2 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 flex-shrink-0"
-                        title={`Откатить промпт к версии v${v.version}`}
                       >
-                        Откатить
+                        Открыть
                       </button>
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-zinc-500">Базовая версия промпта активна</p>
+                  <p className="text-xs text-zinc-500">Базовый регламент активен</p>
                 )}
               </div>
             </div>
 
-            {/* Isolation Hardware Guarantee Badge */}
+            {/* Hardware Isolation Guarantee */}
             <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-5 space-y-2">
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
                 <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                <span>Аппаратная изоляция песочницы</span>
+                <span>Защищенная среда вычислений</span>
               </div>
               <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Кастомный JS-код выполняется на выделенном сервере{" "}
-                <code className="font-mono text-emerald-700 dark:text-emerald-400">
-                  altai-sandboxd
-                </code>{" "}
-                в изолированной ECMAScript VM с жестким лимитом 100 000 итераций цикла, защитой
-                от SSRF и квотой памяти.
+                Все расчеты и интеграции выполняются в изолированной песочнице с нулевым хранением
+                персональных данных на диске и защитой от сетевых угроз (152-ФЗ compliant).
               </p>
             </div>
           </div>
@@ -1011,92 +941,164 @@ export default function EmployeeStudioPage() {
       )}
 
       {/* ==================================================================== */}
-      {/* TAB 2: PROMPT & KNOWLEDGE BASE EDITOR + VERSION ROLLBACK             */}
+      {/* TAB 2: READ-ONLY PROMPT & KNOWLEDGE BASE WITH VERSION JOURNAL        */}
       {/* ==================================================================== */}
       {activeTab === "prompt" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="lg:col-span-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
+            {/* Readonly Prompt Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-100 dark:border-zinc-800">
               <div>
-                <h2 className="text-base font-bold text-zinc-900 dark:text-white">
-                  Системный промпт и База Знаний Веры (Markdown)
-                </h2>
-                <p className="text-xs text-zinc-500">
-                  Любое сохранение создает новую версию в истории с возможностью мгновенного отката
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+                    Системный регламент и База Знаний Веры
+                  </h2>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 text-[10px] font-bold">
+                    <Lock className="h-3 w-3" />
+                    <span>Только чтение</span>
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Зафиксированные правила общения, стандарты сервиса Ritz-Carlton, квалификация BANT и прайс-лист
                 </p>
               </div>
-              <button
-                onClick={handleSavePrompt}
-                disabled={isSavingPrompt}
-                className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-zinc-950 text-xs font-bold flex items-center gap-2 shadow-md shadow-amber-500/20"
-              >
-                <Save className="h-4 w-4" />
-                <span>{isSavingPrompt ? "Сохранение..." : "Сохранить новую версию"}</span>
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleCopyPrompt(currentPromptText)}
+                  className="px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+                  title="Скопировать текст регламента"
+                >
+                  {copiedPrompt ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      <span>Скопировано</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5" />
+                      <span>Скопировать</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                Описание изменений (Commit Message)
-              </label>
-              <input
-                type="text"
-                value={promptCommitMsg}
-                onChange={(e) => setPromptCommitMsg(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs text-zinc-900 dark:text-white"
-                placeholder="Что изменилось в этой версии?"
-              />
+            {/* Read-only Banner Notification */}
+            <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4 flex items-start gap-3">
+              <Info className="h-4 w-4 text-sky-500 flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-zinc-700 dark:text-zinc-300 space-y-1">
+                <p className="font-semibold text-zinc-900 dark:text-white">
+                  Регламент зафиксирован во избежание сбоев в работе продаж
+                </p>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  Прямое ручное редактирование отключено для гарантии надежности конверсии. Чтобы внести изменения в правила, прайс-лист или сценарии общения, поставьте задачу ИИ-Архитектору во вкладке «ИИ-Архитектор (Чат)».
+                </p>
+              </div>
             </div>
 
-            <textarea
-              value={promptMarkdown}
-              onChange={(e) => setPromptMarkdown(e.target.value)}
-              rows={22}
-              className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 font-mono text-xs text-zinc-900 dark:text-zinc-100 leading-relaxed focus:border-amber-500 focus:outline-none"
-              placeholder="# БАЗА ЗНАНИЙ И ПРАВИЛА ПРОДАЖ..."
-            />
+            {/* Notice if viewing an archive version */}
+            {viewingVersion && (
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs text-amber-900 dark:text-amber-200">
+                  <History className="h-4 w-4 text-amber-500" />
+                  <span>
+                    Просмотр архивной версии: <strong>v{viewingVersion.version}</strong> (
+                    {viewingVersion.change_description || "Архивная копия"})
+                  </span>
+                </div>
+                <button
+                  onClick={() => setViewingVersion(null)}
+                  className="text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline"
+                >
+                  Вернуться к актуальной
+                </button>
+              </div>
+            )}
+
+            {/* Read-only Text Box */}
+            <div className="relative rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950 p-5 font-mono text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed overflow-y-auto max-h-[560px] whitespace-pre-wrap select-text selection:bg-amber-500/30">
+              {currentPromptText || "Регламент загружается..."}
+            </div>
           </div>
 
-          <div className="lg:col-span-4 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4">
-            <div className="flex items-center gap-2">
+          {/* Right 4 cols: Version History & Rollback */}
+          <div className="lg:col-span-4 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
+            <div className="flex items-center gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800">
               <History className="h-4 w-4 text-amber-500" />
               <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
-                Журнал версий промпта
+                Журнал версий регламента
               </h3>
             </div>
-            <div className="space-y-3 max-h-[540px] overflow-y-auto pr-1">
+
+            <p className="text-xs text-zinc-500 leading-relaxed">
+              История каждого обновления базы знаний с возможностью просмотра и быстрого отката
+            </p>
+
+            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
               {config?.prompt?.versions && config.prompt.versions.length > 0 ? (
-                config.prompt.versions.map((v) => (
-                  <div
-                    key={v.version}
-                    className="p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-950/50 space-y-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold text-xs">
-                        Версия v{v.version}
-                      </span>
-                      <button
-                        onClick={() => handleRollbackPrompt(v.version)}
-                        className="px-2.5 py-1 rounded-lg bg-zinc-200/80 hover:bg-amber-500 hover:text-zinc-950 dark:bg-zinc-800 dark:hover:bg-amber-500 dark:hover:text-zinc-950 text-[11px] font-semibold transition-colors"
-                      >
-                        Восстановить v{v.version}
-                      </button>
+                config.prompt.versions.map((v) => {
+                  const isCurrent =
+                    !viewingVersion && v.version === config.prompt?.versions?.[0]?.version;
+                  const isViewing = viewingVersion?.version === v.version;
+
+                  return (
+                    <div
+                      key={v.version}
+                      className={`p-3.5 rounded-2xl border transition-all space-y-2.5 ${
+                        isViewing
+                          ? "border-amber-500 bg-amber-500/10"
+                          : "border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-950/50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold text-xs">
+                            Версия v{v.version}
+                          </span>
+                          {isCurrent && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                              Активна
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setViewingVersion(v)}
+                            className="px-2 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 transition-colors"
+                          >
+                            Просмотр
+                          </button>
+                          {!isCurrent && (
+                            <button
+                              onClick={() => handleRollbackPrompt(v.version)}
+                              className="px-2 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-[10px] font-bold transition-colors"
+                              title="Восстановить эту версию как активную"
+                            >
+                              Откатить
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <p className="text-xs font-medium text-zinc-800 dark:text-zinc-200 leading-snug">
+                        {v.change_description || "Плановое обновление базы знаний"}
+                      </p>
+
+                      <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                        <span>Автор: {v.author || "Архитектор"}</span>
+                        <span>
+                          {v.created_at ? new Date(v.created_at).toLocaleString("ru-RU") : ""}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
-                      {v.change_description}
-                    </p>
-                    <div className="flex items-center justify-between text-[10px] text-zinc-400">
-                      <span>Автор: {v.author}</span>
-                      <span>
-                        {v.created_at ? new Date(v.created_at).toLocaleString("ru-RU") : ""}
-                      </span>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
-                <p className="text-xs text-zinc-500">
-                  Сохраните первое изменение, чтобы начать вести версионность промпта.
-                </p>
+                <div className="py-8 text-center text-xs text-zinc-500">
+                  Базовая версия регламента зафиксирована.
+                </div>
               )}
             </div>
           </div>
@@ -1104,315 +1106,420 @@ export default function EmployeeStudioPage() {
       )}
 
       {/* ==================================================================== */}
-      {/* TAB 3: CUSTOM CODE TOOLS (JS SANDBOX IDE)                            */}
+      {/* TAB 3: HUMAN-READABLE TOOLS & DIGITAL SKILLS SPECIFICATION            */}
       {/* ==================================================================== */}
-      {activeTab === "code" && (
+      {activeTab === "tools" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left 4 cols: Tool List & Versions */}
+          {/* Left 4 cols: Skills Catalog */}
           <div className="lg:col-span-4 space-y-5">
-            <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4">
+            <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                   <Layers className="h-4 w-4 text-amber-500" />
-                  <span>JS-Инструменты Веры</span>
+                  <span>Цифровые навыки Веры</span>
                 </h3>
-                <button
-                  onClick={startNewTool}
-                  className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold flex items-center gap-1"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Новый навык</span>
-                </button>
+                <span className="text-xs text-zinc-500 font-mono">
+                  {config?.custom_tools?.length || 0} подкл.
+                </span>
               </div>
+
+              <p className="text-xs text-zinc-500">
+                Калькуляторы, формулы и правила, которые Вера автоматически применяет в диалогах
+              </p>
 
               <div className="space-y-2.5">
                 {config?.custom_tools && config.custom_tools.length > 0 ? (
                   config.custom_tools.map((t) => {
                     const isSelected = selectedToolId === t.id;
+                    const exp = getToolExplanation(t);
                     return (
                       <div
                         key={t.id}
-                        onClick={() => selectToolIntoEditor(t)}
-                        className={`p-3.5 rounded-2xl border cursor-pointer transition-all space-y-2 ${
+                        onClick={() => selectToolForView(t)}
+                        className={`p-3.5 rounded-2xl border cursor-pointer transition-all space-y-2.5 ${
                           isSelected
-                            ? "border-amber-500 bg-amber-500/10"
+                            ? "border-amber-500 bg-amber-500/10 shadow-sm"
                             : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-950/40"
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-mono text-xs font-bold text-zinc-900 dark:text-white truncate">
-                            {t.name}
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 font-semibold">
-                              v{t.version || t.current_version || 1}
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <span className="text-xs font-bold text-zinc-900 dark:text-white block leading-snug">
+                              {exp.title}
                             </span>
+                            <span className="font-mono text-[10px] text-zinc-400 mt-0.5 block">
+                              {t.name}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleToggleTool(t);
                               }}
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
                                 t.is_active
                                   ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
                                   : "bg-zinc-200 dark:bg-zinc-800 text-zinc-500"
                               }`}
+                              title={t.is_active ? "Нажмите для паузы" : "Нажмите для включения"}
                             >
-                              {t.is_active ? "ON" : "OFF"}
+                              {t.is_active ? "ВКЛ" : "ПАУЗА"}
                             </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteTool(t.id);
                               }}
-                              className="p-1 text-zinc-400 hover:text-red-500"
-                              title="Удалить инструмент"
+                              className="p-1 text-zinc-400 hover:text-red-500 transition-colors"
+                              title="Удалить навык"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
-                        <p className="text-[11px] text-zinc-600 dark:text-zinc-400 line-clamp-2">
-                          {t.description}
+
+                        <p className="text-[11px] text-zinc-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                          {exp.purpose}
                         </p>
                       </div>
                     );
                   })
                 ) : (
-                  <p className="text-xs text-zinc-500 py-4 text-center">
-                    Список инструментов пуст. Создайте первый JS-навык справа!
-                  </p>
+                  <div className="py-8 text-center text-xs text-zinc-500">
+                    Навыки пока не подключены.
+                  </div>
                 )}
+              </div>
+
+              {/* Request New Skill CTA */}
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    setChatInput("Настрой новый навык для Веры: ");
+                    setActiveTab("architect");
+                  }}
+                  className="w-full py-2.5 px-3 rounded-2xl border border-dashed border-amber-500/40 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-semibold flex items-center justify-center gap-2 transition-all"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  <span>Заказать новый навык у ИИ-Архитектора</span>
+                </button>
               </div>
             </div>
 
-            {/* Selected Tool Version History */}
-            {toolVersions.length > 0 && (
-              <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500">
-                  Версии кода инструмента
-                </h4>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {toolVersions.map((tv) => (
-                    <div
-                      key={tv.id}
-                      className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs"
-                    >
-                      <div>
-                        <span className="font-bold text-amber-500">v{tv.version}</span>
-                        <span className="ml-2 text-zinc-600 dark:text-zinc-300">
-                          {tv.change_description || "Обновление кода"}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setToolCode(tv.code);
-                          setToolSchemaText(
-                            JSON.stringify(tv.parameters_schema || {}, null, 2)
-                          );
-                          showToast("success", `Код версии v${tv.version} загружен в редактор`);
-                        }}
-                        className="px-2 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-[10px] font-semibold hover:bg-amber-500 hover:text-zinc-950"
-                      >
-                        Загрузить
-                      </button>
-                    </div>
-                  ))}
-                </div>
+            {/* Execution Hardware Guarantee */}
+            <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-3 text-xs">
+              <div className="flex items-center gap-2 font-bold text-zinc-900 dark:text-white">
+                <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                <span>Изолированная песочница altai-sandboxd</span>
               </div>
-            )}
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                Навыки исполняются в одноразовых безопасных контейнерах. Скорость вычислений — до 5 мс, полная защита данных клиентов и CRM.
+              </p>
+            </div>
           </div>
 
-          {/* Right 8 cols: Code Editor + Sandbox Test Runner */}
+          {/* Right 8 cols: Detailed Readable Specification & Live Business Test */}
           <div className="lg:col-span-8 space-y-6">
-            <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                    <Code2 className="h-5 w-5 text-amber-500" />
-                    <span>
-                      {selectedToolId
-                        ? `Редактор навыка: ${toolName}`
-                        : "Создание нового JS-навыка"}
-                    </span>
-                  </h2>
-                  <p className="text-xs text-zinc-500">
-                    Когда клиент в диалоге задает вопрос, требующий расчетов или внешнего API, Вера автоматически вызовет эту функцию
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleRunSandboxOnly}
-                    disabled={isRunningTest || isSavingTool}
-                    className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-white text-xs font-semibold flex items-center gap-1.5"
-                  >
-                    <Play className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>{isRunningTest ? "Запуск..." : "Тест в песочнице"}</span>
-                  </button>
-
-                  <button
-                    onClick={handleSaveAndTestTool}
-                    disabled={isSavingTool}
-                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-amber-500/20"
-                  >
-                    <Save className="h-3.5 w-3.5" />
-                    <span>{isSavingTool ? "Сохранение..." : "Сохранить и протестировать"}</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
-                    Системное имя функции (snake_case)
-                  </label>
-                  <input
-                    type="text"
-                    value={toolName}
-                    onChange={(e) => setToolName(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 font-mono text-xs text-zinc-900 dark:text-white"
-                    placeholder="calculate_shipping"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
-                    Описание для ИИ (когда вызывать инструмент)
-                  </label>
-                  <input
-                    type="text"
-                    value={toolDesc}
-                    onChange={(e) => setToolDesc(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs text-zinc-900 dark:text-white"
-                    placeholder="Рассчитывает точную цену доставки..."
-                  />
-                </div>
-              </div>
-
-              {/* Code Editor */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                    JavaScript Код (ECMAScript Isolate — altai-sandboxd)
-                  </label>
-                  <span className="text-[10px] text-zinc-400">
-                    Лимит: 1500 мс | 100 000 итераций цикла | Память: 32 МБ
-                  </span>
-                </div>
-                <textarea
-                  value={toolCode}
-                  onChange={(e) => setToolCode(e.target.value)}
-                  rows={14}
-                  className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 p-4 font-mono text-xs text-emerald-300 leading-relaxed focus:border-amber-500 focus:outline-none"
-                />
-              </div>
-
-              {/* Parameters JSON Schema & Test Payload side-by-side */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
-                    JSON Schema аргументов (Parameters Schema)
-                  </label>
-                  <textarea
-                    value={toolSchemaText}
-                    onChange={(e) => setToolSchemaText(e.target.value)}
-                    rows={7}
-                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-3 font-mono text-[11px] text-zinc-800 dark:text-zinc-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
-                    Тестовые аргументы (args для проверки в песочнице)
-                  </label>
-                  <textarea
-                    value={testPayloadText}
-                    onChange={(e) => setTestPayloadText(e.target.value)}
-                    rows={7}
-                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-3 font-mono text-[11px] text-zinc-800 dark:text-zinc-200"
-                  />
-                </div>
-              </div>
-
-              {/* Sandbox Execution Output Console */}
-              {sandboxOutput && (
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 space-y-2.5 text-xs font-mono">
-                  <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-                    <div className="flex items-center gap-2">
-                      <Terminal className="h-4 w-4 text-amber-400" />
+            {selectedTool && toolExplanation ? (
+              <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 sm:p-7 space-y-6 shadow-sm">
+                {/* Tool Title & Status Header */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 border-b border-zinc-100 dark:border-zinc-800">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
+                        {toolExplanation.title}
+                      </h2>
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold text-[11px] border border-amber-500/20">
+                        {toolExplanation.badge}
+                      </span>
                       <span
-                        className={
-                          sandboxOutput.ok
-                            ? "text-emerald-400 font-bold"
-                            : "text-red-400 font-bold"
-                        }
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
+                          selectedTool.is_active
+                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200 dark:border-zinc-700"
+                        }`}
                       >
-                        {sandboxOutput.ok
-                          ? "✓ ВЫПОЛНЕНО УСПЕШНО (altai-sandboxd)"
-                          : "✗ ОШИБКА ВЫПОЛНЕНИЯ В ПЕСОЧНИЦЕ"}
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            selectedTool.is_active ? "bg-emerald-500" : "bg-zinc-400"
+                          }`}
+                        />
+                        <span>{selectedTool.is_active ? "Включен (Используется Верой)" : "Приостановлен"}</span>
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-[11px] text-zinc-400">
-                      <span>Время: {sandboxOutput.duration_ms ?? 0} мс</span>
-                      {sandboxOutput.memory_kb ? (
-                        <span>Память: {sandboxOutput.memory_kb} КБ</span>
-                      ) : null}
+                    <div className="flex items-center gap-2 text-xs text-zinc-500">
+                      <span className="font-mono text-[11px]">Системный ключ: {selectedTool.name}</span>
+                      <span>•</span>
+                      <span>Версия v{selectedTool.version || selectedTool.current_version || 1}</span>
                     </div>
                   </div>
 
-                  {sandboxOutput.logs && sandboxOutput.logs.length > 0 && (
-                    <div className="space-y-1">
-                      <div className="text-[10px] uppercase text-zinc-500">Консоль (console.log):</div>
-                      {sandboxOutput.logs.map((line, i) => (
-                        <div key={i} className="text-zinc-300 text-[11px]">
-                          &gt; {line}
+                  <button
+                    onClick={() => handleToggleTool(selectedTool)}
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-sm ${
+                      selectedTool.is_active
+                        ? "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200"
+                        : "bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold"
+                    }`}
+                  >
+                    {selectedTool.is_active ? "Приостановить навык" : "Включить навык"}
+                  </button>
+                </div>
+
+                {/* 1. Purpose */}
+                <div className="space-y-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>1. Назначение и бизнес-польза</span>
+                  </h3>
+                  <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed bg-zinc-50/70 dark:bg-zinc-950/50 p-4 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80">
+                    {toolExplanation.purpose}
+                  </p>
+                </div>
+
+                {/* 2. Triggers */}
+                <div className="space-y-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                    <HelpCircle className="h-4 w-4" />
+                    <span>2. Когда Вера применяет этот навык</span>
+                  </h3>
+                  <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed bg-zinc-50/70 dark:bg-zinc-950/50 p-4 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80">
+                    {toolExplanation.trigger}
+                  </p>
+                </div>
+
+                {/* 3. Parameters Table */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                    <Sliders className="h-4 w-4" />
+                    <span>3. Входные параметры из диалога</span>
+                  </h3>
+                  <div className="space-y-2">
+                    {toolExplanation.parameters.map((p) => (
+                      <div
+                        key={p.key}
+                        className="p-3.5 rounded-2xl bg-zinc-50/70 dark:bg-zinc-950/50 border border-zinc-200/60 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-zinc-900 dark:text-white">
+                              {p.name}
+                            </span>
+                            <span className="font-mono text-[10px] text-zinc-400">({p.key})</span>
+                            <span
+                              className={`text-[10px] font-semibold px-2 py-0.2 rounded-full ${
+                                p.required
+                                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                                  : "bg-zinc-200/70 dark:bg-zinc-800 text-zinc-500"
+                              }`}
+                            >
+                              {p.required ? "Обязательный" : "Опциональный"}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                            {p.description} • {p.source}
+                          </p>
+                        </div>
+                        <div className="text-[11px] font-medium text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 flex-shrink-0">
+                          Пример: {p.example}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 4. Algorithm Walkthrough */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                    <Calculator className="h-4 w-4" />
+                    <span>4. Пошаговый алгоритм работы</span>
+                  </h3>
+                  <div className="space-y-2">
+                    {toolExplanation.algorithmSteps.map((step, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-3 p-3 rounded-2xl bg-zinc-50/50 dark:bg-zinc-950/40 border border-zinc-100 dark:border-zinc-800/60 text-xs text-zinc-700 dark:text-zinc-300"
+                      >
+                        <span className="flex h-5 w-5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">
+                          {idx + 1}
+                        </span>
+                        <span className="leading-relaxed">{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 5. Output Summary */}
+                <div className="space-y-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                    <Bot className="h-4 w-4" />
+                    <span>5. Что получает покупатель в ответе</span>
+                  </h3>
+                  <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed bg-zinc-50/70 dark:bg-zinc-950/50 p-4 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80">
+                    {toolExplanation.outputSummary}
+                  </p>
+                </div>
+
+                {/* 6. Live Interactive Test (Human-friendly parameters, NO CODE) */}
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                      <Play className="h-4 w-4 text-emerald-500" />
+                      <span>6. Проверка работы навыка в реальном времени</span>
+                    </h3>
+                    <span className="text-[11px] text-zinc-500">Безопасный тестовый запуск</span>
+                  </div>
+
+                  <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/70 p-5 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {toolExplanation.parameters.map((p) => (
+                        <div key={p.key} className="space-y-1">
+                          <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
+                            {p.name} ({p.key})
+                          </label>
+                          <input
+                            type={p.type.includes("Число") ? "number" : "text"}
+                            value={testFormInputs[p.key] ?? ""}
+                            onChange={(e) =>
+                              setTestFormInputs({
+                                ...testFormInputs,
+                                [p.key]: p.type.includes("Число")
+                                  ? Number(e.target.value)
+                                  : e.target.value,
+                              })
+                            }
+                            placeholder={p.example}
+                            className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-900 dark:text-white"
+                          />
                         </div>
                       ))}
                     </div>
-                  )}
 
-                  {sandboxOutput.error ? (
-                    <pre className="text-red-400 text-[11px] whitespace-pre-wrap">
-                      {sandboxOutput.error}
-                    </pre>
-                  ) : (
-                    <div>
-                      <div className="text-[10px] uppercase text-zinc-500 mb-1">
-                        Возвращенный результат (return):
+                    <button
+                      onClick={handleRunToolTest}
+                      disabled={isRunningTest}
+                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-yellow-400 transition-all disabled:opacity-50"
+                    >
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                      <span>{isRunningTest ? "Вычисление..." : "Проверить расчет навыка"}</span>
+                    </button>
+
+                    {/* Result Card */}
+                    {sandboxOutput && (
+                      <div
+                        className={`rounded-xl p-4 border space-y-2.5 text-xs transition-all ${
+                          sandboxOutput.ok
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-100"
+                            : "bg-red-500/10 border-red-500/30 text-red-950 dark:text-red-100"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between font-bold">
+                          <div className="flex items-center gap-2">
+                            {sandboxOutput.ok ? (
+                              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                            ) : (
+                              <AlertTriangle className="h-4 w-4 text-red-500" />
+                            )}
+                            <span>
+                              {sandboxOutput.ok
+                                ? "Расчет выполнен успешно"
+                                : "Ошибка при вычислении"}
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-mono text-zinc-500">
+                            Время ответа: {sandboxOutput.duration_ms ?? 0} мс
+                          </span>
+                        </div>
+
+                        {sandboxOutput.error ? (
+                          <p className="text-[11px] text-red-600 dark:text-red-300">
+                            {sandboxOutput.error}
+                          </p>
+                        ) : (
+                          <div className="space-y-1.5 pt-1">
+                            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block font-semibold">
+                              Результат, переданный Вере:
+                            </span>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {sandboxOutput.result &&
+                                typeof sandboxOutput.result === "object" &&
+                                Object.entries(sandboxOutput.result).map(([k, val]) => (
+                                  <div
+                                    key={k}
+                                    className="p-2.5 rounded-lg bg-white/70 dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-zinc-800 text-[11px]"
+                                  >
+                                    <div className="text-[10px] text-zinc-500 capitalize">
+                                      {k.replace(/_/g, " ")}
+                                    </div>
+                                    <div className="font-bold text-zinc-900 dark:text-white mt-0.5">
+                                      {String(val)}
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <pre className="text-emerald-300 text-[11px] overflow-x-auto">
-                        {JSON.stringify(sandboxOutput.result, null, 2)}
-                      </pre>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* 7. Changelog */}
+                {toolVersions.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                      История обновлений навыка
+                    </h4>
+                    <div className="space-y-1.5">
+                      {toolVersions.map((tv) => (
+                        <div
+                          key={tv.id}
+                          className="flex items-center justify-between p-2 rounded-xl bg-zinc-50 dark:bg-zinc-950/40 text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-amber-500">v{tv.version}</span>
+                            <span className="text-zinc-700 dark:text-zinc-300">
+                              {tv.change_description || "Плановое обновление параметров"}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-zinc-400">
+                            {tv.created_at ? new Date(tv.created_at).toLocaleDateString("ru-RU") : ""}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-12 text-center text-xs text-zinc-500">
+                Выберите навык из списка слева, чтобы ознакомиться с его описанием и правилами работы.
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* ==================================================================== */}
-      {/* TAB 4: TENANT SECRETS (ctx.secrets)                                  */}
+      {/* TAB 4: INTEGRATION SECRETS (CRM TOKENS, ERP KEYS)                    */}
       {/* ==================================================================== */}
       {activeTab === "secrets" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4">
+          <div className="lg:col-span-5 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
             <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
               <KeyRound className="h-5 w-5 text-amber-500" />
-              <span>Добавить секретный ключ</span>
+              <span>Добавить ключ интеграции</span>
             </h2>
             <p className="text-xs text-zinc-500 leading-relaxed">
-              Секреты передаются напрямую в изолированную песочницу{" "}
-              <code className="font-mono text-amber-600 dark:text-amber-400">
-                ctx.secrets.KEY_NAME
-              </code>{" "}
-              при вызове ваших JS-инструментов и никогда не попадают в публичный промпт LLM.
+              API-ключи и пароли передаются напрямую в изолированную защищенную песочницу и никогда не попадают в публичный контекст переписки.
             </p>
 
             <form onSubmit={handleSaveSecret} className="space-y-3">
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
-                  Имя переменной (UPPER_SNAKE_CASE)
+                  Название ключа (UPPER_SNAKE_CASE)
                 </label>
                 <input
                   type="text"
@@ -1424,7 +1531,7 @@ export default function EmployeeStudioPage() {
               </div>
               <div>
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
-                  Значение секрета
+                  Секретное значение (токен)
                 </label>
                 <input
                   type="password"
@@ -1437,16 +1544,16 @@ export default function EmployeeStudioPage() {
               <button
                 type="submit"
                 disabled={isSavingSecret || !newSecretKey.trim() || !newSecretVal.trim()}
-                className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-zinc-950 font-bold text-xs shadow-md shadow-amber-500/20"
+                className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-zinc-950 font-bold text-xs shadow-md shadow-amber-500/20 transition-all"
               >
-                {isSavingSecret ? "Сохранение..." : "Сохранить секрет"}
+                {isSavingSecret ? "Сохранение..." : "Сохранить ключ в защищенное хранилище"}
               </button>
             </form>
           </div>
 
-          <div className="lg:col-span-7 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4">
+          <div className="lg:col-span-7 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
             <h3 className="text-base font-bold text-zinc-900 dark:text-white">
-              Сохраненные секреты окружения ({config?.secrets?.length || 0})
+              Сохраненные ключи интеграций ({config?.secrets?.length || 0})
             </h3>
             {config?.secrets && config.secrets.length > 0 ? (
               <div className="space-y-2.5">
@@ -1457,7 +1564,7 @@ export default function EmployeeStudioPage() {
                   >
                     <div>
                       <div className="font-mono text-xs font-bold text-zinc-900 dark:text-white">
-                        ctx.secrets.{s.key_name}
+                        {s.key_name}
                       </div>
                       <div className="font-mono text-[11px] text-zinc-400 mt-0.5">
                         Значение: {s.masked_value}
@@ -1466,7 +1573,7 @@ export default function EmployeeStudioPage() {
                     <button
                       onClick={() => handleDeleteSecret(s.key_name)}
                       className="p-2 rounded-xl text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                      title="Удалить секрет"
+                      title="Удалить ключ"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -1475,7 +1582,7 @@ export default function EmployeeStudioPage() {
               </div>
             ) : (
               <div className="py-12 text-center text-xs text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
-                Секретные ключи еще не добавлены.
+                Ключи интеграций еще не добавлены.
               </div>
             )}
           </div>
