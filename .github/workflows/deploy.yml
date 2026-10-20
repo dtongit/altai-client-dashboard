@@ -37,7 +37,7 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_API_URL: https://stage-api.optima.altaiweb.online/api/v1/client
-          NEXT_PUBLIC_APP_DOMAIN: stage.optima.altaiweb.online
+          NEXT_PUBLIC_APP_DOMAIN: stage.altaiweb.online
 
       - name: Deploy Prod to Cloudflare Pages
         if: github.ref == 'refs/heads/main'
