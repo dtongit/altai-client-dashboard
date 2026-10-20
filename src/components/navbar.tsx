@@ -21,7 +21,12 @@ export function Navbar() {
   const [showConfirm, setShowConfirm] = useState(false);
 
   const isActive = tenant?.is_active ?? true;
-  const isVeraSelected = pathname !== "/" && pathname !== "/login" && !pathname.startsWith("/admin");
+  const isVeraSelected =
+    pathname !== "/" &&
+    pathname !== "/login" &&
+    pathname !== "/login/" &&
+    !pathname?.startsWith("/login") &&
+    !pathname?.startsWith("/admin");
 
   const handleToggle = async () => {
     setIsToggling(true);
