@@ -36,6 +36,21 @@ export default function VeraOverviewPage() {
   const [data, setData] = useState<OverviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [connectingTg, setConnectingTg] = useState(false);
+
+  const handleConnectTelegram = async () => {
+    setConnectingTg(true);
+    try {
+      const invite = await api.createTeamInvite("senior");
+      if (invite?.invite_url) {
+        window.open(invite.invite_url, "_blank");
+      }
+    } catch (e) {
+      console.error("Failed to generate invite link:", e);
+    } finally {
+      setConnectingTg(false);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -142,15 +157,19 @@ export default function VeraOverviewPage() {
               </p>
             </div>
           </div>
-          <a
-            href={`https://t.me/altai_optima_vera_bot?start=tenant_${tenantId}`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold shadow-sm transition-all flex-shrink-0 self-stretch sm:self-auto justify-center"
+          <button
+            onClick={handleConnectTelegram}
+            disabled={connectingTg}
+            type="button"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-zinc-950 text-xs font-semibold shadow-sm transition-all flex-shrink-0 self-stretch sm:self-auto justify-center cursor-pointer"
           >
-            <Send className="h-3.5 w-3.5" />
-            <span>Написать</span>
-          </a>
+            {connectingTg ? (
+              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-950 border-t-transparent" />
+            ) : (
+              <Send className="h-3.5 w-3.5" />
+            )}
+            <span>{connectingTg ? "Подключение..." : "Написать"}</span>
+          </button>
         </div>
       )}
 
