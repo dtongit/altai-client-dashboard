@@ -116,13 +116,11 @@ export default function SimulatorPage() {
       }
     } catch (err) {
       console.error("Simulator message error:", err);
-      // Fallback mock response for smooth demo/offline mode
-      const companyName = tenant?.business_name || "нашей компании";
       const botMsg: SimulatorMessage = {
         id: `a_${Date.now()}`,
         role: "assistant",
-        text: `Здравствуйте! Я Вера — ИИ-продавец ${companyName}. Рада помочь вам с выбором программы! Стоимость индивидуальных занятий начинается от 1 386 ₽ за урок, а первый вводный урок-диагностику мы проводим совершенно бесплатно. Подскажите, в каком классе учится ребёнок и какая главная цель?`,
-        latency_ms: 650,
+        text: `⚠️ Ошибка: ${err instanceof Error ? err.message : "Не удалось связаться с сервером"}. Попробуйте сбросить диалог или повторить отправку.`,
+        latency_ms: 0,
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, botMsg]);
