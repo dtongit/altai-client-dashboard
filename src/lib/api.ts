@@ -16,6 +16,9 @@ import {
   AdminCrudResourceSchema,
   InstagramStatus,
   AdminChatTraceResponse,
+  TeamMember,
+  TeamInviteResponse,
+  TeamMembersResponse,
 } from "@/types";
 
 const rawApiUrl =
@@ -235,6 +238,38 @@ export const api = {
     return request("/telegram/confirm", {
       method: "POST",
       body: JSON.stringify({ chat_id: chatId, username }),
+    });
+  },
+
+  async getTeamMembers(): Promise<TeamMembersResponse> {
+    return request<TeamMembersResponse>("/team/members");
+  },
+
+  async createTeamInvite(role: "senior" | "manager" = "manager"): Promise<TeamInviteResponse> {
+    return request<TeamInviteResponse>("/team/invite", {
+      method: "POST",
+      body: JSON.stringify({ role }),
+    });
+  },
+
+  async updateTeamMember(
+    memberId: string,
+    data: {
+      role?: string;
+      can_modify_instructions?: boolean;
+      can_manage_team?: boolean;
+      is_active?: boolean;
+    }
+  ): Promise<{ ok: boolean; member: TeamMember }> {
+    return request<{ ok: boolean; member: TeamMember }>(`/team/members/${memberId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteTeamMember(memberId: string): Promise<{ ok: boolean; deleted_id: string }> {
+    return request<{ ok: boolean; deleted_id: string }>(`/team/members/${memberId}`, {
+      method: "DELETE",
     });
   },
 

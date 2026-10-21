@@ -19,7 +19,14 @@ import {
   ShieldCheck,
   Power,
   KeyRound,
+  Users,
+  Crown,
+  Shield,
+  Trash2,
+  Plus,
+  Sparkles,
 } from "lucide-react";
+import { TeamMember } from "@/types";
 
 export default function SettingsPage() {
   const { tenant } = useAuth();
@@ -33,6 +40,30 @@ export default function SettingsPage() {
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Colleague Team Bot State
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamBotUsername, setTeamBotUsername] = useState("altai_optima_vera_bot");
+  const [loadingTeam, setLoadingTeam] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [inviteRole, setInviteRole] = useState<"manager" | "senior">("manager");
+  const [generatedInvite, setGeneratedInvite] = useState<{ url: string; token: string } | null>(null);
+  const [copiedInvite, setCopiedInvite] = useState(false);
+  const [generatingInvite, setGeneratingInvite] = useState(false);
+  const [teamActionMsg, setTeamActionMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const loadTeam = async () => {
+    setLoadingTeam(true);
+    try {
+      const res = await api.getTeamMembers();
+      setTeamMembers(res.members || []);
+      if (res.bot_username) setTeamBotUsername(res.bot_username);
+    } catch (e) {
+      console.error("Failed to load team members:", e);
+    } finally {
+      setLoadingTeam(false);
+    }
+  };
+
   const loadStatus = async () => {
     setLoading(true);
     try {
@@ -45,10 +76,54 @@ export default function SettingsPage() {
         setInstagramStatus(igRes);
         setReplyToComments(Boolean(igRes.reply_to_comments));
       }
+      await loadTeam();
     } catch (e) {
       console.error("Failed to load status:", e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerateInvite = async (role: "manager" | "senior" = inviteRole) => {
+    setGeneratingInvite(true);
+    setTeamActionMsg(null);
+    try {
+      const res = await api.createTeamInvite(role);
+      setGeneratedInvite({ url: res.invite_url, token: res.token });
+    } catch (err: any) {
+      setTeamActionMsg({ type: "error", text: err?.detail || err?.message || "Ошибка генерации ссылки" });
+    } finally {
+      setGeneratingInvite(false);
+    }
+  };
+
+  const handleToggleInstructions = async (m: TeamMember) => {
+    try {
+      const next = !m.can_modify_instructions;
+      await api.updateTeamMember(m.id, { can_modify_instructions: next });
+      await loadTeam();
+    } catch (err: any) {
+      setTeamActionMsg({ type: "error", text: err?.detail || err?.message || "Ошибка обновления прав" });
+    }
+  };
+
+  const handleToggleActive = async (m: TeamMember) => {
+    try {
+      const next = !m.is_active;
+      await api.updateTeamMember(m.id, { is_active: next });
+      await loadTeam();
+    } catch (err: any) {
+      setTeamActionMsg({ type: "error", text: err?.detail || err?.message || "Ошибка обновления статуса" });
+    }
+  };
+
+  const handleDeleteMember = async (id: string, name: string) => {
+    if (!confirm(`Вы действительно хотите удалить сотрудника «${name}» из команды бота?`)) return;
+    try {
+      await api.deleteTeamMember(id);
+      await loadTeam();
+    } catch (err: any) {
+      setTeamActionMsg({ type: "error", text: err?.detail || err?.message || "Ошибка удаления" });
     }
   };
 
@@ -523,57 +598,245 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Staff Telegram Alert Setting & Recipients */}
-      {statusData?.telegram_bot?.has_subscribers ? (
-        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 p-5 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm dark:shadow-none transition-colors">
+      {/* Colleague Vera Internal Team Bot Section */}
+      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/60 backdrop-blur-xl p-6 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="h-5 w-5" />
+            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <Users className="h-5 w-5" />
             </div>
             <div>
-              <h4 className="text-xs font-semibold text-zinc-900 dark:text-white">
-                Telegram-оповещения настроены ({statusData.telegram_bot.subscribers_count} получатель(ей))
-              </h4>
-              <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                Сотрудники компании подключены к боту @altai_optima_vera_bot и получают уведомления о горячих лидах
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
+                  Служебный Telegram-бот «Вера-Коллега»
+                </h3>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  @{teamBotUsername}
+                </span>
+              </div>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
+                Закрытый служебный контур: общение Веры с РОПом и менеджерами, аналитические сводки, двухэтапные правки правил и экстренная эскалация
               </p>
             </div>
           </div>
 
-          <a
-            href={`https://t.me/altai_optima_vera_bot?start=tenant_${tenant?.id || statusData?.tenant_id || "demo_amo"}`}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white text-xs font-medium border border-zinc-200 dark:border-zinc-700 transition-colors"
+          <button
+            onClick={() => {
+              setInviteModalOpen(!inviteModalOpen);
+              if (!generatedInvite) handleGenerateInvite(inviteRole);
+            }}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold shadow-sm transition-all flex-shrink-0"
           >
-            <Send className="h-3.5 w-3.5 text-sky-500" />
-            <span>Подключить еще сотрудника</span>
-          </a>
+            <Plus className="h-4 w-4" />
+            <span>Подключить Telegram / Пригласить</span>
+          </button>
         </div>
-      ) : (
-        <div className="rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/20 px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
-          <div className="flex items-start sm:items-center gap-3 text-left">
-            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5 sm:mt-0" />
-            <div className="space-y-0.5">
-              <span className="block text-xs sm:text-sm font-semibold text-zinc-900 dark:text-white">
-                Напишите Вере в телеграм, чтобы быть с ней на связи
-              </span>
-              <p className="text-[11px] sm:text-xs text-zinc-600 dark:text-zinc-400 leading-snug">
-                Вы сможете обсуждать с Верой её задачи и статус. А если что-то случится, Вера сразу вам напишет
+
+        {teamActionMsg && (
+          <div
+            className={`p-3 rounded-xl text-xs flex items-center justify-between gap-2 ${
+              teamActionMsg.type === "success"
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+            }`}
+          >
+            <span>{teamActionMsg.text}</span>
+            <button onClick={() => setTeamActionMsg(null)} className="text-xs opacity-70 hover:opacity-100">✕</button>
+          </div>
+        )}
+
+        {/* Modal / Generator Card */}
+        {inviteModalOpen && (
+          <div className="p-5 rounded-xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/20 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-semibold text-zinc-900 dark:text-white">
+                <Sparkles className="h-4 w-4 text-amber-500" />
+                <span>Генератор персональной ссылки-приглашения</span>
+              </div>
+              <button
+                onClick={() => setInviteModalOpen(false)}
+                className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              >
+                Закрыть
+              </button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-zinc-600 dark:text-zinc-400 font-medium">Роль в боте:</label>
+                <select
+                  value={inviteRole}
+                  onChange={(e) => {
+                    const r = e.target.value as "manager" | "senior";
+                    setInviteRole(r);
+                    handleGenerateInvite(r);
+                  }}
+                  className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                >
+                  <option value="manager">Менеджер (сводка, поиск клиентов, прием эскалаций)</option>
+                  <option value="senior">Старший сотрудник / РОП (полные права + изменение правил)</option>
+                </select>
+              </div>
+
+              <button
+                disabled={generatingInvite}
+                onClick={() => handleGenerateInvite(inviteRole)}
+                className="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+              >
+                <RefreshCw className={`h-3 w-3 ${generatingInvite ? "animate-spin" : ""}`} />
+                <span>Сгенерировать новую ссылку</span>
+              </button>
+            </div>
+
+            {generatedInvite && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={generatedInvite.url}
+                    className="flex-1 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 font-mono text-xs text-zinc-900 dark:text-white"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedInvite.url);
+                      setCopiedInvite(true);
+                      setTimeout(() => setCopiedInvite(false), 2000);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-xs font-medium text-zinc-900 dark:text-white transition-colors"
+                  >
+                    {copiedInvite ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                    <span>{copiedInvite ? "Скопировано!" : "Скопировать"}</span>
+                  </button>
+                  <a
+                    href={generatedInvite.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white text-xs font-semibold transition-colors"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    <span>Открыть в Telegram</span>
+                  </a>
+                </div>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  ⚠️ Ссылка является одноразовой и действует 24 часа. После перехода пользователь будет привязан к вашей компании.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Team Members List */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+            <span>Подключенные сотрудники компании ({teamMembers.length})</span>
+            <button
+              onClick={loadTeam}
+              className="hover:text-zinc-900 dark:hover:text-white flex items-center gap-1 transition-colors"
+            >
+              <RefreshCw className={`h-3 w-3 ${loadingTeam ? "animate-spin" : ""}`} />
+              <span>Обновить</span>
+            </button>
+          </div>
+
+          {teamMembers.length === 0 ? (
+            <div className="p-8 text-center rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400 space-y-2">
+              <Users className="h-8 w-8 mx-auto opacity-40 text-amber-500" />
+              <p className="font-medium text-zinc-800 dark:text-zinc-200">
+                В служебном боте еще нет подключенных сотрудников
+              </p>
+              <p className="text-[11px] max-w-md mx-auto">
+                Нажмите кнопку «Подключить Telegram / Пригласить», чтобы привязать ваш аккаунт. Первый подключившийся сотрудник автоматически становится руководителем (старшим сотрудником) с полными правами.
               </p>
             </div>
-          </div>
-          <a
-            href={`https://t.me/altai_optima_vera_bot?start=tenant_${tenant?.id || statusData?.tenant_id || "demo_amo"}`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold shadow-sm transition-all flex-shrink-0 self-stretch sm:self-auto justify-center"
-          >
-            <Send className="h-3.5 w-3.5" />
-            <span>Написать</span>
-          </a>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {teamMembers.map((m) => (
+                <div
+                  key={m.id}
+                  className={`p-4 rounded-xl border transition-all ${
+                    m.is_active
+                      ? "border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/40"
+                      : "border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/40 opacity-60"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold flex items-center justify-center text-xs border border-amber-500/20">
+                        {m.display_name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs font-semibold text-zinc-900 dark:text-white">
+                            {m.display_name}
+                          </h4>
+                          {m.role === "senior" ? (
+                            <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                              <Crown className="h-2.5 w-2.5" />
+                              Старший
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300">
+                              Менеджер
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                          {m.telegram_username ? `@${m.telegram_username}` : `ID: ${m.telegram_user_id}`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleDeleteMember(m.id, m.display_name)}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-colors"
+                        title="Удалить из команды"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Permissions & Controls */}
+                  <div className="mt-3 pt-3 border-t border-zinc-200/60 dark:border-zinc-800/60 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleToggleInstructions(m)}
+                        className={`px-2 py-1 rounded-md text-[10px] font-medium transition-colors ${
+                          m.can_modify_instructions
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400"
+                        }`}
+                        title="Может предлагать и утверждать новые правила, акции и цены в боте"
+                      >
+                        {m.can_modify_instructions ? "✓ Изменение правил" : "✕ Без прав на правила"}
+                      </button>
+
+                      {m.can_manage_team && (
+                        <span className="px-2 py-1 rounded-md text-[10px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          Управление командой
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => handleToggleActive(m)}
+                      className={`text-[10px] font-medium ${
+                        m.is_active
+                          ? "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                          : "text-amber-600 dark:text-amber-400 font-semibold"
+                      }`}
+                    >
+                      {m.is_active ? "Приостановить" : "Возобновить доступ"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

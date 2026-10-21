@@ -47,6 +47,36 @@ export interface TelegramBotInfo {
   }>;
 }
 
+export interface TeamMember {
+  id: string;
+  tenant_id: string;
+  telegram_user_id: string;
+  telegram_username?: string | null;
+  display_name: string;
+  role: "senior" | "manager" | "viewer" | string;
+  can_modify_instructions: boolean;
+  can_view_analytics: boolean;
+  can_manage_team: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeamInviteResponse {
+  ok: boolean;
+  token: string;
+  role: string;
+  bot_username: string;
+  invite_url: string;
+  expires_in: number;
+}
+
+export interface TeamMembersResponse {
+  ok: boolean;
+  bot_username: string;
+  members: TeamMember[];
+}
+
 export interface InstagramStatus {
   ok: boolean;
   tenant_id: string;
