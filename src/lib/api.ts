@@ -169,6 +169,18 @@ export const api = {
     );
   },
 
+  async resetChat(sessionId: string) {
+    return request<{
+      ok: boolean;
+      session_id: string;
+      rows_deleted: number;
+      is_paused: boolean;
+      message: string;
+    }>(`/chats/${encodeURIComponent(sessionId)}/reset`, {
+      method: "POST",
+    });
+  },
+
   async toggleSystemActive(isActive?: boolean) {
     return request<{ ok: boolean; tenant_id: string; is_active: boolean; message: string }>(
       "/system/toggle-active",

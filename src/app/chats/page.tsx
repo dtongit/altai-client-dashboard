@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Cpu,
   Mic,
+  RotateCcw,
 } from "lucide-react";
 import { formatRelativeTime, formatDateTime } from "@/lib/utils";
 
@@ -30,6 +31,7 @@ export default function ChatsPage() {
   const [loadingList, setLoadingList] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -132,6 +134,38 @@ export default function ChatsPage() {
       console.error("Failed to toggle pause:", e);
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleResetChat = async () => {
+    if (!chatDetail) return;
+    const confirmed = window.confirm(
+      `Вы действительно хотите сбросить историю диалога с клиентом ${chatDetail.user_id} (${chatDetail.channel})?\n\n` +
+      `Все предыдущие сообщения будут удалены из памяти ИИ, а сессия снята с паузы. При следующем сообщении из канала Вера начнет диалог с чистого листа.`
+    );
+    if (!confirmed) return;
+
+    setResetting(true);
+    try {
+      const res = await api.resetChat(chatDetail.session_id);
+      if (res.ok) {
+        setChatDetail({
+          ...chatDetail,
+          turns: [],
+          turns_count: 0,
+          is_paused: false,
+          qualification: null,
+          crm_result: null,
+        });
+        setChats((prev) =>
+          prev.filter((c) => c.session_id !== chatDetail.session_id)
+        );
+      }
+    } catch (e) {
+      console.error("Failed to reset chat:", e);
+      alert("Не удалось сбросить диалог. Проверьте соединение с сервером.");
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -310,6 +344,16 @@ export default function ChatsPage() {
                 )}
 
                 <button
+                  onClick={handleResetChat}
+                  disabled={resetting || actionLoading}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-all shadow-sm"
+                  title="Очистить историю диалога из памяти ИИ и снять с паузы (для чистого повторного тестирования)"
+                >
+                  <RotateCcw className={`h-4 w-4 text-rose-500 ${resetting ? "animate-spin" : ""}`} />
+                  <span>Сбросить историю</span>
+                </button>
+
+                <button
                   onClick={handleTogglePause}
                   disabled={actionLoading}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold shadow-md transition-all ${
@@ -360,7 +404,20 @@ export default function ChatsPage() {
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
               {/* Messages Timeline */}
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {chatDetail.turns.map((turn) => (
+                {chatDetail.turns.length === 0 ? (
+                  <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-center p-8 space-y-3 text-zinc-400 dark:text-zinc-500">
+                    <RotateCcw className="h-8 w-8 text-emerald-500/60" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                        История диалога очищена
+                      </p>
+                      <p className="text-xs max-w-sm">
+                        Память ИИ для этого диалога сброшена, сессия активна. При новом входящем сообщении из канала Вера начнет диалог с чистого листа.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  chatDetail.turns.map((turn) => (
                   <div key={turn.id} className="space-y-3">
                     {/* User Message */}
                     {turn.user_message && (
@@ -419,7 +476,7 @@ export default function ChatsPage() {
                       </div>
                     ) : null}
                   </div>
-                ))}
+                )))}
               </div>
 
               {/* BANT Card Sidebar */}
