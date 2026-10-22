@@ -14,6 +14,7 @@ export function generateStaticParams() {
     { tenant: "demo-meditsinskiy-tsentr-nauka" },
     { tenant: "altai_optima" },
     { tenant: "newo_ai" },
+    { tenant: "mediasafe" },
   ];
 }
 
