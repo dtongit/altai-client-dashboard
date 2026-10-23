@@ -15,6 +15,7 @@ export function generateStaticParams() {
     { tenant: "altai_optima" },
     { tenant: "newo_ai" },
     { tenant: "mediasafe" },
+    { tenant: "lada_digit" },
   ];
 }
 
