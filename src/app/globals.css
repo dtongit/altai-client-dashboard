@@ -24,6 +24,23 @@ body {
   color: var(--foreground);
 }
 
+button,
+[role="button"],
+select,
+summary,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"]:disabled,
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
+
 @keyframes float-shimmer {
   0% {
     transform: translateY(0);

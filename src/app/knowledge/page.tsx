@@ -41,6 +41,8 @@ import {
   Database,
 } from "lucide-react";
 
+import { MarkdownView } from "@/components/markdown-view";
+
 interface StudioChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -218,7 +220,7 @@ export default function EmployeeStudioPage() {
   const [config, setConfig] = useState<EmployeeConfigResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"architect" | "prompt" | "tools" | "secrets">(
-    "architect"
+    "prompt"
   );
   const [statusBanner, setStatusBanner] = useState<{
     type: "success" | "error";
@@ -488,7 +490,7 @@ export default function EmployeeStudioPage() {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-                <span>База знаний и Навыки: Вера</span>
+                <span>Инструкции для Веры</span>
                 <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                   Стандарт Ritz-Carlton
                 </span>
@@ -503,27 +505,15 @@ export default function EmployeeStudioPage() {
         {/* Studio Navigation Tabs */}
         <div className="flex flex-wrap items-center gap-1.5 bg-zinc-200/70 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-300/60 dark:border-zinc-800">
           <button
-            onClick={() => setActiveTab("architect")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-              activeTab === "architect"
-                ? "bg-amber-500 text-zinc-950 shadow-sm"
-                : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
-            }`}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>ИИ-Архитектор (Чат)</span>
-          </button>
-
-          <button
             onClick={() => setActiveTab("prompt")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "prompt"
                 ? "bg-amber-500 text-zinc-950 shadow-sm"
                 : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
             }`}
           >
             <FileText className="h-3.5 w-3.5" />
-            <span>Регламент (Промпт)</span>
+            <span>Инструкция</span>
             {config?.prompt?.versions?.length ? (
               <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-black/10 dark:bg-white/10 font-mono">
                 v{config.prompt.versions[0]?.version || 1}
@@ -533,14 +523,14 @@ export default function EmployeeStudioPage() {
 
           <button
             onClick={() => setActiveTab("tools")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "tools"
                 ? "bg-amber-500 text-zinc-950 shadow-sm"
                 : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
             }`}
           >
             <Layers className="h-3.5 w-3.5" />
-            <span>Навыки и Инструменты</span>
+            <span>Навыки</span>
             <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-black/10 dark:bg-white/10 font-bold">
               {config?.custom_tools?.length || 0}
             </span>
@@ -548,14 +538,14 @@ export default function EmployeeStudioPage() {
 
           <button
             onClick={() => setActiveTab("secrets")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "secrets"
                 ? "bg-amber-500 text-zinc-950 shadow-sm"
                 : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
             }`}
           >
             <KeyRound className="h-3.5 w-3.5" />
-            <span>Ключи интеграций ({config?.secrets?.length || 0})</span>
+            <span>Пароли ({config?.secrets?.length || 0})</span>
           </button>
         </div>
       </div>
@@ -941,33 +931,24 @@ export default function EmployeeStudioPage() {
       )}
 
       {/* ==================================================================== */}
-      {/* TAB 2: READ-ONLY PROMPT & KNOWLEDGE BASE WITH VERSION JOURNAL        */}
+      {/* TAB 2: PROMPT & KNOWLEDGE BASE WITH VERSION JOURNAL                  */}
       {/* ==================================================================== */}
       {activeTab === "prompt" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
-            {/* Readonly Prompt Header */}
+            {/* Prompt Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-100 dark:border-zinc-800">
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-zinc-900 dark:text-white">
-                    Системный регламент и База Знаний Веры
-                  </h2>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 text-[10px] font-bold">
-                    <Lock className="h-3 w-3" />
-                    <span>Только чтение</span>
-                  </span>
-                </div>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Зафиксированные правила общения, стандарты сервиса Ritz-Carlton, квалификация BANT и прайс-лист
-                </p>
+                <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+                  Основная инструкция
+                </h2>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleCopyPrompt(currentPromptText)}
-                  className="px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
-                  title="Скопировать текст регламента"
+                  className="px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+                  title="Скопировать текст инструкции"
                 >
                   {copiedPrompt ? (
                     <>
@@ -984,19 +965,6 @@ export default function EmployeeStudioPage() {
               </div>
             </div>
 
-            {/* Read-only Banner Notification */}
-            <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4 flex items-start gap-3">
-              <Info className="h-4 w-4 text-sky-500 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-zinc-700 dark:text-zinc-300 space-y-1">
-                <p className="font-semibold text-zinc-900 dark:text-white">
-                  Регламент зафиксирован во избежание сбоев в работе продаж
-                </p>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                  Прямое ручное редактирование отключено для гарантии надежности конверсии. Чтобы внести изменения в правила, прайс-лист или сценарии общения, поставьте задачу ИИ-Архитектору во вкладке «ИИ-Архитектор (Чат)».
-                </p>
-              </div>
-            </div>
-
             {/* Notice if viewing an archive version */}
             {viewingVersion && (
               <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 flex items-center justify-between">
@@ -1009,16 +977,16 @@ export default function EmployeeStudioPage() {
                 </div>
                 <button
                   onClick={() => setViewingVersion(null)}
-                  className="text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline"
+                  className="text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
                 >
                   Вернуться к актуальной
                 </button>
               </div>
             )}
 
-            {/* Read-only Text Box */}
-            <div className="relative rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950 p-5 font-mono text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed overflow-y-auto max-h-[560px] whitespace-pre-wrap select-text selection:bg-amber-500/30">
-              {currentPromptText || "Регламент загружается..."}
+            {/* Beautiful Markdown Rendering Box */}
+            <div className="relative rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950 p-6 overflow-y-auto max-h-[580px] select-text selection:bg-amber-500/30">
+              <MarkdownView content={currentPromptText} />
             </div>
           </div>
 
@@ -1116,7 +1084,7 @@ export default function EmployeeStudioPage() {
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                   <Layers className="h-4 w-4 text-amber-500" />
-                  <span>Цифровые навыки Веры</span>
+                  <span>Навыки Веры</span>
                 </h3>
                 <span className="text-xs text-zinc-500 font-mono">
                   {config?.custom_tools?.length || 0} подкл.
@@ -1156,23 +1124,9 @@ export default function EmployeeStudioPage() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleToggleTool(t);
-                              }}
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors ${
-                                t.is_active
-                                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
-                                  : "bg-zinc-200 dark:bg-zinc-800 text-zinc-500"
-                              }`}
-                              title={t.is_active ? "Нажмите для паузы" : "Нажмите для включения"}
-                            >
-                              {t.is_active ? "ВКЛ" : "ПАУЗА"}
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
                                 handleDeleteTool(t.id);
                               }}
-                              className="p-1 text-zinc-400 hover:text-red-500 transition-colors"
+                              className="p-1 text-zinc-400 hover:text-red-500 transition-colors cursor-pointer"
                               title="Удалить навык"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -1192,80 +1146,25 @@ export default function EmployeeStudioPage() {
                   </div>
                 )}
               </div>
-
-              {/* Request New Skill CTA */}
-              <div className="pt-2">
-                <button
-                  onClick={() => {
-                    setChatInput("Настрой новый навык для Веры: ");
-                    setActiveTab("architect");
-                  }}
-                  className="w-full py-2.5 px-3 rounded-2xl border border-dashed border-amber-500/40 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-semibold flex items-center justify-center gap-2 transition-all"
-                >
-                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                  <span>Заказать новый навык у ИИ-Архитектора</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Execution Hardware Guarantee */}
-            <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-3 text-xs">
-              <div className="flex items-center gap-2 font-bold text-zinc-900 dark:text-white">
-                <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                <span>Изолированная песочница altai-sandboxd</span>
-              </div>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Навыки исполняются в одноразовых безопасных контейнерах. Скорость вычислений — до 5 мс, полная защита данных клиентов и CRM.
-              </p>
             </div>
           </div>
 
-          {/* Right 8 cols: Detailed Readable Specification & Live Business Test */}
+          {/* Right 8 cols: Detailed Readable Specification */}
           <div className="lg:col-span-8 space-y-6">
             {selectedTool && toolExplanation ? (
               <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 sm:p-7 space-y-6 shadow-sm">
-                {/* Tool Title & Status Header */}
+                {/* Tool Title Header */}
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 border-b border-zinc-100 dark:border-zinc-800">
                   <div className="space-y-1.5">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
-                        {toolExplanation.title}
-                      </h2>
-                      <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold text-[11px] border border-amber-500/20">
-                        {toolExplanation.badge}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${
-                          selectedTool.is_active
-                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
-                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200 dark:border-zinc-700"
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            selectedTool.is_active ? "bg-emerald-500" : "bg-zinc-400"
-                          }`}
-                        />
-                        <span>{selectedTool.is_active ? "Включен (Используется Верой)" : "Приостановлен"}</span>
-                      </span>
-                    </div>
+                    <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
+                      {toolExplanation.title}
+                    </h2>
                     <div className="flex items-center gap-2 text-xs text-zinc-500">
                       <span className="font-mono text-[11px]">Системный ключ: {selectedTool.name}</span>
                       <span>•</span>
                       <span>Версия v{selectedTool.version || selectedTool.current_version || 1}</span>
                     </div>
                   </div>
-
-                  <button
-                    onClick={() => handleToggleTool(selectedTool)}
-                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-sm ${
-                      selectedTool.is_active
-                        ? "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200"
-                        : "bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold"
-                    }`}
-                  >
-                    {selectedTool.is_active ? "Приостановить навык" : "Включить навык"}
-                  </button>
                 </div>
 
                 {/* 1. Purpose */}
@@ -1362,111 +1261,7 @@ export default function EmployeeStudioPage() {
                   </p>
                 </div>
 
-                {/* 6. Live Interactive Test (Human-friendly parameters, NO CODE) */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                      <Play className="h-4 w-4 text-emerald-500" />
-                      <span>6. Проверка работы навыка в реальном времени</span>
-                    </h3>
-                    <span className="text-[11px] text-zinc-500">Безопасный тестовый запуск</span>
-                  </div>
-
-                  <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/70 p-5 space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {toolExplanation.parameters.map((p) => (
-                        <div key={p.key} className="space-y-1">
-                          <label className="block text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
-                            {p.name} ({p.key})
-                          </label>
-                          <input
-                            type={p.type.includes("Число") ? "number" : "text"}
-                            value={testFormInputs[p.key] ?? ""}
-                            onChange={(e) =>
-                              setTestFormInputs({
-                                ...testFormInputs,
-                                [p.key]: p.type.includes("Число")
-                                  ? Number(e.target.value)
-                                  : e.target.value,
-                              })
-                            }
-                            placeholder={p.example}
-                            className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-900 dark:text-white"
-                          />
-                        </div>
-                      ))}
-                    </div>
-
-                    <button
-                      onClick={handleRunToolTest}
-                      disabled={isRunningTest}
-                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-yellow-400 transition-all disabled:opacity-50"
-                    >
-                      <Play className="h-3.5 w-3.5 fill-current" />
-                      <span>{isRunningTest ? "Вычисление..." : "Проверить расчет навыка"}</span>
-                    </button>
-
-                    {/* Result Card */}
-                    {sandboxOutput && (
-                      <div
-                        className={`rounded-xl p-4 border space-y-2.5 text-xs transition-all ${
-                          sandboxOutput.ok
-                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-950 dark:text-emerald-100"
-                            : "bg-red-500/10 border-red-500/30 text-red-950 dark:text-red-100"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between font-bold">
-                          <div className="flex items-center gap-2">
-                            {sandboxOutput.ok ? (
-                              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                            ) : (
-                              <AlertTriangle className="h-4 w-4 text-red-500" />
-                            )}
-                            <span>
-                              {sandboxOutput.ok
-                                ? "Расчет выполнен успешно"
-                                : "Ошибка при вычислении"}
-                            </span>
-                          </div>
-                          <span className="text-[11px] font-mono text-zinc-500">
-                            Время ответа: {sandboxOutput.duration_ms ?? 0} мс
-                          </span>
-                        </div>
-
-                        {sandboxOutput.error ? (
-                          <p className="text-[11px] text-red-600 dark:text-red-300">
-                            {sandboxOutput.error}
-                          </p>
-                        ) : (
-                          <div className="space-y-1.5 pt-1">
-                            <span className="text-[11px] text-zinc-500 dark:text-zinc-400 block font-semibold">
-                              Результат, переданный Вере:
-                            </span>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                              {sandboxOutput.result &&
-                                typeof sandboxOutput.result === "object" &&
-                                Object.entries(sandboxOutput.result).map(([k, val]) => (
-                                  <div
-                                    key={k}
-                                    className="p-2.5 rounded-lg bg-white/70 dark:bg-zinc-900/80 border border-zinc-200/60 dark:border-zinc-800 text-[11px]"
-                                  >
-                                    <div className="text-[10px] text-zinc-500 capitalize">
-                                      {k.replace(/_/g, " ")}
-                                    </div>
-                                    <div className="font-bold text-zinc-900 dark:text-white mt-0.5">
-                                      {String(val)}
-                                    </div>
-                                  </div>
-                                ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* 7. Changelog */}
+                {/* 6. Changelog */}
                 {toolVersions.length > 0 && (
                   <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500">
@@ -1510,7 +1305,7 @@ export default function EmployeeStudioPage() {
           <div className="lg:col-span-5 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
             <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
               <KeyRound className="h-5 w-5 text-amber-500" />
-              <span>Добавить ключ интеграции</span>
+              <span>Добавить пароль или ключ API</span>
             </h2>
             <p className="text-xs text-zinc-500 leading-relaxed">
               API-ключи и пароли передаются напрямую в изолированную защищенную песочницу и никогда не попадают в публичный контекст переписки.
@@ -1553,7 +1348,7 @@ export default function EmployeeStudioPage() {
 
           <div className="lg:col-span-7 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
             <h3 className="text-base font-bold text-zinc-900 dark:text-white">
-              Сохраненные ключи интеграций ({config?.secrets?.length || 0})
+              Сохраненные пароли и ключи ({config?.secrets?.length || 0})
             </h3>
             {config?.secrets && config.secrets.length > 0 ? (
               <div className="space-y-2.5">

@@ -15,15 +15,16 @@ import {
 } from "lucide-react";
 
 const navigation = [
-  { name: "Сводка и KPI", href: "/vera", icon: BarChart3 },
-  { name: "Живые диалоги", href: "/chats", icon: MessageSquare },
-  { name: "Тренажер Веры", href: "/simulator", icon: Bot },
-  { name: "Каналы и статус", href: "/settings", icon: Sliders },
-  { name: "База знаний и Навыки", href: "/knowledge", icon: BookOpen },
+  { name: "Дашборд", href: "/vera", icon: BarChart3 },
+  { name: "Чаты", href: "/chats", icon: MessageSquare },
+  { name: "Пообщаться с Верой", href: "/simulator", icon: Bot },
+  { name: "Выключатели", href: "/settings", icon: Sliders },
+  { name: "Инструкции для Веры", href: "/knowledge", icon: BookOpen },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const cleanPath = (pathname || "").replace(/\/+$/, "") || "/";
 
   return (
     <aside className="w-64 flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col justify-between p-4 min-h-[calc(100vh-4rem)] transition-colors">
@@ -76,8 +77,8 @@ export function Sidebar() {
             {navigation.map((item) => {
               const isActive =
                 item.href === "/vera"
-                  ? pathname === "/vera"
-                  : pathname.startsWith(item.href);
+                  ? cleanPath === "/vera" || cleanPath.startsWith("/vera/")
+                  : cleanPath.startsWith(item.href);
               const Icon = item.icon;
 
               return (

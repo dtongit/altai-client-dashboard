@@ -244,10 +244,10 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2.5">
           <Sliders className="h-6 w-6 text-amber-500" />
-          <span>Каналы и управление системой</span>
+          <span>Выключатели</span>
         </h1>
         <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-          Статусы мессенджеров Веры для приема заявок и параметры синхронизации с CRM
+          Управление каналами связи Веры, подключением CRM и режимами автоответов
         </p>
       </div>
 
@@ -355,75 +355,6 @@ export default function SettingsPage() {
               <p className="text-[11px] text-zinc-600 dark:text-zinc-400">{ch.detail}</p>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* CRM Integration Card */}
-      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm shadow-sm dark:shadow-none transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
-              <Building2 className="h-4 w-4" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Синхронизация с CRM</h3>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                Автоматическое сохранение заявок и передача BANT-квалификации
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${crmBadgeStyle}`}>
-              {crmBadgeText}
-            </span>
-
-            {crmUrl && (
-              <a
-                href={crmUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-sm shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                title="Открыть CRM в новой вкладке"
-              >
-                <span>Открыть CRM</span>
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            )}
-          </div>
-        </div>
-
-        <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-700 dark:text-zinc-300 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-zinc-500">Тип CRM:</span>
-            <span className="font-semibold uppercase text-zinc-900 dark:text-white">
-              {crmType === "excel" ? "Excel (файл на Яндекс Диске)" : crmType.toUpperCase()}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-zinc-500">Режим создания лида:</span>
-            <span className="text-emerald-700 dark:text-emerald-400 font-medium">
-              {crmType === "excel"
-                ? "Автоматическая запись строк в онлайн-таблицу .xlsx"
-                : "Complex Lead с передачей контакта и суммы"}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-zinc-500">Передача истории переписки:</span>
-            <span className="text-zinc-700 dark:text-zinc-300">
-              {crmType === "excel"
-                ? "Фиксация колонок: BANT-потребность, телефон, бюджет, резюме диалога"
-                : "Автоматически в примечание сделки"}
-            </span>
-          </div>
-          {crmType === "excel" && (
-            <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60 dark:border-zinc-800/60">
-              <span className="text-zinc-500">Хранилище таблицы:</span>
-              <span className="text-zinc-700 dark:text-zinc-300">
-                Яндекс Диск (папка /CRM/leads.xlsx)
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -644,11 +575,18 @@ export default function SettingsPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
-                  Служебный Telegram-бот «Вера-Коллега»
+                  Ваш чат с Верой
                 </h3>
-                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  @{teamBotUsername}
-                </span>
+                <a
+                  href={`https://t.me/${teamBotUsername}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 border border-amber-500/20 transition-colors"
+                  title={`Открыть бота @${teamBotUsername} в Telegram`}
+                >
+                  <span>@{teamBotUsername}</span>
+                  <ExternalLink className="h-2.5 w-2.5" />
+                </a>
               </div>
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
                 Закрытый служебный контур: общение Веры с РОПом и менеджерами, аналитические сводки, двухэтапные правки правил и экстренная эскалация
@@ -661,10 +599,10 @@ export default function SettingsPage() {
               setInviteModalOpen(!inviteModalOpen);
               if (!generatedInvite) handleGenerateInvite(inviteRole);
             }}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold shadow-sm transition-all flex-shrink-0"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-semibold shadow-sm transition-all flex-shrink-0 cursor-pointer"
           >
             <Plus className="h-4 w-4" />
-            <span>Подключить Telegram / Пригласить</span>
+            <span>Подключиться к чату</span>
           </button>
         </div>
 
@@ -782,7 +720,7 @@ export default function SettingsPage() {
                 В служебном боте еще нет подключенных сотрудников
               </p>
               <p className="text-[11px] max-w-md mx-auto">
-                Нажмите кнопку «Подключить Telegram / Пригласить», чтобы привязать ваш аккаунт. Первый подключившийся сотрудник автоматически становится руководителем (старшим сотрудником) с полными правами.
+                Нажмите кнопку «Подключиться к чату», чтобы привязать ваш аккаунт. Первый подключившийся сотрудник автоматически становится руководителем (старшим сотрудником) с полными правами.
               </p>
             </div>
           ) : (
@@ -869,6 +807,75 @@ export default function SettingsPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* CRM Integration Card (Moved to bottom) */}
+      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm shadow-sm dark:shadow-none transition-colors">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+              <Building2 className="h-4 w-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Синхронизация с CRM</h3>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                Автоматическое сохранение заявок и передача BANT-квалификации
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${crmBadgeStyle}`}>
+              {crmBadgeText}
+            </span>
+
+            {crmUrl && (
+              <a
+                href={crmUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-sm shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                title="Открыть CRM в новой вкладке"
+              >
+                <span>Открыть CRM</span>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-700 dark:text-zinc-300 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-zinc-500">Тип CRM:</span>
+            <span className="font-semibold uppercase text-zinc-900 dark:text-white">
+              {crmType === "excel" ? "Excel (файл на Яндекс Диске)" : crmType.toUpperCase()}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-zinc-500">Режим создания лида:</span>
+            <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+              {crmType === "excel"
+                ? "Автоматическая запись строк в онлайн-таблицу .xlsx"
+                : "Complex Lead с передачей контакта и суммы"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-zinc-500">Передача истории переписки:</span>
+            <span className="text-zinc-700 dark:text-zinc-300">
+              {crmType === "excel"
+                ? "Фиксация колонок: BANT-потребность, телефон, бюджет, резюме диалога"
+                : "Автоматически в примечание сделки"}
+            </span>
+          </div>
+          {crmType === "excel" && (
+            <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60 dark:border-zinc-800/60">
+              <span className="text-zinc-500">Хранилище таблицы:</span>
+              <span className="text-zinc-700 dark:text-zinc-300">
+                Яндекс Диск (папка /CRM/leads.xlsx)
+              </span>
             </div>
           )}
         </div>

@@ -188,22 +188,20 @@ export default function VeraOverviewPage() {
         <MetricCard
           title="Входящие диалоги"
           value={formatNumber(kpis.total_conversations)}
-          subtitle={`Сегодня новых: +${kpis.today_conversations} клиентов`}
+          subtitle={`Сегодня новых: +${kpis.today_conversations} чатов`}
           icon={MessageSquare}
           accent="blue"
         />
 
         <MetricCard
-          title="Квалифицировано лидов (BANT)"
+          title="Квалифицировано лидов"
           value={formatNumber(kpis.qualified_leads)}
-          subtitle={`Конверсия в заявку: ${kpis.conversion_rate_pct}%`}
           icon={Flame}
-          trend={`+${kpis.conversion_rate_pct}%`}
           accent="amber"
         />
 
         <MetricCard
-          title="Скорость ответа (TTFT)"
+          title="Скорость ответа"
           value={`${(kpis.average_latency_ms / 1000).toFixed(1)} сек`}
           subtitle="В 30 раз быстрее штатного менеджера"
           icon={Zap}
@@ -214,7 +212,6 @@ export default function VeraOverviewPage() {
         <MetricCard
           title="Экономия на ФОТ"
           value={formatCurrency(kpis.estimated_payroll_saved_rub)}
-          subtitle={`Себестоимость ИИ: ${formatCurrency(kpis.estimated_cost_rub)}`}
           icon={PiggyBank}
           trend="Выгода 3x"
           accent="purple"

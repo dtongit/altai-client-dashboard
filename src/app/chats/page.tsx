@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
@@ -22,8 +22,21 @@ import {
   RotateCcw,
   Send,
   ShieldCheck,
+  ChevronDown,
 } from "lucide-react";
 import { formatRelativeTime, formatDateTime } from "@/lib/utils";
+
+function formatClientTitle(channel?: string, userId?: string, clientName?: string | null) {
+  if (clientName && clientName !== userId) return clientName;
+  if (!userId) return "Клиент";
+  const ch = (channel || "").toLowerCase();
+  if (ch.includes("instagram") || userId === "68544160") {
+    if (userId === "68544160") return "@jwa71008";
+    if (userId.startsWith("@")) return userId;
+    return `@${userId}`;
+  }
+  return userId;
+}
 
 export default function ChatsPage() {
   const { user } = useAuth();
@@ -36,6 +49,7 @@ export default function ChatsPage() {
   const [resetting, setResetting] = useState(false);
   const [operatorInput, setOperatorInput] = useState("");
   const [sendingOperatorMsg, setSendingOperatorMsg] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -54,15 +68,17 @@ export default function ChatsPage() {
         const liveChats = (res.chats || []).filter((c) => {
           const ch = (c.channel || "").toLowerCase();
           const sess = (c.session_id || "").toLowerCase();
-          return (
-            ch !== "simulator" &&
-            ch !== "web_simulator" &&
-            ch !== "aitest" &&
-            !sess.includes(":simulator:") &&
-            !sess.includes(":aitest:") &&
-            !sess.startsWith("simulator:") &&
-            !sess.startsWith("aitest:")
-          );
+          const isSim =
+            ch === "simulator" ||
+            ch === "web_simulator" ||
+            ch === "aitest" ||
+            sess.includes(":simulator:") ||
+            sess.includes(":aitest:") ||
+            sess.startsWith("simulator:") ||
+            sess.startsWith("aitest:");
+          if (isSim) return false;
+          if (channelFilter && !ch.includes(channelFilter.toLowerCase())) return false;
+          return true;
         });
         setChats(liveChats);
         if (!selectedSessionId && liveChats.length > 0) {
@@ -103,6 +119,12 @@ export default function ChatsPage() {
     }
     loadDetail();
   }, [selectedSessionId]);
+
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, [selectedSessionId, chatDetail?.turns?.length]);
 
   const handleTogglePause = async () => {
     if (!chatDetail) return;
@@ -228,11 +250,11 @@ export default function ChatsPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-amber-500" />
-              <span>Диалоги клиентов</span>
+              <span>Чаты</span>
             </h2>
             <button
               onClick={loadChats}
-              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 transition-colors"
+              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               title="Обновить список"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loadingList ? "animate-spin" : ""}`} />
@@ -250,26 +272,44 @@ export default function ChatsPage() {
             />
           </form>
 
-          {/* Status Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 text-xs">
-            {[
-              { id: "all", label: "Все" },
-              { id: "qualified", label: "🔥 Горячие лиды" },
-              { id: "paused", label: "⏸️ На паузе" },
-              { id: "active", label: "🟢 Активные" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setStatusFilter(tab.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors ${
-                  statusFilter === tab.id
-                    ? "bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-500/30"
-                    : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-900"
-                }`}
+          {/* Status & Channel Filters */}
+          <div className="flex items-center justify-between gap-2 pt-0.5">
+            <div className="flex items-center gap-1 text-xs">
+              {[
+                { id: "all", label: "Все" },
+                { id: "paused", label: "На паузе" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setStatusFilter(tab.id)}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                    statusFilter === tab.id
+                      ? "bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-500/30 font-semibold"
+                      : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-900 border border-transparent"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative">
+              <select
+                value={channelFilter}
+                onChange={(e) => setChannelFilter(e.target.value)}
+                className="appearance-none pl-2.5 pr-6 py-1 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-[11px] font-medium text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
               >
-                {tab.label}
-              </button>
-            ))}
+                <option value="">Все каналы</option>
+                <option value="telegram">Telegram</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="instagram">Instagram</option>
+                <option value="avito">Avito</option>
+                <option value="max">MAX</option>
+                <option value="web">Сайт / Web</option>
+              </select>
+              <ChevronDown className="h-3 w-3 text-zinc-400 pointer-events-none absolute right-1.5 top-2" />
+            </div>
           </div>
         </div>
 
@@ -286,7 +326,7 @@ export default function ChatsPage() {
           ) : (
             chats.map((chat) => {
               const isSelected = chat.session_id === selectedSessionId;
-              const clientName = chat.qualification?.client_name || chat.user_id;
+              const clientName = formatClientTitle(chat.channel, chat.user_id, chat.qualification?.client_name);
 
               return (
                 <button
@@ -363,7 +403,7 @@ export default function ChatsPage() {
                 <div>
                   <h3 className="text-sm font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
                     <span>
-                      {chatDetail.qualification?.client_name || `Клиент ${chatDetail.user_id}`}
+                      {formatClientTitle(chatDetail.channel, chatDetail.user_id, chatDetail.qualification?.client_name)}
                     </span>
                     {chatDetail.qualification?.client_phone && (
                       <span className="text-xs text-amber-700 dark:text-amber-400 font-normal">
@@ -465,7 +505,7 @@ export default function ChatsPage() {
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
               {/* Messages Timeline & Operator Input */}
               <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4">
                   {chatDetail.turns.length === 0 ? (
                     <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-center p-8 space-y-3 text-zinc-400 dark:text-zinc-500">
                       <RotateCcw className="h-8 w-8 text-emerald-500/60" />
@@ -556,9 +596,11 @@ export default function ChatsPage() {
                               <span>{formatDateTime(turn.created_at)}</span>
                             </div>
                           </div>
-                          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-amber-500 text-zinc-950 flex items-center justify-center font-bold text-xs shadow-md shadow-amber-500/20">
-                            В
-                          </div>
+                          <img
+                            src="/avatar_eva_face.webp"
+                            alt="Вера"
+                            className="flex-shrink-0 h-8 w-8 rounded-full object-cover object-top border border-amber-500/30 shadow-sm"
+                          />
                         </div>
                       ) : null}
                     </div>
