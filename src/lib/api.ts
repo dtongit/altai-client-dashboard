@@ -19,6 +19,9 @@ import {
   TeamMember,
   TeamInviteResponse,
   TeamMembersResponse,
+  ChannelWorkMode,
+  TeamBotConversation,
+  TeamBotLogEvent,
 } from "@/types";
 
 const rawApiUrl =
@@ -162,10 +165,23 @@ export const api = {
     );
   },
 
-  async resumeChat(sessionId: string) {
+  async resumeChat(sessionId: string, triggerReply: boolean = false) {
     return request<{ ok: boolean; session_id: string; is_paused: boolean; message: string }>(
       `/chats/${encodeURIComponent(sessionId)}/resume`,
-      { method: "POST" }
+      {
+        method: "POST",
+        body: JSON.stringify({ trigger_reply: triggerReply }),
+      }
+    );
+  },
+
+  async sendChatMessage(sessionId: string, text: string) {
+    return request<{ ok: boolean; session_id: string; message: string }>(
+      `/chats/${encodeURIComponent(sessionId)}/message`,
+      {
+        method: "POST",
+        body: JSON.stringify({ text }),
+      }
     );
   },
 
@@ -304,14 +320,16 @@ export const api = {
     });
   },
 
-  async toggleInstagram(enabled: boolean): Promise<{
+  async toggleInstagram(enabled: boolean, mode?: ChannelWorkMode): Promise<{
     ok: boolean;
     enabled: boolean;
+    mode?: ChannelWorkMode;
+    require_approval?: boolean;
     message: string;
   }> {
     return request("/instagram/toggle", {
       method: "POST",
-      body: JSON.stringify({ enabled }),
+      body: JSON.stringify({ enabled, mode }),
     });
   },
 
@@ -558,5 +576,29 @@ export const api = {
       throw new Error(err.detail || "Ошибка при отправке сообщения");
     }
     return res.json();
+  },
+
+  // ==========================================================================
+  // Team Bot Chats & Logs
+  // ==========================================================================
+
+  async listTeamChats(tenantId?: string): Promise<{
+    ok: boolean;
+    conversations: TeamBotConversation[];
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/team-chats${qs}`, {}, ADMIN_API_BASE_URL);
+  },
+
+  async getTeamChatHistory(telegramUserId: string, limit: number = 50): Promise<{
+    ok: boolean;
+    telegram_user_id: string;
+    events: TeamBotLogEvent[];
+  }> {
+    return request(
+      `/team-chats/${encodeURIComponent(telegramUserId)}?limit=${limit}`,
+      {},
+      ADMIN_API_BASE_URL
+    );
   },
 };

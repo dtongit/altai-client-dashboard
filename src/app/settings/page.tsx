@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
-import { SystemStatusResponse, InstagramStatus } from "@/types";
+import { SystemStatusResponse, InstagramStatus, ChannelWorkMode, TeamMember } from "@/types";
 import {
   CheckCircle2,
   XCircle,
@@ -26,7 +26,6 @@ import {
   Plus,
   Sparkles,
 } from "lucide-react";
-import { TeamMember } from "@/types";
 
 export default function SettingsPage() {
   const { tenant } = useAuth();
@@ -39,6 +38,7 @@ export default function SettingsPage() {
   const [replyToComments, setReplyToComments] = useState(false);
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showAutoConfirmModal, setShowAutoConfirmModal] = useState(false);
 
   // Colleague Team Bot State
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -145,24 +145,39 @@ export default function SettingsPage() {
     }
   };
 
-  const handleToggleInstagram = async () => {
+  const currentMode: ChannelWorkMode = !instagramStatus?.enabled
+    ? "stop"
+    : instagramStatus?.require_approval
+    ? "hitl"
+    : "auto";
+
+  const handleSelectMode = async (mode: ChannelWorkMode) => {
     if (!instagramStatus?.has_token) {
       setIgMessage({ type: "error", text: "Сначала укажите и сохраните API-токен Umnico" });
       return;
     }
+    if (mode === "auto") {
+      setShowAutoConfirmModal(true);
+      return;
+    }
+    await applyMode(mode);
+  };
+
+  const applyMode = async (mode: ChannelWorkMode) => {
     setTogglingIg(true);
     setIgMessage(null);
     try {
-      const nextState = !instagramStatus.enabled;
-      const res = await api.toggleInstagram(nextState);
+      const enabled = mode !== "stop";
+      const res = await api.toggleInstagram(enabled, mode);
       setIgMessage({ type: "success", text: res.message });
       const updated = await api.getInstagramStatus();
       setInstagramStatus(updated);
       await loadStatus();
     } catch (err: any) {
-      setIgMessage({ type: "error", text: err?.detail || err?.message || "Ошибка изменения статуса канала" });
+      setIgMessage({ type: "error", text: err?.detail || err?.message || "Ошибка изменения режима канала" });
     } finally {
       setTogglingIg(false);
+      setShowAutoConfirmModal(false);
     }
   };
 
@@ -426,15 +441,19 @@ export default function SettingsPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Instagram Direct (Umnico)</h3>
-                {instagramStatus?.enabled ? (
+                {currentMode === "auto" ? (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>В эфире (Live)</span>
+                    <span>⚡ Автопилот (Live)</span>
+                  </span>
+                ) : currentMode === "hitl" ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/30 flex items-center gap-1">
+                    <ShieldCheck className="h-3 w-3" />
+                    <span>🛡️ Пре-модерация (HITL)</span>
                   </span>
                 ) : instagramStatus?.has_token ? (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
-                    <ShieldCheck className="h-3 w-3" />
-                    <span>Безопасный режим (Выкл)</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/30 flex items-center gap-1">
+                    <span>🔴 Отключен</span>
                   </span>
                 ) : (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
@@ -448,35 +467,52 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Master Toggle Switch */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleToggleInstagram}
-              disabled={togglingIg || !instagramStatus?.has_token}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-sm ${
-                instagramStatus?.enabled
-                  ? "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/20"
-                  : instagramStatus?.has_token
-                  ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20 hover:scale-[1.02] active:scale-[0.98]"
-                  : "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 cursor-not-allowed"
-              }`}
-              title={
-                !instagramStatus?.has_token
-                  ? "Сначала укажите и сохраните токен Umnico"
-                  : instagramStatus?.enabled
-                  ? "Нажмите, чтобы временно отключить автоответы Веры"
-                  : "Нажмите, чтобы включить автоответы Веры в Direct"
-              }
-            >
-              <Power className={`h-3.5 w-3.5 ${togglingIg ? "animate-spin" : ""}`} />
-              <span>
-                {togglingIg
-                  ? "Переключение..."
-                  : instagramStatus?.enabled
-                  ? "Отключить автоответы"
-                  : "Включить автоответы Веры"}
-              </span>
-            </button>
+          {/* 3-Way Mode Segmented Control */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="inline-flex p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 shadow-inner">
+              <button
+                type="button"
+                onClick={() => handleSelectMode("stop")}
+                disabled={togglingIg || !instagramStatus?.has_token}
+                className={`px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 ${
+                  currentMode === "stop"
+                    ? "bg-rose-600 text-white shadow-sm font-semibold"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium"
+                }`}
+                title="Отключить автоответы Веры. Диалоги ведет только оператор."
+              >
+                <span>🔴 Отключен</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectMode("hitl")}
+                disabled={togglingIg || !instagramStatus?.has_token}
+                className={`px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 ${
+                  currentMode === "hitl"
+                    ? "bg-blue-600 text-white shadow-sm font-semibold"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium"
+                }`}
+                title="Вера генерирует проект ответа и направляет супервизору в Telegram-бот перед отправкой."
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>🛡️ Пре-модерация</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSelectMode("auto")}
+                disabled={togglingIg || !instagramStatus?.has_token}
+                className={`px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 ${
+                  currentMode === "auto"
+                    ? "bg-emerald-600 text-white shadow-sm font-semibold"
+                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium"
+                }`}
+                title="Полный автопилот: Вера отвечает клиентам напрямую без подтверждения."
+              >
+                <span>⚡ Автопилот</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -837,6 +873,52 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+
+      {/* Modal Confirmation for Full Autopilot */}
+      {showAutoConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-md rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-amber-600 dark:text-amber-400">
+              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
+                  Включение полного автопилота
+                </h3>
+                <p className="text-xs text-zinc-500">Instagram Direct (Live)</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-300 space-y-2">
+              <p>
+                <strong>Внимание:</strong> В режиме автопилота Вера будет отправлять все сгенерированные ответы клиентам в Direct <strong>напрямую без предварительного согласования</strong> в Telegram-боте.
+              </p>
+              <p className="text-[11px] text-zinc-500">
+                Используйте этот режим, только если база знаний и каталог обуви полностью проверены и откалиброваны в симуляторе.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowAutoConfirmModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={() => applyMode("auto")}
+                disabled={togglingIg}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-600/20 transition-all flex items-center gap-1.5"
+              >
+                <span>Да, включить автопилот</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

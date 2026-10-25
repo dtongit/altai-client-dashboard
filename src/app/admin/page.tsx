@@ -21,6 +21,7 @@ import {
   Clock,
   Cpu,
   MessageSquare,
+  Users,
 } from "lucide-react";
 
 const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
@@ -342,13 +343,20 @@ export default function SuperadminConsolePage() {
           })}
         </nav>
 
-        <div className="pt-3 mt-2 border-t border-zinc-200 dark:border-zinc-800">
+        <div className="pt-3 mt-2 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
           <Link
             href="/admin/chats"
             className="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-amber-700 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-all border border-amber-500/25"
           >
             <Cpu className="h-4 w-4 text-amber-500" />
             <span>Трейсы диалогов LLM</span>
+          </Link>
+          <Link
+            href="/admin/team-chats"
+            className="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-indigo-700 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 transition-all border border-indigo-500/25"
+          >
+            <Users className="h-4 w-4 text-indigo-500" />
+            <span>Командные боты и логи</span>
           </Link>
         </div>
       </aside>

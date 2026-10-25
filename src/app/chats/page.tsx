@@ -20,6 +20,8 @@ import {
   Cpu,
   Mic,
   RotateCcw,
+  Send,
+  ShieldCheck,
 } from "lucide-react";
 import { formatRelativeTime, formatDateTime } from "@/lib/utils";
 
@@ -32,6 +34,8 @@ export default function ChatsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [operatorInput, setOperatorInput] = useState("");
+  const [sendingOperatorMsg, setSendingOperatorMsg] = useState(false);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -102,21 +106,11 @@ export default function ChatsPage() {
 
   const handleTogglePause = async () => {
     if (!chatDetail) return;
-    setActionLoading(true);
-    try {
-      if (chatDetail.is_paused) {
-        // Resume
-        const res = await api.resumeChat(chatDetail.session_id);
-        if (res.ok) {
-          setChatDetail({ ...chatDetail, is_paused: false });
-          setChats((prev) =>
-            prev.map((c) =>
-              c.session_id === chatDetail.session_id ? { ...c, is_paused: false } : c
-            )
-          );
-        }
-      } else {
-        // Pause
+    if (chatDetail.is_paused) {
+      await handleResumeChat(false);
+    } else {
+      setActionLoading(true);
+      try {
         const res = await api.pauseChat(
           chatDetail.session_id,
           "Ручной перехват оператором через дашборд"
@@ -129,11 +123,63 @@ export default function ChatsPage() {
             )
           );
         }
+      } catch (e) {
+        console.error("Failed to pause chat:", e);
+      } finally {
+        setActionLoading(false);
+      }
+    }
+  };
+
+  const handleResumeChat = async (triggerReply: boolean = false) => {
+    if (!chatDetail) return;
+    setActionLoading(true);
+    try {
+      const res = await api.resumeChat(chatDetail.session_id, triggerReply);
+      if (res.ok) {
+        setChatDetail({ ...chatDetail, is_paused: false });
+        setChats((prev) =>
+          prev.map((c) =>
+            c.session_id === chatDetail.session_id ? { ...c, is_paused: false } : c
+          )
+        );
+        if (triggerReply) {
+          setTimeout(async () => {
+            const fresh = await api.getChatDetail(chatDetail.session_id);
+            if (fresh.ok) setChatDetail(fresh);
+          }, 1500);
+        }
       }
     } catch (e) {
-      console.error("Failed to toggle pause:", e);
+      console.error("Failed to resume chat:", e);
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleSendOperatorMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatDetail || !operatorInput.trim() || sendingOperatorMsg) return;
+    setSendingOperatorMsg(true);
+    const textToSend = operatorInput.trim();
+    try {
+      await api.sendChatMessage(chatDetail.session_id, textToSend);
+      setOperatorInput("");
+      const updated = await api.getChatDetail(chatDetail.session_id);
+      if (updated.ok) {
+        setChatDetail(updated);
+        setChats((prev) =>
+          prev.map((c) =>
+            c.session_id === chatDetail.session_id
+              ? { ...c, is_paused: true, last_message: `Менеджер: ${textToSend}` }
+              : c
+          )
+        );
+      }
+    } catch (err: any) {
+      alert(err?.detail || err?.message || "Ошибка отправки сообщения клиенту");
+    } finally {
+      setSendingOperatorMsg(false);
     }
   };
 
@@ -384,99 +430,159 @@ export default function ChatsPage() {
 
             {/* Operator Takeover Alert Banner */}
             {chatDetail.is_paused && (
-              <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-3 flex items-center justify-between gap-3 text-xs text-amber-800 dark:text-amber-300">
+              <div className="bg-amber-500/10 border-b border-amber-500/20 px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-800 dark:text-amber-300">
                 <div className="flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 flex-shrink-0 text-amber-500" />
                   <span>
-                    <strong>Внимание: диалог перехвачен оператором.</strong> ИИ-продавец Вера временно не отвечает этому клиенту. Ответьте напрямую в мессенджере или CRM.
+                    <strong>Внимание: диалог перехвачен оператором.</strong> ИИ-продавец Вера временно не отвечает клиенту.
                   </span>
                 </div>
-                <button
-                  onClick={handleTogglePause}
-                  className="underline text-amber-700 dark:text-amber-400 font-semibold hover:text-amber-600 dark:hover:text-amber-300 whitespace-nowrap"
-                >
-                  Снять с паузы
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleResumeChat(false)}
+                    disabled={actionLoading}
+                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-200 transition-colors whitespace-nowrap"
+                  >
+                    Снять с паузы
+                  </button>
+                  <button
+                    onClick={() => handleResumeChat(true)}
+                    disabled={actionLoading}
+                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-colors whitespace-nowrap"
+                    title="Снять диалог с паузы и сразу сгенерировать ответ клиенту силами Веры"
+                  >
+                    Снять и ответить ИИ
+                  </button>
+                </div>
               </div>
             )}
 
             {/* Split Content: Messages & BANT */}
             <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-              {/* Messages Timeline */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {chatDetail.turns.length === 0 ? (
-                  <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-center p-8 space-y-3 text-zinc-400 dark:text-zinc-500">
-                    <RotateCcw className="h-8 w-8 text-emerald-500/60" />
-                    <div className="space-y-1">
-                      <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                        История диалога очищена
-                      </p>
-                      <p className="text-xs max-w-sm">
-                        Память ИИ для этого диалога сброшена, сессия активна. При новом входящем сообщении из канала Вера начнет диалог с чистого листа.
-                      </p>
+              {/* Messages Timeline & Operator Input */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                  {chatDetail.turns.length === 0 ? (
+                    <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-center p-8 space-y-3 text-zinc-400 dark:text-zinc-500">
+                      <RotateCcw className="h-8 w-8 text-emerald-500/60" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                          История диалога очищена
+                        </p>
+                        <p className="text-xs max-w-sm">
+                          Память ИИ для этого диалога сброшена, сессия активна. При новом входящем сообщении из канала Вера начнет диалог с чистого листа.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  chatDetail.turns.map((turn) => (
-                  <div key={turn.id} className="space-y-3">
-                    {/* User Message */}
-                    {turn.user_message && (
-                      <div className="flex items-start gap-3 max-w-xl">
-                        <div className="flex-shrink-0 h-8 w-8 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-400 text-xs font-semibold shadow-sm">
-                          {turn.user_message.startsWith("[Голосовое сообщение]:") ? (
-                            <Mic className="h-4 w-4 text-indigo-500" />
-                          ) : (
-                            <User className="h-4 w-4" />
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          {turn.user_message.startsWith("[Голосовое сообщение]:") && (
-                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/40 text-[10px] font-medium">
-                              <Mic className="h-2.5 w-2.5" />
-                              <span>Голосовое сообщение</span>
-                            </div>
-                          )}
-                          <div className="rounded-2xl rounded-tl-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 px-4 py-3 text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed shadow-sm">
-                            {turn.user_message.replace(/^\[Голосовое сообщение\]:\s*/, "")}
-                          </div>
-                          <div className="text-[10px] text-zinc-400 dark:text-zinc-500 pl-1">
-                            {formatDateTime(turn.created_at)}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Assistant Response or Paused Notification */}
-                    {turn.status === "paused_takeover" ? (
-                      <div className="flex items-center justify-center py-2">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-500/20 text-[11px]">
-                          <PauseCircle className="h-3 w-3" />
-                          <span>Сообщение принято, автоответ ИИ остановлен ручной паузой</span>
-                        </span>
-                      </div>
-                    ) : turn.assistant_response ? (
-                      <div className="flex items-start justify-end gap-3 max-w-xl ml-auto">
-                        <div className="space-y-1 text-right">
-                          <div className="rounded-2xl rounded-tr-sm bg-amber-500/10 dark:bg-gradient-to-br dark:from-amber-500/10 dark:to-amber-600/10 border border-amber-500/20 px-4 py-3 text-xs text-zinc-900 dark:text-zinc-100 text-left leading-relaxed shadow-sm">
-                            {turn.assistant_response}
-                          </div>
-                          <div className="flex items-center justify-end gap-2 text-[10px] text-zinc-400 dark:text-zinc-500 pr-1">
-                            {turn.latency_ms && (
-                              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                <Clock className="h-2.5 w-2.5" />
-                                <span>{(turn.latency_ms / 1000).toFixed(1)} с</span>
-                              </span>
+                  ) : (
+                    chatDetail.turns.map((turn) => (
+                    <div key={turn.id} className="space-y-3">
+                      {/* User Message */}
+                      {turn.user_message && (
+                        <div className="flex items-start gap-3 max-w-xl">
+                          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-400 text-xs font-semibold shadow-sm">
+                            {turn.user_message.startsWith("[Голосовое сообщение]:") ? (
+                              <Mic className="h-4 w-4 text-indigo-500" />
+                            ) : (
+                              <User className="h-4 w-4" />
                             )}
-                            <span>{formatDateTime(turn.created_at)}</span>
+                          </div>
+                          <div className="space-y-1">
+                            {turn.user_message.startsWith("[Голосовое сообщение]:") && (
+                              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/40 text-[10px] font-medium">
+                                <Mic className="h-2.5 w-2.5" />
+                                <span>Голосовое сообщение</span>
+                              </div>
+                            )}
+                            <div className="rounded-2xl rounded-tl-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 px-4 py-3 text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed shadow-sm">
+                              {turn.user_message.replace(/^\[Голосовое сообщение\]:\s*/, "")}
+                            </div>
+                            <div className="text-[10px] text-zinc-400 dark:text-zinc-500 pl-1">
+                              {formatDateTime(turn.created_at)}
+                            </div>
                           </div>
                         </div>
-                        <div className="flex-shrink-0 h-8 w-8 rounded-full bg-amber-500 text-zinc-950 flex items-center justify-center font-bold text-xs shadow-md shadow-amber-500/20">
-                          В
+                      )}
+
+                      {/* Assistant Response, Operator Message, or Paused / Pending Notification */}
+                      {turn.status === "pending_approval" ? (
+                        <div className="flex items-center justify-center py-2">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-800 dark:text-blue-400 border border-blue-500/20 text-[11px] font-medium">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            <span>Ответ сформирован и ожидает одобрения супервизором в Telegram</span>
+                          </span>
                         </div>
-                      </div>
-                    ) : null}
-                  </div>
-                )))}
+                      ) : turn.status === "paused_takeover" ? (
+                        <div className="flex items-center justify-center py-2">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-500/20 text-[11px]">
+                            <PauseCircle className="h-3 w-3" />
+                            <span>Сообщение принято, автоответ ИИ остановлен ручной паузой</span>
+                          </span>
+                        </div>
+                      ) : (turn.role === "operator" || turn.status === "operator_reply") ? (
+                        <div className="flex items-start justify-end gap-3 max-w-xl ml-auto">
+                          <div className="space-y-1 text-right">
+                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20 text-[10px] font-medium mb-1">
+                              <span>Менеджер</span>
+                            </div>
+                            <div className="rounded-2xl rounded-tr-sm bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/40 px-4 py-3 text-xs text-zinc-900 dark:text-zinc-100 text-left leading-relaxed shadow-sm">
+                              {turn.assistant_response}
+                            </div>
+                            <div className="text-[10px] text-zinc-400 dark:text-zinc-500 pr-1">
+                              {formatDateTime(turn.created_at)}
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-md shadow-indigo-600/20">
+                            М
+                          </div>
+                        </div>
+                      ) : turn.assistant_response ? (
+                        <div className="flex items-start justify-end gap-3 max-w-xl ml-auto">
+                          <div className="space-y-1 text-right">
+                            <div className="rounded-2xl rounded-tr-sm bg-amber-500/10 dark:bg-gradient-to-br dark:from-amber-500/10 dark:to-amber-600/10 border border-amber-500/20 px-4 py-3 text-xs text-zinc-900 dark:text-zinc-100 text-left leading-relaxed shadow-sm">
+                              {turn.assistant_response}
+                            </div>
+                            <div className="flex items-center justify-end gap-2 text-[10px] text-zinc-400 dark:text-zinc-500 pr-1">
+                              {turn.latency_ms && (
+                                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                  <Clock className="h-2.5 w-2.5" />
+                                  <span>{(turn.latency_ms / 1000).toFixed(1)} с</span>
+                                </span>
+                              )}
+                              <span>{formatDateTime(turn.created_at)}</span>
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-amber-500 text-zinc-950 flex items-center justify-center font-bold text-xs shadow-md shadow-amber-500/20">
+                            В
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                  )))}
+                </div>
+
+                {/* Operator Manual Response Input Bar */}
+                <form
+                  onSubmit={handleSendOperatorMessage}
+                  className="p-3 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/80 flex items-center gap-2"
+                >
+                  <input
+                    type="text"
+                    value={operatorInput}
+                    onChange={(e) => setOperatorInput(e.target.value)}
+                    placeholder="Написать клиенту от имени менеджера (ставит ИИ на паузу)..."
+                    disabled={sendingOperatorMsg}
+                    className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!operatorInput.trim() || sendingOperatorMsg}
+                    className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-zinc-950 disabled:opacity-50 transition-all flex items-center gap-1.5 shadow-sm shadow-amber-500/20"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    <span>{sendingOperatorMsg ? "Отправка..." : "Ответить"}</span>
+                  </button>
+                </form>
               </div>
 
               {/* BANT Card Sidebar */}

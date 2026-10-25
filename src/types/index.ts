@@ -77,11 +77,16 @@ export interface TeamMembersResponse {
   members: TeamMember[];
 }
 
+export type ChannelWorkMode = "stop" | "hitl" | "auto";
+
 export interface InstagramStatus {
   ok: boolean;
   tenant_id: string;
   configured: boolean;
   enabled: boolean;
+  mode?: ChannelWorkMode;
+  require_approval?: boolean;
+  supervisor_chat_id?: string;
   has_token: boolean;
   masked_token?: string;
   user_id?: number;
@@ -90,6 +95,37 @@ export interface InstagramStatus {
   reply_to_comments?: boolean;
   webhook_url: string;
   webhook_id?: number;
+}
+
+export interface TeamBotLogEvent {
+  id: string;
+  tenant_id: string;
+  telegram_user_id: string;
+  telegram_username?: string | null;
+  display_name?: string | null;
+  event_type: "dialog" | "button_click" | "system_alert" | "command" | "guest_attempt" | string;
+  direction: "inbound" | "outbound" | "both" | string;
+  user_message?: string | null;
+  bot_response?: string | null;
+  event_payload?: Record<string, any> | null;
+  llm_provider?: string | null;
+  llm_model?: string | null;
+  prompt_tokens?: number | null;
+  completion_tokens?: number | null;
+  estimated_cost_rub?: number | null;
+  total_latency_ms?: number | null;
+  tools_executed?: string[] | any;
+  created_at: string;
+}
+
+export interface TeamBotConversation {
+  telegram_user_id: string;
+  display_name: string;
+  role?: string;
+  total_events: number;
+  last_event_time: string;
+  last_event_type: string;
+  last_message: string;
 }
 
 export interface OverviewData {
@@ -136,6 +172,7 @@ export interface ChatTurn {
   status: string;
   latency_ms: number | null;
   tokens: number;
+  role?: "user" | "assistant" | "operator" | "system";
 }
 
 export interface ChatDetail {
