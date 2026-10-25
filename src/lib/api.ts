@@ -166,8 +166,14 @@ export const api = {
   },
 
   async resumeChat(sessionId: string, triggerReply: boolean = false) {
-    return request<{ ok: boolean; session_id: string; is_paused: boolean; message: string }>(
-      `/chats/${encodeURIComponent(sessionId)}/resume`,
+    return request<{
+      ok: boolean;
+      session_id: string;
+      is_paused: boolean;
+      triggered_reply?: boolean;
+      message: string;
+    }>(
+      `/chats/${encodeURIComponent(sessionId)}/resume?trigger_reply=${triggerReply}`,
       {
         method: "POST",
         body: JSON.stringify({ trigger_reply: triggerReply }),

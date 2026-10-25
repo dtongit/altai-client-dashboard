@@ -148,6 +148,10 @@ export default function ChatsPage() {
             const fresh = await api.getChatDetail(chatDetail.session_id);
             if (fresh.ok) setChatDetail(fresh);
           }, 1500);
+          setTimeout(async () => {
+            const fresh = await api.getChatDetail(chatDetail.session_id);
+            if (fresh.ok) setChatDetail(fresh);
+          }, 4000);
         }
       }
     } catch (e) {
