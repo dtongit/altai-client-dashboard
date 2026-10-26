@@ -45,7 +45,12 @@ export function Navbar() {
               <img
                 src="/brand_logo.webp"
                 alt="ALTAI Optima"
-                className="h-6 sm:h-7 w-auto object-contain dark:brightness-110"
+                className="h-6 sm:h-7 w-auto object-contain dark:hidden"
+              />
+              <img
+                src="/brand_logo_dark.webp"
+                alt="ALTAI Optima"
+                className="h-6 sm:h-7 w-auto object-contain hidden dark:block"
               />
             </Link>
 

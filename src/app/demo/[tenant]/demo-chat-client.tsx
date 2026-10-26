@@ -195,7 +195,12 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
               <img
                 src="/brand_logo.webp"
                 alt="ALTAI Optima"
-                className="h-6 w-auto object-contain dark:brightness-110"
+                className="h-6 w-auto object-contain dark:hidden"
+              />
+              <img
+                src="/brand_logo_dark.webp"
+                alt="ALTAI Optima"
+                className="h-6 w-auto object-contain hidden dark:block"
               />
             </Link>
             <span className="text-zinc-300 dark:text-zinc-700 font-light select-none">/</span>
