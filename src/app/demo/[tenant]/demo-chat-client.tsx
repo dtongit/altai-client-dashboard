@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getTenantDisplayName } from "@/lib/tenants";
+import { FormattedMessageText } from "@/components/formatted-message-text";
 import {
   Send,
   RotateCcw,
@@ -272,7 +273,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
                         : "bg-amber-500 text-white rounded-tr-sm shadow-sm"
                     }`}
                   >
-                    <div className="whitespace-pre-wrap">{m.text}</div>
+                    <FormattedMessageText text={m.text} isAssistant={isAssistant} />
                     {m.escalation && (
                       <div className="mt-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/15 p-2.5 sm:p-3 text-xs space-y-1.5 transition-all text-left">
                         <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">

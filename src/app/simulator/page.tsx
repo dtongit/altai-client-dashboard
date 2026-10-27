@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { SimulatorMessage, SimulatorQualification } from "@/types";
+import { FormattedMessageText } from "@/components/formatted-message-text";
 import {
   Sparkles,
   User,
@@ -260,7 +261,7 @@ export default function SimulatorPage() {
                         : "bg-zinc-100/90 dark:bg-zinc-950/90 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-tl-sm"
                     }`}
                   >
-                    <div className="whitespace-pre-wrap">{msg.text}</div>
+                    <FormattedMessageText text={msg.text} isAssistant={!isUser} />
 
                     {/* Meta Footer */}
                     <div
