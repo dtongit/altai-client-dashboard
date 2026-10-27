@@ -571,6 +571,11 @@ export const api = {
     waited_seconds: number;
     status: string;
     error?: string | null;
+    escalation?: {
+      escalated: boolean;
+      reason: string;
+      alert_preview?: string;
+    } | null;
   }> {
     const res = await fetch(`${DEMO_API_BASE_URL}/chat`, {
       method: "POST",

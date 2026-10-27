@@ -8,9 +8,9 @@ import {
   Send,
   RotateCcw,
   ExternalLink,
-  LogIn,
   Sparkles,
   Bot,
+  BellRing,
   User as UserIcon,
   Clock,
   CheckCircle2,
@@ -21,6 +21,11 @@ interface Message {
   sender: "user" | "assistant";
   text: string;
   timestamp: string;
+  escalation?: {
+    escalated: boolean;
+    reason: string;
+    alert_preview?: string;
+  } | null;
 }
 
 const DEFAULT_SUGGESTIONS: Record<string, string[]> = {
@@ -159,6 +164,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
         sender: "assistant",
         text: res.assistant_response || "Спасибо за обращение! Менеджер свяжется с вами.",
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        escalation: res.escalation,
       };
 
       setMessages((prev) => [...prev, botMsg]);
@@ -224,18 +230,10 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
               href="https://optima.altaiweb.online"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
             >
-              <span>Наш сайт</span>
+              <span>О платформе</span>
               <ExternalLink className="w-3.5 h-3.5 opacity-60" />
-            </Link>
-
-            <Link
-              href="https://my.altaiweb.online"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-colors"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Кабинет клиента</span>
             </Link>
 
             <ThemeToggle />
@@ -309,6 +307,23 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
                     }`}
                   >
                     <div className="whitespace-pre-wrap">{m.text}</div>
+                    {m.escalation && (
+                      <div className="mt-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/15 p-2.5 sm:p-3 text-xs space-y-1.5 transition-all text-left">
+                        <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">
+                          <BellRing className="w-3.5 h-3.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                          <span>Симуляция эскалации менеджеру (Human-in-the-Loop)</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-600 dark:text-zinc-300 leading-snug">
+                          В боевом мессенджере диалог ставится на паузу, а в Telegram-бот команды отправляется карточка:
+                        </p>
+                        <div className="rounded-lg bg-white/90 dark:bg-zinc-950/80 border border-amber-500/25 px-2.5 py-1.5 font-mono text-[11px] text-zinc-800 dark:text-zinc-200 whitespace-pre-line leading-relaxed shadow-xs">
+                          {m.escalation.alert_preview || `🚨 Срочный вопрос от клиента!\n💬 Суть: ${m.escalation.reason}`}
+                        </div>
+                        <p className="text-[10px] text-amber-700/90 dark:text-amber-400/90 italic">
+                          💡 На демо-стенде диалог не блокируется — вы можете продолжить общение с Верой.
+                        </p>
+                      </div>
+                    )}
                     <div
                       className={`text-[10px] mt-1 text-right select-none ${
                         isAssistant
