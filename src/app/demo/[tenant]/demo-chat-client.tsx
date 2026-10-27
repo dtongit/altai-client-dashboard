@@ -8,7 +8,6 @@ import { getTenantDisplayName } from "@/lib/tenants";
 import {
   Send,
   RotateCcw,
-  Sparkles,
   Bot,
   BellRing,
   User as UserIcon,
@@ -28,46 +27,6 @@ interface Message {
   } | null;
 }
 
-const DEFAULT_SUGGESTIONS: Record<string, string[]> = {
-  haier: [
-    "Как работает программа рассрочки 0% и какие банки ее предоставляют?",
-    "Как оформить бесплатную доставку и сертифицированный монтаж техники?",
-    "Какие привилегии дает участие в клубе Haier Premium и приложение EVO?",
-    "Чем отличаются дисконт-центры в «КухниПарк» и Озерецком от брендшопов?",
-  ],
-
-  lada_digit: [
-    "Чем экосистема LADA Цифра полезна поставщикам и магазинам автозапчастей?",
-    "Как устроен B2B-маркетплейс и интеграция с брендом LECAR?",
-    "Как подключить автосервис (СТО) к единой цифровой системе?",
-    "Как начать сотрудничество с LADA Цифра и какие условия для партнеров?",
-  ],
-
-  mediasafe: [
-    "Чем MediaSafe отличается от Яндекс Метрики и Google Analytics?",
-    "Как работает Pre-Bid API и за сколько миллисекунд принимается решение?",
-    "Замедлит ли ваш счетчик скорость загрузки страниц нашего сайта?",
-    "Сколько стоит начать и что входит в бесплатный тариф Start?",
-  ],
-  kostis: [
-    "Какие фуршетные сеты посоветуете на 15–20 человек?",
-    "Какая минимальная сумма и зоны доставки?",
-    "Какие сейчас действуют промокоды и акции?",
-    "Работаете ли вы с юрлицами по безналичному расчету?",
-  ],
-  tallora: [
-    "Какие модели женской обуви есть 42 размера?",
-    "Как осуществляется доставка с примеркой по Москве?",
-    "Подойдет ли модель Aida на высокий подъем?",
-  ],
-};
-
-const FALLBACK_SUGGESTIONS = [
-  "Расскажите подробнее о вашей продукции и ценах",
-  "Какие условия доставки и оплаты?",
-  "Есть ли скидки на первый заказ?",
-];
-
 export default function DemoChatClient({ initialTenantId }: { initialTenantId: string }) {
   const tenantId = initialTenantId || "kostis";
   const [businessName, setBusinessName] = useState<string>("Загрузка...");
@@ -75,15 +34,32 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>("");
-  const [suggestions, setSuggestions] = useState<string[]>(
-    DEFAULT_SUGGESTIONS[tenantId] || FALLBACK_SUGGESTIONS
-  );
 
   const displayTenant = getTenantDisplayName(tenantId, businessName);
 
   useEffect(() => {
     document.title = `Демо ALTAI Optima + ${displayTenant}`;
   }, [displayTenant]);
+
+  // Lock document body scroll on mobile iOS/Android to guarantee zero outer page bouncing
+  useEffect(() => {
+    const origOverflow = document.body.style.overflow;
+    const origPosition = document.body.style.position;
+    const origWidth = document.body.style.width;
+    const origHeight = document.body.style.height;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+    document.body.style.height = "100%";
+
+    return () => {
+      document.body.style.overflow = origOverflow;
+      document.body.style.position = origPosition;
+      document.body.style.width = origWidth;
+      document.body.style.height = origHeight;
+    };
+  }, []);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -119,12 +95,6 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
           setBusinessName(config.business_name);
         } else {
           setBusinessName(tenantId === "kostis" ? "ООО «КОСТИС»" : tenantId);
-        }
-
-        if (DEFAULT_SUGGESTIONS[tenantId]) {
-          setSuggestions(DEFAULT_SUGGESTIONS[tenantId]);
-        } else if (config?.suggested_questions?.length) {
-          setSuggestions(config.suggested_questions);
         }
       } catch (err) {
         console.warn("Could not fetch remote demo config, using offline fallback:", err);
@@ -276,7 +246,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
           <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 overscroll-contain">
             {messages.length === 0 && !loading && (
               <div className="h-full min-h-[180px] flex flex-col items-center justify-center text-center px-4 text-zinc-400 dark:text-zinc-500 select-none">
-                <p className="text-sm">Задайте вопрос или выберите тему ниже</p>
+                <p className="text-sm font-medium">Начните диалог с Верой</p>
               </div>
             )}
             {messages.map((m) => {
@@ -358,30 +328,8 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Prompt chips (suggestions) */}
-          {suggestions.length > 0 && messages.length <= 3 && (
-            <div className="flex-none px-3 sm:px-6 py-1.5 border-t border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/40 dark:bg-zinc-900/40">
-              <div className="text-[10px] sm:text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mb-1 flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-amber-500" />
-                <span>Быстрые вопросы:</span>
-              </div>
-              <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar sm:flex-wrap">
-                {suggestions.map((q, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleSend(q)}
-                    disabled={loading}
-                    className="text-xs px-2.5 py-1 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:border-amber-500 hover:text-amber-600 dark:hover:text-amber-400 transition-colors shrink-0 sm:shrink whitespace-nowrap sm:whitespace-normal text-left"
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Input Box */}
-          <div className="flex-none p-2.5 sm:p-4 border-t border-zinc-100 dark:border-zinc-800/80 bg-white dark:bg-zinc-900">
+          <div className="flex-none p-2.5 sm:p-4 border-t border-zinc-100 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
