@@ -29,9 +29,24 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { tenant } = await params;
   const name = getTenantDisplayName(tenant);
+  const title = `ALTAI Optima + ${name} (демо)`;
+  const description = `Вера уже ждёт вас в чате, чтобы рассказать о компании ${name}`;
+
   return {
-    title: `Демо ALTAI Optima + ${name}`,
-    description: `Интерактивный демонстрационный стенд автономного ИИ-сотрудника Веры для компании ${name} от ALTAI Optima`,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      url: `/demo/${tenant}/`,
+      siteName: "ALTAI Optima",
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+    },
   };
 }
 

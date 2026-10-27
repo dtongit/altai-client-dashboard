@@ -16,8 +16,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://my.altaiweb.online"),
   title: "Altai Optima — Кабинет клиента",
   description: "Панель мониторинга и управления автономным ИИ-продавцом Верой",
+  openGraph: {
+    title: "Altai Optima — Кабинет клиента",
+    description: "Панель мониторинга и управления автономным ИИ-продавцом Верой",
+    url: "https://my.altaiweb.online",
+    siteName: "ALTAI Optima",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
