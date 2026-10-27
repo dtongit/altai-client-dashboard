@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { getTenantDisplayName } from "@/lib/tenants";
 import {
   Send,
   RotateCcw,
@@ -78,6 +79,12 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
   const [suggestions, setSuggestions] = useState<string[]>(
     DEFAULT_SUGGESTIONS[tenantId] || FALLBACK_SUGGESTIONS
   );
+
+  const displayTenant = getTenantDisplayName(tenantId, businessName);
+
+  useEffect(() => {
+    document.title = `Демо ALTAI Optima + ${displayTenant}`;
+  }, [displayTenant]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -412,16 +419,16 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
                 <span className="hidden sm:inline sm:ml-2">Отправить</span>
               </button>
             </form>
-            <div className="mt-2 text-center">
-              <span className="text-[11px] text-zinc-400 dark:text-zinc-500 select-none">
-                Автономный ИИ-сотрудник на платформе{" "}
+            <div className="mt-2 text-center px-2">
+              <span className="text-[11px] text-zinc-400 dark:text-zinc-500 leading-tight">
+                Это демо-версия Веры, созданная на основе открытых материалов компании {displayTenant}. Для точных ответов во всех сценариях нужна{" "}
                 <Link
                   href="https://optima.altaiweb.online"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-amber-600 dark:text-amber-400 hover:underline"
                 >
-                  ALTAI Optima
+                  полноценная интеграция от ALTAI Optima
                 </Link>
               </span>
             </div>

@@ -1,5 +1,7 @@
 import React from "react";
+import type { Metadata } from "next";
 import DemoChatClient from "./demo-chat-client";
+import { getTenantDisplayName } from "@/lib/tenants";
 
 export function generateStaticParams() {
   return [
@@ -23,6 +25,15 @@ export function generateStaticParams() {
 type Props = {
   params: Promise<{ tenant: string }>;
 };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { tenant } = await params;
+  const name = getTenantDisplayName(tenant);
+  return {
+    title: `Демо ALTAI Optima + ${name}`,
+    description: `Интерактивный демонстрационный стенд автономного ИИ-сотрудника Веры для компании ${name} от ALTAI Optima`,
+  };
+}
 
 export default async function Page({ params }: Props) {
   const { tenant } = await params;
