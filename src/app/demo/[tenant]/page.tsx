@@ -19,6 +19,7 @@ export function generateStaticParams() {
     { tenant: "mediasafe" },
     { tenant: "lada_digit" },
     { tenant: "haier" },
+    { tenant: "neometria" },
   ];
 }
 

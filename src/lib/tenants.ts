@@ -7,6 +7,7 @@ export const TENANT_DISPLAY_NAMES: Record<string, string> = {
   client_tallora: "Tallora",
   foxford: "Фоксфорд",
   gk_fsk: "ГК ФСК",
+  neometria: "Неометрия",
   medicinskiy_tsentr_nauka: "Медицинский центр «Наука»",
   "demo-meditsinskiy-tsentr-nauka": "Медицинский центр «Наука»",
   altai_optima: "ALTAI Optima",
