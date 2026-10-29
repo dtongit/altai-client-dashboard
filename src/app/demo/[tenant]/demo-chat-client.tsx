@@ -226,13 +226,13 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
 
   return (
     <div className="relative min-h-[100dvh] lg:h-[100dvh] lg:max-h-[100dvh] w-full flex flex-col bg-[#F5F2EE] text-[#1C1B1A] font-['Manrope',system-ui,sans-serif] overflow-y-auto lg:overflow-hidden">
-      {/* Giant & Watermark from template */}
+      {/* Giant Watermark from template */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute right-[-40px] sm:right-[-60px] bottom-[-160px] sm:bottom-[-220px] text-[480px] sm:text-[700px] lg:text-[900px] font-extrabold leading-none select-none z-0"
-        style={{ color: brand.primaryColor, opacity: 0.05 }}
+        className="pointer-events-none absolute right-[-40px] sm:right-[-60px] bottom-[-160px] sm:bottom-[-220px] text-[360px] sm:text-[500px] lg:text-[700px] font-extrabold leading-none select-none z-0 tracking-tighter"
+        style={{ color: brand.primaryColor, opacity: 0.04 }}
       >
-        &amp;
+        {brand.watermarkText || "&"}
       </div>
 
       {/* Header */}

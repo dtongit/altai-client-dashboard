@@ -78,8 +78,8 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
     suggestedQuestions: [
       "В чем уникальность проекта?",
       "Партнёрство с Hilton и доходность",
-      "Условия беспроцентной рассрочки",
-      "Как получить ВНЖ Грузии?",
+      "Финмодель Cushman & Wakefield",
+      "Форматы резиденций и цены",
     ],
   },
 };
