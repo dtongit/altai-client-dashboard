@@ -32,6 +32,7 @@ export interface TenantBrandConfig {
   hasPattern: boolean;
   badgeText?: string;
   placeholderText?: string;
+  welcomeMessage?: string;
   suggestedQuestions?: string[];
 }
 
@@ -50,6 +51,8 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
     hasPattern: true,
     badgeText: "möbel & zeit",
     placeholderText: "Спросите о моделях, тканях, ценах или доставке…",
+    welcomeMessage:
+      "Добрый день! Я Вера, консультант möbel&zeit. Рада приветствовать вас! Подбираете диван в гостиную, мастер-спальню или домашний кинотеатр? Чем могу помочь?",
     suggestedQuestions: [
       "Какие есть механизмы?",
       "Сроки и доставка",
@@ -70,6 +73,8 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
     hasPattern: true,
     badgeText: "Lagoon Resort",
     placeholderText: "Спросите о резиденциях, ценах, рассрочке или ВНЖ…",
+    welcomeMessage:
+      "Здравствуйте! Я Вера, инвестиционный консультант Lagoon Resort. Рада приветствовать вас! Рассматриваете резиденции для высокого арендного дохода с Hilton, личного отдыха или получения ВНЖ Грузии?",
     suggestedQuestions: [
       "В чем уникальность проекта?",
       "Партнёрство с Hilton и доходность",
@@ -121,6 +126,7 @@ export function getTenantBrand(
       hasPattern: Boolean(custom.hasPattern),
       badgeText: custom.badgeText,
       placeholderText: custom.placeholderText || "Задайте любой вопрос по продукции, ценам или услугам...",
+      welcomeMessage: custom.welcomeMessage,
       suggestedQuestions: custom.suggestedQuestions,
     };
   }

@@ -385,7 +385,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
 
           {/* Footer Disclaimer */}
           <p className="mt-auto pt-4 border-t border-[#E4DED6] text-xs text-[#6B645C] leading-relaxed">
-            Это демо-версия Веры на основе открытых материалов möbel&amp;zeit. Для точных ответов во всех сценариях нужна полноценная интеграция от{" "}
+            Это демо-версия Веры на основе открытых материалов {displayTenant}. Для точных ответов во всех сценариях нужна полноценная интеграция от{" "}
             <Link
               href="https://optima.altaiweb.online"
               target="_blank"
@@ -422,7 +422,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                   Вера
                 </span>
                 <span className="text-xs sm:text-sm text-[#6B645C] truncate">
-                  консультант möbel&amp;zeit · {loading ? "печатает…" : "в сети"}
+                  консультант {displayTenant} · {loading ? "печатает…" : "в сети"}
                 </span>
               </div>
             </div>
@@ -459,7 +459,8 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                     className="w-8 h-8 rounded-full object-cover shrink-0"
                   />
                   <div className="bg-white border border-[#EDE7E0] p-3.5 sm:p-4 rounded-[20px_20px_20px_6px] text-sm sm:text-base leading-relaxed text-[#1C1B1A] shadow-2xs">
-                    Добрый день! Я Вера, консультант möbel&amp;zeit. Рада приветствовать вас! Подбираете диван в гостиную, мастер-спальню или домашний кинотеатр? Чем могу помочь?
+                    {brand.welcomeMessage ||
+                      `Здравствуйте! Я Вера, консультант ${displayTenant}. Чем могу помочь вам сегодня?`}
                   </div>
                 </div>
               </div>
