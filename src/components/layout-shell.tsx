@@ -46,7 +46,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
       <div
         className={
           isDemoPage
-            ? "fixed inset-0 overflow-hidden flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100"
+            ? "min-h-screen w-full flex flex-col bg-[#F5F2EE] text-[#1C1B1A]"
             : "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors"
         }
       >
