@@ -20,6 +20,7 @@ export function generateStaticParams() {
     { tenant: "lada_digit" },
     { tenant: "haier" },
     { tenant: "neometria" },
+    { tenant: "mobel_zeit" },
   ];
 }
 
