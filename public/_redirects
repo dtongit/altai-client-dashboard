@@ -1,0 +1,3 @@
+# Cloudflare Pages Rewrites
+# Any un-rendered /demo/<tenant> URL falls back to /demo/index.html with status 200 (SPA mode)
+/demo/*  /demo/index.html  200

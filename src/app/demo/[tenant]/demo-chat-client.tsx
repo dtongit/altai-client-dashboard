@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { api } from "@/lib/api";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getTenantDisplayName } from "@/lib/tenants";
@@ -28,13 +29,46 @@ interface Message {
   } | null;
 }
 
-export default function DemoChatClient({ initialTenantId }: { initialTenantId: string }) {
-  const tenantId = initialTenantId || "kostis";
+export default function DemoChatClient({ initialTenantId }: { initialTenantId?: string }) {
+  const pathname = usePathname();
+
+  const detectedTenant = (() => {
+    if (initialTenantId && initialTenantId.trim()) {
+      return initialTenantId.trim();
+    }
+    if (pathname) {
+      const match = pathname.match(/\/demo\/([^/?#]+)/);
+      if (match && match[1] && match[1] !== "demo") {
+        return match[1];
+      }
+    }
+    return "kostis";
+  })();
+
+  const [tenantId, setTenantId] = useState<string>(detectedTenant);
   const [businessName, setBusinessName] = useState<string>("Загрузка...");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const q = sp.get("tenant");
+      if (q && q.trim() && q.trim() !== tenantId) {
+        setTenantId(q.trim());
+        return;
+      }
+    }
+    if (detectedTenant && detectedTenant !== tenantId) {
+      setTenantId(detectedTenant);
+    }
+  }, [detectedTenant, pathname]);
+
+  useEffect(() => {
+    setMessages([]);
+  }, [tenantId]);
 
   const displayTenant = getTenantDisplayName(tenantId, businessName);
 
@@ -343,7 +377,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId: s
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Задайте любой вопрос по меню, ценам или доставке..."
+                placeholder="Задайте любой вопрос по продукции, ценам или услугам..."
                 disabled={loading}
                 className="flex-1 px-3.5 sm:px-4 py-2.5 text-[16px] sm:text-base rounded-xl bg-zinc-100/80 dark:bg-zinc-800/80 border border-transparent focus:border-amber-500 focus:bg-white dark:focus:bg-zinc-900 focus:outline-none transition-all placeholder:text-zinc-400"
               />
