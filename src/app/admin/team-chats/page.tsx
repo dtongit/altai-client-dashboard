@@ -40,10 +40,20 @@ export default function AdminTeamChatsPage() {
     setLoadingList(true);
     try {
       const res = await api.listTeamChats();
-      if (res.conversations) {
-        setConversations(res.conversations);
-        if (!selectedTgId && res.conversations.length > 0) {
-          setSelectedTgId(res.conversations[0].telegram_user_id);
+      const list = res.conversations || (res as any).chats || [];
+      if (Array.isArray(list)) {
+        const normalized: TeamBotConversation[] = list.map((c: any) => ({
+          telegram_user_id: c.telegram_user_id,
+          display_name: c.display_name || c.telegram_username || "Сотрудник",
+          role: c.role,
+          total_events: c.total_events ?? c.events_count ?? 0,
+          last_event_time: c.last_event_time || c.last_created_at || "",
+          last_event_type: c.last_event_type || "dialog",
+          last_message: c.last_message || "",
+        }));
+        setConversations(normalized);
+        if (!selectedTgId && normalized.length > 0) {
+          setSelectedTgId(normalized[0].telegram_user_id);
         }
       }
     } catch (e) {

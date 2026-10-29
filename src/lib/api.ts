@@ -595,7 +595,8 @@ export const api = {
 
   async listTeamChats(tenantId?: string): Promise<{
     ok: boolean;
-    conversations: TeamBotConversation[];
+    conversations?: TeamBotConversation[];
+    chats?: TeamBotConversation[];
   }> {
     const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
     return request(`/team-chats${qs}`, {}, ADMIN_API_BASE_URL);
