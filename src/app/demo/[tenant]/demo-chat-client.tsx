@@ -225,7 +225,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
   };
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col bg-[#F5F2EE] text-[#1C1B1A] font-['Manrope',system-ui,sans-serif]">
+    <div className="relative min-h-[100dvh] lg:h-[100dvh] lg:max-h-[100dvh] w-full flex flex-col bg-[#F5F2EE] text-[#1C1B1A] font-['Manrope',system-ui,sans-serif] overflow-y-auto lg:overflow-hidden">
       {/* Giant & Watermark from template */}
       <div
         aria-hidden="true"
@@ -236,12 +236,12 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
       </div>
 
       {/* Header */}
-      <header className="relative flex-none z-20 w-full h-[76px] sm:h-[84px] px-6 sm:px-10 lg:px-16 border-b border-[#E4DED6] bg-[#F5F2EE] flex items-center justify-between">
+      <header className="relative flex-none z-20 w-full h-[60px] sm:h-[68px] px-6 sm:px-10 lg:px-12 border-b border-[#E4DED6] bg-[#F5F2EE] flex items-center justify-between">
         <div className="flex items-center gap-4 sm:gap-6 min-w-0">
           <img
             src={brand.logoShowroomUrl || brand.logoBadgeUrl || "/mobel_zeit_showroom.png"}
             alt={displayTenant}
-            className="h-8 sm:h-9 w-auto object-contain shrink-0 block"
+            className="h-7 sm:h-8 w-auto object-contain shrink-0 block"
           />
         </div>
 
@@ -261,130 +261,122 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
       </header>
 
       {/* Main Two-Column Layout */}
-      <main className="relative z-10 flex-1 max-w-[1440px] mx-auto w-full flex flex-col lg:flex-row gap-8 lg:gap-14 px-6 sm:px-10 lg:px-16 py-6 sm:py-8 lg:py-11 min-h-0">
+      <main className="relative z-10 flex-1 min-h-0 max-w-[1440px] mx-auto w-full flex flex-col lg:flex-row gap-6 lg:gap-10 px-6 sm:px-10 lg:px-12 py-3 sm:py-4 lg:py-5">
         {/* Left Column: Business & Integrations Info */}
-        <section className="w-full lg:w-[540px] shrink-0 flex flex-col gap-5 sm:gap-6">
-          {/* Badges */}
-          <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#E4DED6] text-xs sm:text-[13px] font-bold text-[#1C1B1A] shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-[#1F9D55]" />
-              Ответ за 15 секунд
-            </span>
-            <span className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-white border border-[#E4DED6] text-xs sm:text-[13px] font-bold text-[#1C1B1A] shadow-2xs">
-              24/7 без выходных
-            </span>
-            <span className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-white border border-[#E4DED6] text-xs sm:text-[13px] font-bold text-[#1C1B1A] shadow-2xs">
-              Понимает голосовые
-            </span>
-          </div>
+        <section className="w-full lg:w-[480px] xl:w-[520px] shrink-0 flex flex-col justify-between h-full gap-4 lg:gap-5 py-1">
+          {/* Top text block */}
+          <div className="flex flex-col gap-3 sm:gap-3.5">
+            {/* Heading */}
+            <h1 className="text-2xl sm:text-3xl lg:text-[42px] xl:text-[46px] font-extrabold leading-[1.08] tracking-[-0.02em] text-[#1C1B1A]">
+              Вера уже изучила{" "}
+              <span style={{ color: brand.primaryColor }}>вашу компанию</span>
+            </h1>
 
-          {/* Heading */}
-          <h1 className="text-3xl sm:text-4xl lg:text-[50px] xl:text-[54px] font-extrabold leading-[1.04] tracking-[-0.02em] text-[#1C1B1A]">
-            Вера уже изучила{" "}
-            <span style={{ color: brand.primaryColor }}>вашу компанию</span>
-          </h1>
+            {/* Description */}
+            <p className="text-xs sm:text-sm lg:text-[15px] leading-[1.5] text-[#3B3631]">
+              Ваш новый лучший сотрудник. Обаяние чуткого эксперта, тонкий ум и железная компьютерная дисциплина. Вера помнит каждого клиента, ведёт диалог по стандартам флагманского салона и бережно доводит каждого до реальной покупки в CRM.
+            </p>
 
-          {/* Description */}
-          <p className="text-sm sm:text-base lg:text-[18px] leading-[1.55] text-[#3B3631]">
-            Ваш новый любимый сотрудник. Обаяние живого эксперта, тонкий юмор уровня Довлатова и железная компьютерная дисциплина. Вера помнит каждого клиента, ведёт диалог как лучший менеджер салона и доводит его до реальной сделки в CRM с сервисом пятизвёздочного отеля.
-          </p>
-
-          {/* Cursive Handwriting Note */}
-          <p
-            className="font-['Caveat',cursive] text-2xl sm:text-[26px] leading-[1.1] -mt-1 sm:-mt-2"
-            style={{ color: brand.primaryColor }}
-          >
-            Напишите ей как покупатель, она уже ждёт в чате
-          </p>
-
-          {/* Messengers Block */}
-          <div className="space-y-2.5 pt-1">
-            <span className="text-[12px] font-bold tracking-[0.1em] uppercase text-[#8A8178] block">
-              Живёт там, где пишут ваши клиенты
-            </span>
-            <div className="grid grid-cols-2 gap-2 max-w-[440px]">
-              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white border border-[#E4DED6] text-xs sm:text-sm font-bold text-[#1C1B1A] shadow-2xs">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#25D366] shrink-0" />
-                <span>WhatsApp</span>
-              </div>
-              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white border border-[#E4DED6] text-xs sm:text-sm font-bold text-[#1C1B1A] shadow-2xs">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#229ED9] shrink-0" />
-                <span>Telegram</span>
-              </div>
-              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white border border-[#E4DED6] text-xs sm:text-sm font-bold text-[#1C1B1A] shadow-2xs">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#E1306C] shrink-0" />
-                <span>Instagram</span>
-              </div>
-              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white border border-[#E4DED6] text-xs sm:text-sm font-bold text-[#1C1B1A] shadow-2xs">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#00AAFF] shrink-0" />
-                <span>Авито Чат</span>
-              </div>
-              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white border border-[#E4DED6] text-xs sm:text-sm font-bold text-[#1C1B1A] shadow-2xs">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#7B3FF2] shrink-0" />
-                <span>MAX</span>
-              </div>
-              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white border border-[#E4DED6] text-xs sm:text-sm font-bold text-[#1C1B1A] shadow-2xs">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#0077FF] shrink-0" />
-                <span>VK</span>
-              </div>
-            </div>
-            <p className="text-xs sm:text-[13px] leading-snug text-[#4E4842] mt-1">
-              Вера подхватывает обращения в любых мессенджерах одновременно, отправляя в CRM готовые заказы
+            {/* Cursive Handwriting Note */}
+            <p
+              className="font-['Caveat',cursive] text-xl sm:text-[23px] leading-tight"
+              style={{ color: brand.primaryColor }}
+            >
+              Напишите ей как покупатель, она уже ждёт в чате
             </p>
           </div>
 
-          {/* CRM Block */}
-          <div className="space-y-2 pt-1">
-            <span className="text-[12px] font-bold tracking-[0.1em] uppercase text-[#8A8178] block">
-              Сама ведёт базу в любой CRM
-            </span>
-            <div className="flex flex-wrap items-center gap-3.5 sm:gap-4.5 py-1">
-              <div className="flex items-center gap-2">
-                <img
-                  src="/logos/amocrm_logo.webp"
-                  alt="amoCRM"
-                  className="h-5 sm:h-6 w-auto object-contain"
-                />
-                <span className="text-xs sm:text-sm font-bold text-[#1C1B1A]">amoCRM</span>
+          {/* Channels & Integrations */}
+          <div className="flex flex-col gap-3.5 sm:gap-4">
+            {/* Messengers Block - clean unboxed list */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
+                Живёт там, где пишут ваши клиенты
+              </span>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs sm:text-[13px] font-bold text-[#1C1B1A]">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#25D366] shrink-0" />
+                  <span>WhatsApp</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#229ED9] shrink-0" />
+                  <span>Telegram</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#E1306C] shrink-0" />
+                  <span>Instagram</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#00AAFF] shrink-0" />
+                  <span>Авито</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#7B3FF2] shrink-0" />
+                  <span>MAX</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#0077FF] shrink-0" />
+                  <span>VK</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <img
-                  src="/logos/bitrix24_logo.webp"
-                  alt="Битрикс24"
-                  className="h-5 sm:h-6 w-auto object-contain"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <img
-                  src="/logos/1c_logo.webp"
-                  alt="1С"
-                  className="h-5 sm:h-6 w-auto object-contain"
-                />
-                <span className="text-xs sm:text-sm font-bold text-[#1C1B1A]">1С</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <img
-                  src="/logos/moysklad_logo.svg"
-                  alt="МойСклад"
-                  className="h-5 sm:h-6 w-auto object-contain"
-                />
-                <span className="text-xs sm:text-sm font-bold text-[#1C1B1A]">МойСклад</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <svg className="h-5 sm:h-6 w-auto aspect-square shrink-0" viewBox="0 0 32 32" fill="none">
-                  <rect x="2" y="4" width="28" height="24" rx="4" fill="#107C41" />
-                  <rect x="18" y="9" width="9" height="14" fill="#185C37" opacity="0.3" />
-                  <path d="M18 9h9v4h-9V9zm0 5h9v4h-9v-4zm0 5h9v4h-9v-4z" fill="#fff" opacity="0.25" />
-                  <rect x="4" y="7" width="13" height="18" rx="2" fill="#107C41" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.25))" />
-                  <path d="M7.8 11.5l2.2 3.5 2.2-3.5h2.3l-3.3 4.5 3.5 4.5h-2.3l-2.4-3.6-2.4 3.6H5.5l3.5-4.5-3.3-4.5h2.1z" fill="#fff" />
-                </svg>
-                <span className="text-xs sm:text-sm font-bold text-[#1C1B1A]">Excel</span>
+              <p className="text-[11px] sm:text-xs leading-snug text-[#6B645C]">
+                Вера мгновенно подхватывает обращения в любых мессенджерах и передаёт в CRM готовые заказы
+              </p>
+            </div>
+
+            {/* CRM Block */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
+                Сама ведёт базу в любой CRM
+              </span>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <img
+                    src="/logos/amocrm_logo.webp"
+                    alt="amoCRM"
+                    className="h-5 w-auto object-contain"
+                  />
+                  <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">amoCRM</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <img
+                    src="/logos/bitrix24_logo.webp"
+                    alt="Битрикс24"
+                    className="h-5 w-auto object-contain"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <img
+                    src="/logos/1c_logo.webp"
+                    alt="1С"
+                    className="h-5 w-auto object-contain"
+                  />
+                  <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">1С</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <img
+                    src="/logos/moysklad_logo.svg"
+                    alt="МойСклад"
+                    className="h-5 w-auto object-contain"
+                  />
+                  <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">МойСклад</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <svg className="h-4.5 w-auto aspect-square shrink-0" viewBox="0 0 32 32" fill="none">
+                    <rect x="2" y="4" width="28" height="24" rx="4" fill="#107C41" />
+                    <rect x="18" y="9" width="9" height="14" fill="#185C37" opacity="0.3" />
+                    <path d="M18 9h9v4h-9V9zm0 5h9v4h-9v-4zm0 5h9v4h-9v-4z" fill="#fff" opacity="0.25" />
+                    <rect x="4" y="7" width="13" height="18" rx="2" fill="#107C41" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.25))" />
+                    <path d="M7.8 11.5l2.2 3.5 2.2-3.5h2.3l-3.3 4.5 3.5 4.5h-2.3l-2.4-3.6-2.4 3.6H5.5l3.5-4.5-3.3-4.5h2.1z" fill="#fff" />
+                  </svg>
+                  <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">Excel</span>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Footer Disclaimer */}
-          <p className="mt-auto pt-4 border-t border-[#E4DED6] text-xs text-[#6B645C] leading-relaxed">
+          <p className="border-t border-[#E4DED6] pt-2 text-[11px] sm:text-xs text-[#6B645C] leading-relaxed">
             Это демо-версия Веры на основе открытых материалов {displayTenant}. Для точных ответов во всех сценариях нужна полноценная интеграция от{" "}
             <Link
               href="https://optima.altaiweb.online"
@@ -401,18 +393,18 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
         {/* Right Column: Live Interactive Chat with Vera */}
         <section
           aria-label="Чат с Верой"
-          className="flex-1 min-w-0 bg-white rounded-[28px] shadow-[0_30px_80px_-30px_rgba(60,40,20,0.25),0_0_0_1px_#EAE4DC] flex flex-col overflow-hidden min-h-[580px] lg:h-[720px]"
+          className="flex-1 min-w-0 h-full bg-white rounded-[24px] sm:rounded-[28px] shadow-[0_20px_50px_-20px_rgba(60,40,20,0.18),0_0_0_1px_#EAE4DC] flex flex-col overflow-hidden min-h-[480px] lg:min-h-0"
         >
           {/* Card Header */}
-          <div className="flex-none flex items-center justify-between px-5 sm:px-7 py-4.5 border-b border-[#F0EBE5] bg-white">
-            <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-              <div className="relative w-12 h-12 sm:w-14 sm:h-14 shrink-0">
+          <div className="flex-none flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-[#F0EBE5] bg-white">
+            <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+              <div className="relative w-11 h-11 sm:w-12 sm:h-12 shrink-0">
                 <img
                   src={brand.veraAvatarUrl || "/vera_showroom_avatar.png"}
                   alt="Вера"
-                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover shadow-xs"
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover shadow-xs"
                   style={{
-                    boxShadow: `0 0 0 3px #FFFFFF, 0 0 0 5px ${brand.primaryColor}`,
+                    boxShadow: `0 0 0 2.5px #FFFFFF, 0 0 0 4.5px ${brand.primaryColor}`,
                   }}
                 />
                 <span className="absolute right-0 bottom-0 w-3.5 h-3.5 rounded-full bg-[#1F9D55] border-2 border-white" />
@@ -541,16 +533,16 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
           </div>
 
           {/* Quick Questions & Input Box */}
-          <div className="flex-none p-4 sm:p-5 border-t border-[#F0EBE5] bg-white flex flex-col gap-3">
+          <div className="flex-none p-3 sm:p-4 border-t border-[#F0EBE5] bg-white flex flex-col gap-2.5">
             {/* Quick Suggested Chips */}
             {brand.suggestedQuestions && brand.suggestedQuestions.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {brand.suggestedQuestions.map((q, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => handleSend(q)}
-                    className="font-semibold text-xs sm:text-sm text-[#1C1B1A] bg-[#F5F2EE] hover:bg-[#EAE4DC] rounded-full px-3.5 sm:px-4 py-2 cursor-pointer transition-colors shadow-2xs"
+                    className="font-semibold text-xs sm:text-[13px] text-[#1C1B1A] bg-[#F5F2EE] hover:bg-[#EAE4DC] rounded-full px-3 sm:px-3.5 py-1.5 cursor-pointer transition-colors shadow-2xs"
                   >
                     {q}
                   </button>
@@ -564,7 +556,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                 e.preventDefault();
                 handleSend();
               }}
-              className="flex items-center gap-2.5 sm:gap-3"
+              className="flex items-center gap-2 sm:gap-2.5"
             >
               <input
                 ref={inputRef}
@@ -573,13 +565,13 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={brand.placeholderText}
                 disabled={loading}
-                className="flex-1 bg-[#F8F6F3] border border-[#E4DED6] rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-sm sm:text-base text-[#1C1B1A] outline-none focus:border-[#C8102E] transition-all placeholder:text-[#8A8178]"
+                className="flex-1 bg-[#F8F6F3] border border-[#E4DED6] rounded-xl sm:rounded-2xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-[#1C1B1A] outline-none focus:border-[#C8102E] transition-all placeholder:text-[#8A8178]"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || loading}
                 aria-label="Отправить"
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl text-white flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-all"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl text-white flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-all"
                 style={{
                   backgroundColor: brand.primaryColor,
                 }}
