@@ -21,6 +21,7 @@ export function generateStaticParams() {
     { tenant: "haier" },
     { tenant: "neometria" },
     { tenant: "mobel_zeit" },
+    { tenant: "lagoon_resort" },
   ];
 }
 
