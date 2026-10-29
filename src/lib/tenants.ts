@@ -20,6 +20,8 @@ export const TENANT_DISPLAY_NAMES: Record<string, string> = {
 export interface TenantBrandConfig {
   displayName: string;
   logoBadgeUrl?: string;
+  logoShowroomUrl?: string;
+  veraAvatarUrl?: string;
   logoTextUrl?: string;
   primaryColor: string;
   primaryHover: string;
@@ -34,22 +36,24 @@ export interface TenantBrandConfig {
 
 export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = {
   mobel_zeit: {
-    displayName: "möbel&zeit gallery",
+    displayName: "möbel&zeit",
     logoBadgeUrl: "/logos/mobel_zeit_badge.png",
+    logoShowroomUrl: "/mobel_zeit_showroom.png",
+    veraAvatarUrl: "/vera_showroom_avatar.png",
     logoTextUrl: "/logos/mobel_zeit_text_white.png",
-    primaryColor: "#cc0000",
-    primaryHover: "#b30000",
-    primaryRing: "rgba(204, 0, 0, 0.35)",
-    primaryLightBg: "rgba(204, 0, 0, 0.08)",
-    watermarkText: "möbel & zeit",
+    primaryColor: "#C8102E",
+    primaryHover: "#9E0B23",
+    primaryRing: "rgba(200, 16, 46, 0.35)",
+    primaryLightBg: "rgba(200, 16, 46, 0.08)",
+    watermarkText: "&",
     hasPattern: true,
     badgeText: "möbel & zeit",
-    placeholderText: "Спросите о коллекциях, ценах со скидкой или дизайн-проекте...",
+    placeholderText: "Спросите о моделях, тканях, ценах или доставке…",
     suggestedQuestions: [
-      "Какие флагманские коллекции диванов представлены?",
-      "Какие модели со скидкой до 70% есть в аутлете?",
-      "Как заказать бесплатный 3D дизайн-проект?",
-      "В чем уникальность патентов и стандарта DGM?",
+      "Какие есть механизмы?",
+      "Сроки и доставка",
+      "Где ближайший салон?",
+      "Скидки в аутлете",
     ],
   },
 };
@@ -85,6 +89,8 @@ export function getTenantBrand(
     return {
       displayName: custom.displayName || displayName,
       logoBadgeUrl: custom.logoBadgeUrl,
+      logoShowroomUrl: custom.logoShowroomUrl,
+      veraAvatarUrl: custom.veraAvatarUrl,
       logoTextUrl: custom.logoTextUrl,
       primaryColor: custom.primaryColor,
       primaryHover: custom.primaryHover || "#b30000",

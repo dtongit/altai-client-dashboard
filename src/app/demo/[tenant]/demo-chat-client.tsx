@@ -240,260 +240,315 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
   };
 
   return (
-    <div className="relative h-[100dvh] max-h-[100dvh] flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors overflow-hidden">
-      {/* Ambient Brand Glow */}
-      {brand.hasPattern && (
-        <div
-          className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[110vw] max-w-5xl h-[380px] rounded-full blur-[100px] opacity-25 dark:opacity-30 z-0"
-          style={{ background: brand.primaryColor }}
-          aria-hidden="true"
-        />
-      )}
+    <div className="relative min-h-[100dvh] lg:h-[100dvh] lg:max-h-[100dvh] flex flex-col bg-[#F5F2EE] dark:bg-[#0f0e0d] text-[#1C1B1A] dark:text-[#F5F2EE] font-['Manrope',system-ui,sans-serif] transition-colors overflow-y-auto lg:overflow-hidden">
+      {/* Giant & Watermark from template */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute right-[-40px] sm:right-[-60px] bottom-[-160px] sm:bottom-[-220px] text-[480px] sm:text-[700px] lg:text-[900px] font-extrabold leading-none select-none z-0"
+        style={{ color: brand.primaryColor, opacity: 0.05 }}
+      >
+        &amp;
+      </div>
 
-      {/* Branded Watermark Pattern Rows ("в строчку много строчек") */}
-      {brand.hasPattern && brand.watermarkText && (
-        <BrandedWatermarkPattern
-          watermarkText={brand.watermarkText}
-          color={brand.primaryColor}
-        />
-      )}
+      {/* Header */}
+      <header className="relative flex-none z-20 w-full h-[76px] sm:h-[84px] px-4 sm:px-10 lg:px-16 border-b border-[#E4DED6] dark:border-zinc-800 bg-[#F5F2EE]/90 dark:bg-[#0f0e0d]/90 backdrop-blur-md flex items-center justify-between">
+        <div className="flex items-center gap-4 sm:gap-6 min-w-0">
+          <img
+            src={brand.logoShowroomUrl || brand.logoBadgeUrl || "/mobel_zeit_showroom.png"}
+            alt={displayTenant}
+            className="h-7 sm:h-9 w-auto object-contain shrink-0"
+          />
+        </div>
 
-      {/* Minimalist Top Bar */}
-      <header className="relative flex-none z-30 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md">
-        <div className="max-w-5xl mx-auto flex h-13 sm:h-16 items-center justify-between px-3 sm:px-6">
-          {/* Brand info */}
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+        <div className="flex items-center gap-4 sm:gap-6 shrink-0">
+          <Link
+            href="https://optima.altaiweb.online"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 sm:gap-2 text-[#6B645C] dark:text-zinc-400 hover:text-[#1C1B1A] dark:hover:text-white text-xs sm:text-[13px] font-medium transition-colors"
+          >
+            <span>powered by</span>
+            <span className="font-extrabold tracking-wider text-[#14213D] dark:text-zinc-100 uppercase">
+              ALTAI OPTIMA
+            </span>
+          </Link>
+          <ThemeToggle />
+        </div>
+      </header>
+
+      {/* Main Two-Column Layout */}
+      <main className="relative z-10 flex-1 max-w-[1440px] mx-auto w-full flex flex-col lg:flex-row gap-8 lg:gap-14 px-4 sm:px-10 lg:px-16 py-6 sm:py-8 lg:py-10 min-h-0">
+        {/* Left Column: Business & Integrations Info */}
+        <section className="w-full lg:w-[500px] xl:w-[540px] shrink-0 flex flex-col gap-5 sm:gap-6">
+          {/* Badges */}
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-zinc-900 border border-[#E4DED6] dark:border-zinc-800 text-xs sm:text-[13px] font-bold text-[#1C1B1A] dark:text-zinc-200 shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-[#1F9D55]" />
+              Ответ за 15 секунд
+            </span>
+            <span className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-white dark:bg-zinc-900 border border-[#E4DED6] dark:border-zinc-800 text-xs sm:text-[13px] font-bold text-[#1C1B1A] dark:text-zinc-200 shadow-2xs">
+              24/7 без выходных
+            </span>
+            <span className="inline-flex items-center px-3.5 py-1.5 rounded-full bg-white dark:bg-zinc-900 border border-[#E4DED6] dark:border-zinc-800 text-xs sm:text-[13px] font-bold text-[#1C1B1A] dark:text-zinc-200 shadow-2xs">
+              Понимает голосовые
+            </span>
+          </div>
+
+          {/* Heading */}
+          <h1 className="text-3xl sm:text-4xl lg:text-[46px] xl:text-[50px] font-extrabold leading-[1.05] tracking-tight text-[#1C1B1A] dark:text-white">
+            Вера уже изучила{" "}
+            <span style={{ color: brand.primaryColor }}>вашу компанию</span>
+          </h1>
+
+          {/* Description */}
+          <p className="text-sm sm:text-base lg:text-[17px] leading-relaxed text-[#3B3631] dark:text-zinc-300">
+            Ваш новый любимый сотрудник. Обаяние живого эксперта, тонкий юмор уровня Довлатова и железная компьютерная дисциплина. Вера помнит каждого клиента, ведёт диалог как лучший менеджер салона и доводит его до реальной сделки в CRM с сервисом пятизвёздочного отеля.
+          </p>
+
+          {/* Cursive Handwriting Note */}
+          <p
+            className="font-['Caveat',cursive] text-2xl sm:text-[26px] leading-tight -mt-1 sm:-mt-2"
+            style={{ color: brand.primaryColor }}
+          >
+            Напишите ей как покупатель, она уже ждёт в чате
+          </p>
+
+          {/* Messengers Block (As on site / attachment) */}
+          <div className="space-y-2.5">
+            <span className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#8A8178] dark:text-zinc-400 block">
+              Живёт там, где пишут ваши клиенты
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-[#E4DED6] dark:border-zinc-800 text-xs sm:text-sm font-bold text-[#1C1B1A] dark:text-zinc-100 shadow-2xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#25D366] shrink-0" />
+                <span>WhatsApp</span>
+              </div>
+              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-[#E4DED6] dark:border-zinc-800 text-xs sm:text-sm font-bold text-[#1C1B1A] dark:text-zinc-100 shadow-2xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#229ED9] shrink-0" />
+                <span>Telegram</span>
+              </div>
+              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-[#E4DED6] dark:border-zinc-800 text-xs sm:text-sm font-bold text-[#1C1B1A] dark:text-zinc-100 shadow-2xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#E1306C] shrink-0" />
+                <span>Instagram</span>
+              </div>
+              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-[#E4DED6] dark:border-zinc-800 text-xs sm:text-sm font-bold text-[#1C1B1A] dark:text-zinc-100 shadow-2xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#00AAFF] shrink-0" />
+                <span>Авито Чат</span>
+              </div>
+              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-[#E4DED6] dark:border-zinc-800 text-xs sm:text-sm font-bold text-[#1C1B1A] dark:text-zinc-100 shadow-2xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#7B3FF2] shrink-0" />
+                <span>MAX</span>
+              </div>
+              <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-[#E4DED6] dark:border-zinc-800 text-xs sm:text-sm font-bold text-[#1C1B1A] dark:text-zinc-100 shadow-2xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#0077FF] shrink-0" />
+                <span>VK</span>
+              </div>
+            </div>
+            <p className="text-xs sm:text-[13px] leading-snug text-zinc-600 dark:text-zinc-400">
+              Вера подхватывает обращения в любых мессенджерах одновременно, отправляя в CRM готовые заказы
+            </p>
+          </div>
+
+          {/* CRM Block (As on site / attachment: clean horizontal logos without black boxes) */}
+          <div className="space-y-2 pt-1">
+            <span className="text-[11px] font-bold tracking-[0.1em] uppercase text-[#8A8178] dark:text-zinc-400 block">
+              Сама ведёт базу в любой CRM
+            </span>
+            <div className="flex flex-wrap items-center gap-3.5 sm:gap-5 py-1">
+              <div className="flex items-center gap-2">
+                <img
+                  src="/logos/amocrm_logo.webp"
+                  alt="amoCRM"
+                  className="h-5 sm:h-6 w-auto object-contain"
+                />
+                <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">amoCRM</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <img
+                  src="/logos/bitrix24_logo.webp"
+                  alt="Битрикс24"
+                  className="h-5 sm:h-6 w-auto object-contain"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <img
+                  src="/logos/1c_logo.webp"
+                  alt="1С"
+                  className="h-5 sm:h-6 w-auto object-contain"
+                />
+                <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">1С</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <img
+                  src="/logos/moysklad_logo.svg"
+                  alt="МойСклад"
+                  className="h-5 sm:h-6 w-auto object-contain"
+                />
+                <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">МойСклад</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="h-5 sm:h-6 w-auto aspect-square shrink-0" viewBox="0 0 32 32" fill="none">
+                  <rect x="2" y="4" width="28" height="24" rx="4" fill="#107C41" />
+                  <rect x="18" y="9" width="9" height="14" fill="#185C37" opacity="0.3" />
+                  <path d="M18 9h9v4h-9V9zm0 5h9v4h-9v-4zm0 5h9v4h-9v-4z" fill="#fff" opacity="0.25" />
+                  <rect x="4" y="7" width="13" height="18" rx="2" fill="#107C41" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.25))" />
+                  <path d="M7.8 11.5l2.2 3.5 2.2-3.5h2.3l-3.3 4.5 3.5 4.5h-2.3l-2.4-3.6-2.4 3.6H5.5l3.5-4.5-3.3-4.5h2.1z" fill="#fff" />
+                </svg>
+                <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">Excel</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Disclaimer */}
+          <p className="mt-auto pt-4 border-t border-[#E4DED6] dark:border-zinc-800 text-xs text-[#6B645C] dark:text-zinc-400 leading-relaxed">
+            Это демо-версия Веры на основе открытых материалов möbel&amp;zeit. Для точных ответов во всех сценариях нужна полноценная интеграция от{" "}
             <Link
               href="https://optima.altaiweb.online"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 group transition-opacity hover:opacity-80 shrink-0"
-              title="Перейти на сайт ALTAI Optima"
+              style={{ color: brand.primaryColor }}
+              className="font-semibold hover:underline"
             >
-              <img
-                src="/brand_logo.webp"
-                alt="ALTAI Optima"
-                className="h-5 sm:h-6 w-auto object-contain dark:hidden"
-              />
-              <img
-                src="/brand_logo_dark.webp"
-                alt="ALTAI Optima"
-                className="h-5 sm:h-6 w-auto object-contain hidden dark:block"
-              />
+              ALTAI Optima
             </Link>
-            <span className="text-zinc-300 dark:text-zinc-700 font-light select-none">/</span>
-            <div className="flex items-center gap-2 min-w-0">
-              {brand.logoBadgeUrl ? (
-                <div className="flex items-center gap-2 shrink-0">
-                  <img
-                    src={brand.logoBadgeUrl}
-                    alt={displayTenant}
-                    className="h-5 sm:h-6 w-auto object-contain rounded-md shadow-2xs ring-1 ring-black/10 dark:ring-white/15"
-                  />
-                  <span className="text-xs sm:text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate hidden xs:inline">
-                    {displayTenant}
-                  </span>
-                </div>
-              ) : (
-                <span className="text-xs sm:text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate">
-                  {displayTenant}
-                </span>
-              )}
-            </div>
-          </div>
+          </p>
+        </section>
 
-          {/* Theme Toggle only */}
-          <div className="flex items-center shrink-0">
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
-
-      {/* Main Chat Container */}
-      <main className="relative z-10 flex-1 min-h-0 w-full max-w-4xl mx-auto p-0 sm:p-4 md:p-6 flex flex-col overflow-hidden">
-        <div className="flex-1 min-h-0 flex flex-col bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm border-0 sm:border border-zinc-200/90 dark:border-zinc-800/90 rounded-none sm:rounded-2xl shadow-none sm:shadow-lg overflow-hidden">
-          {/* Chat Header inside card */}
-          <div className="flex-none flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3.5 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/70">
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-              <div className="relative shrink-0">
+        {/* Right Column: Live Interactive Chat with Vera */}
+        <section
+          aria-label="Чат с Верой"
+          className="flex-1 min-w-0 bg-white dark:bg-zinc-900 rounded-[28px] shadow-[0_30px_80px_-30px_rgba(60,40,20,0.25)] border border-[#EAE4DC] dark:border-zinc-800 flex flex-col overflow-hidden h-[620px] lg:h-full min-h-[560px]"
+        >
+          {/* Card Header */}
+          <div className="flex-none flex items-center justify-between px-5 sm:px-7 py-4 border-b border-[#F0EBE5] dark:border-zinc-800 bg-white dark:bg-zinc-900">
+            <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
+              <div className="relative w-12 h-12 sm:w-14 sm:h-14 shrink-0">
                 <img
-                  src="/avatar_eva_face.webp"
+                  src={brand.veraAvatarUrl || "/vera_showroom_avatar.png"}
                   alt="Вера"
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover shadow-xs"
                   style={{
-                    boxShadow: `0 0 0 2px ${brand.primaryRing}`,
+                    boxShadow: `0 0 0 3px #FFFFFF, 0 0 0 5px ${brand.primaryColor}`,
                   }}
                 />
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-900" />
+                <span className="absolute right-0 bottom-0 w-3.5 h-3.5 rounded-full bg-[#1F9D55] border-2 border-white dark:border-zinc-900" />
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <h1 className="text-xs sm:text-base font-bold text-zinc-900 dark:text-white">
-                    Вера
-                  </h1>
-                  {brand.badgeText && (
-                    <span
-                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-white shrink-0 shadow-xs uppercase"
-                      style={{ backgroundColor: brand.primaryColor }}
-                    >
-                      {brand.badgeText}
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 truncate">
-                  Персональный AI-консультант • {displayTenant}
-                </p>
+              <div className="min-w-0 flex flex-col gap-0.5">
+                <span className="text-lg sm:text-[19px] font-extrabold text-[#1C1B1A] dark:text-white leading-tight">
+                  Вера
+                </span>
+                <span className="text-xs sm:text-sm text-[#6B645C] dark:text-zinc-400 truncate">
+                  консультант möbel&amp;zeit · {loading ? "печатает…" : "в сети"}
+                </span>
               </div>
             </div>
 
             <button
               onClick={handleReset}
-              className="inline-flex items-center gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
+              aria-label="Сбросить диалог"
+              className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-[#F5F2EE] dark:bg-zinc-800 hover:bg-[#EAE4DC] dark:hover:bg-zinc-700 text-[#4E4842] dark:text-zinc-300 text-xs sm:text-sm font-semibold transition-colors shrink-0 cursor-pointer"
               title="Начать диалог сначала"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Сбросить диалог</span>
+              <span className="hidden sm:inline">Новый диалог</span>
             </button>
           </div>
 
-          {/* Messages list */}
-          <div className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4 overscroll-contain">
-            {messages.length === 0 && !loading && (
-              <div className="h-full min-h-[220px] flex flex-col items-center justify-center text-center px-4 py-6 text-zinc-400 dark:text-zinc-500 select-none">
-                {brand.logoBadgeUrl ? (
-                  <div className="mb-3.5 p-1 rounded-lg shadow-sm" style={{ backgroundColor: brand.primaryColor }}>
-                    <img
-                      src={brand.logoBadgeUrl}
-                      alt={displayTenant}
-                      className="h-7 sm:h-8 w-auto object-contain rounded"
-                    />
-                  </div>
-                ) : null}
-                <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 mb-1">
-                  Начните диалог с Верой
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mb-4">
-                  Задайте любой вопрос об эргономике, скидках в аутлете, бесплатном дизайн-проекте или адресах салонов
-                </p>
+          {/* Messages Stream */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-7 space-y-4 bg-[#FCFBF9] dark:bg-zinc-950/60 overscroll-contain">
+            <div className="text-center">
+              <span className="inline-block text-xs font-semibold text-[#8A8178] dark:text-zinc-400 bg-[#F2EEE8] dark:bg-zinc-800 px-3 py-1 rounded-full">
+                Сегодня
+              </span>
+            </div>
 
-                {brand.suggestedQuestions && brand.suggestedQuestions.length > 0 && (
-                  <div className="w-full max-w-lg grid grid-cols-1 sm:grid-cols-2 gap-2 text-left">
-                    {brand.suggestedQuestions.map((q, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleSend(q)}
-                        className="p-2.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/60 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 text-xs transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer text-left leading-snug group flex items-start gap-1.5 shadow-2xs"
-                      >
-                        <span className="shrink-0 mt-0.5 text-zinc-400 group-hover:text-red-500">💬</span>
-                        <span className="flex-1">{q}</span>
-                      </button>
-                    ))}
+            {/* If no messages yet, show default warm greeting */}
+            {messages.length === 0 && !loading && (
+              <div className="space-y-4">
+                <div className="flex gap-3 items-end max-w-[85%] sm:max-w-[80%]">
+                  <img
+                    src={brand.veraAvatarUrl || "/vera_showroom_avatar.png"}
+                    alt=""
+                    className="w-8 h-8 rounded-full object-cover shrink-0"
+                  />
+                  <div className="bg-white dark:bg-zinc-900 border border-[#EDE7E0] dark:border-zinc-800 p-3.5 sm:p-4 rounded-[20px_20px_20px_6px] text-sm sm:text-base leading-relaxed text-[#1C1B1A] dark:text-zinc-100 shadow-2xs">
+                    Добрый день! Я Вера, консультант möbel&amp;zeit. Рада приветствовать вас! Подбираете диван в гостиную, мастер-спальню или домашний кинотеатр? Чем могу помочь?
                   </div>
-                )}
+                </div>
               </div>
             )}
+
             {messages.map((m) => {
               const isAssistant = m.sender === "assistant";
               return (
                 <div
                   key={m.id}
-                  className={`flex items-start gap-2.5 sm:gap-3 ${
+                  className={`flex items-end gap-2.5 sm:gap-3 ${
                     isAssistant ? "justify-start" : "justify-end"
                   }`}
                 >
                   {isAssistant && (
                     <img
-                      src="/avatar_eva_face.webp"
-                      alt="Вера"
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shrink-0 mt-0.5"
-                      style={{
-                        boxShadow: `0 0 0 1px ${brand.primaryRing}`,
-                      }}
+                      src={brand.veraAvatarUrl || "/vera_showroom_avatar.png"}
+                      alt=""
+                      className="w-8 h-8 rounded-full object-cover shrink-0"
                     />
                   )}
                   <div
-                    className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-sm sm:text-[15px] leading-relaxed transition-all ${
+                    className={`max-w-[85%] sm:max-w-[78%] p-3.5 sm:p-4 text-sm sm:text-base leading-relaxed ${
                       isAssistant
-                        ? "bg-zinc-100/90 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-tl-sm border border-zinc-200/50 dark:border-zinc-700/50"
-                        : "text-white rounded-tr-sm shadow-sm"
+                        ? "bg-white dark:bg-zinc-900 border border-[#EDE7E0] dark:border-zinc-800 rounded-[20px_20px_20px_6px] text-[#1C1B1A] dark:text-zinc-100 shadow-2xs"
+                        : "bg-[#1C1B1A] dark:bg-zinc-800 text-white rounded-[20px_20px_6px_20px] shadow-xs"
                     }`}
-                    style={
-                      !isAssistant
-                        ? {
-                            backgroundColor: brand.primaryColor,
-                            backgroundImage: `linear-gradient(135deg, ${brand.primaryColor} 0%, ${brand.primaryHover} 100%)`,
-                          }
-                        : undefined
-                    }
                   >
                     <FormattedMessageText text={m.text} isAssistant={isAssistant} />
+
                     {m.escalation && (
-                      <div className="mt-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/15 p-2.5 sm:p-3 text-xs space-y-1.5 transition-all text-left">
-                        <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">
-                          <BellRing className="w-3.5 h-3.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
+                      <div className="mt-2.5 rounded-xl border border-red-500/30 bg-red-500/10 dark:bg-red-500/15 p-2.5 sm:p-3 text-xs space-y-1.5 text-left">
+                        <div className="flex items-center gap-1.5 font-semibold text-red-800 dark:text-red-300">
+                          <BellRing className="w-3.5 h-3.5 shrink-0 text-red-600 dark:text-red-400" />
                           <span>Симуляция эскалации менеджеру (Human-in-the-Loop)</span>
                         </div>
                         <p className="text-[11px] text-zinc-600 dark:text-zinc-300 leading-snug">
                           В боевом мессенджере диалог ставится на паузу, а в Telegram-бот команды отправляется карточка:
                         </p>
-                        <div className="rounded-lg bg-white/90 dark:bg-zinc-950/80 border border-amber-500/25 px-2.5 py-1.5 font-mono text-[11px] text-zinc-800 dark:text-zinc-200 whitespace-pre-line leading-relaxed shadow-xs">
+                        <div className="rounded-lg bg-white/90 dark:bg-zinc-950/80 border border-red-500/25 px-2.5 py-1.5 font-mono text-[11px] text-zinc-800 dark:text-zinc-200 whitespace-pre-line leading-relaxed shadow-xs">
                           {m.escalation.alert_preview || `🚨 Срочный вопрос от клиента!\n💬 Суть: ${m.escalation.reason}`}
                         </div>
-                        <p className="text-[10px] text-amber-700/90 dark:text-amber-400/90 italic">
+                        <p className="text-[10px] text-red-700/90 dark:text-red-400/90 italic">
                           💡 На демо-стенде диалог не блокируется — вы можете продолжить общение с Верой.
                         </p>
                       </div>
                     )}
+
                     <div
                       className={`text-[10px] mt-1 text-right select-none ${
                         isAssistant
-                          ? "text-zinc-400 dark:text-zinc-500"
-                          : "text-white/80"
+                          ? "text-[#8A8178] dark:text-zinc-500"
+                          : "text-zinc-400"
                       }`}
                     >
                       {m.timestamp}
                     </div>
                   </div>
-                  {!isAssistant && (
-                    <div
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                      style={{
-                        backgroundColor: brand.primaryLightBg,
-                        color: brand.primaryColor,
-                      }}
-                    >
-                      <UserIcon className="w-4 h-4" />
-                    </div>
-                  )}
                 </div>
               );
             })}
 
             {loading && (
-              <div className="flex items-start gap-2.5 sm:gap-3">
+              <div className="flex items-center gap-3">
                 <img
-                  src="/avatar_eva_face.webp"
-                  alt="Вера"
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shrink-0 mt-0.5"
-                  style={{
-                    boxShadow: `0 0 0 1px ${brand.primaryRing}`,
-                  }}
+                  src={brand.veraAvatarUrl || "/vera_showroom_avatar.png"}
+                  alt=""
+                  className="w-8 h-8 rounded-full object-cover shrink-0"
                 />
-                <div className="bg-zinc-100/90 dark:bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
-                  <span
-                    className="w-2 h-2 rounded-full animate-bounce"
-                    style={{ backgroundColor: brand.primaryColor }}
-                  />
-                  <span
-                    className="w-2 h-2 rounded-full animate-bounce [animation-delay:0.2s]"
-                    style={{ backgroundColor: brand.primaryColor }}
-                  />
-                  <span
-                    className="w-2 h-2 rounded-full animate-bounce [animation-delay:0.4s]"
-                    style={{ backgroundColor: brand.primaryColor }}
-                  />
-                  <span className="text-xs text-zinc-400 ml-1.5 select-none">Вера печатает...</span>
+                <div
+                  aria-label="Вера печатает"
+                  className="flex gap-1.5 bg-white dark:bg-zinc-900 border border-[#EDE7E0] dark:border-zinc-800 px-4 py-3.5 rounded-[20px_20px_20px_6px] shadow-2xs"
+                >
+                  <span className="w-2 h-2 rounded-full bg-[#B8AEA3] animate-bounce" />
+                  <span className="w-2 h-2 rounded-full bg-[#B8AEA3] animate-bounce [animation-delay:0.2s]" />
+                  <span className="w-2 h-2 rounded-full bg-[#B8AEA3] animate-bounce [animation-delay:0.4s]" />
                 </div>
               </div>
             )}
@@ -501,14 +556,31 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Box */}
-          <div className="flex-none p-2.5 sm:p-4 border-t border-zinc-100 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+          {/* Quick Questions & Input Box */}
+          <div className="flex-none p-4 sm:p-5 border-t border-[#F0EBE5] dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col gap-3">
+            {/* Quick Suggested Chips */}
+            {brand.suggestedQuestions && brand.suggestedQuestions.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {brand.suggestedQuestions.map((q, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSend(q)}
+                    className="font-semibold text-xs sm:text-sm text-[#1C1B1A] dark:text-zinc-200 bg-[#F5F2EE] dark:bg-zinc-800 hover:bg-[#EAE4DC] dark:hover:bg-zinc-700 rounded-full px-3.5 sm:px-4 py-2 cursor-pointer transition-colors shadow-2xs"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Input Form */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSend();
               }}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2.5 sm:gap-3"
             >
               <input
                 ref={inputRef}
@@ -517,15 +589,13 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={brand.placeholderText}
                 disabled={loading}
-                className="flex-1 px-3.5 sm:px-4 py-2.5 text-[16px] sm:text-base rounded-xl bg-zinc-100/80 dark:bg-zinc-800/80 border border-transparent focus:bg-white dark:focus:bg-zinc-900 focus:outline-none transition-all placeholder:text-zinc-400"
-                style={{
-                  outlineColor: brand.primaryColor,
-                }}
+                className="flex-1 bg-[#F8F6F3] dark:bg-zinc-800 border border-[#E4DED6] dark:border-zinc-700 rounded-2xl px-4 sm:px-5 py-3.5 sm:py-4 text-sm sm:text-base text-[#1C1B1A] dark:text-white outline-none focus:border-[#C8102E] transition-all placeholder:text-[#8A8178] dark:placeholder:text-zinc-500"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || loading}
-                className="inline-flex items-center justify-center p-2.5 sm:px-4 sm:py-2.5 rounded-xl text-white font-medium text-sm transition-all shrink-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                aria-label="Отправить"
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl text-white flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-sm transition-all"
                 style={{
                   backgroundColor: brand.primaryColor,
                 }}
@@ -539,28 +609,12 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                     e.currentTarget.style.backgroundColor = brand.primaryColor;
                   }
                 }}
-                title="Отправить сообщение (Enter)"
               >
-                <Send className="w-4 h-4" />
-                <span className="hidden sm:inline sm:ml-2">Отправить</span>
+                <Send className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
               </button>
             </form>
-            <div className="mt-1.5 sm:mt-2 text-center px-1 sm:px-2">
-              <span className="text-[10px] sm:text-[11px] text-zinc-400 dark:text-zinc-500 leading-tight">
-                Это демо-версия Веры, созданная на основе открытых материалов компании {displayTenant}. Для точных ответов во всех сценариях нужна полноценная интеграция от{" "}
-                <Link
-                  href="https://optima.altaiweb.online"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline font-medium"
-                  style={{ color: brand.primaryColor }}
-                >
-                  ALTAI Optima
-                </Link>
-              </span>
-            </div>
           </div>
-        </div>
+        </section>
       </main>
     </div>
   );
