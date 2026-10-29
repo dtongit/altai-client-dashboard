@@ -224,9 +224,6 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
     setMessages([]);
   };
 
-  const patternLogoUrl =
-    brand.logoWatermarkUrl || brand.logoShowroomUrl || brand.logoBadgeUrl;
-
   const renderIntegrationsAndDisclaimer = () => (
     <>
       <div className="flex flex-col gap-3.5 sm:gap-4">
@@ -335,80 +332,6 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
 
   return (
     <div className="relative min-h-[100dvh] lg:h-[100dvh] lg:max-h-[100dvh] w-full flex flex-col bg-[#F5F2EE] text-[#1C1B1A] font-['Manrope',system-ui,sans-serif] overflow-y-auto lg:overflow-hidden">
-      {/* Scattered Brand Logo Pattern Background (10-15% opacity, varied sizes & positions) */}
-      {patternLogoUrl && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none fixed inset-0 overflow-hidden select-none z-0"
-        >
-          {/* Top Left */}
-          <img
-            src={patternLogoUrl}
-            alt=""
-            className="absolute -top-6 -left-8 w-[240px] sm:w-[320px] lg:w-[360px] h-auto object-contain -rotate-[8deg]"
-            style={{ opacity: 0.12 }}
-          />
-          {/* Top Center-Right */}
-          <img
-            src={patternLogoUrl}
-            alt=""
-            className="absolute top-[6%] left-[46%] w-[160px] sm:w-[220px] h-auto object-contain rotate-[9deg]"
-            style={{ opacity: 0.10 }}
-          />
-          {/* Mid Left (behind text) */}
-          <img
-            src={patternLogoUrl}
-            alt=""
-            className="absolute top-[40%] -left-6 w-[200px] sm:w-[260px] h-auto object-contain -rotate-[4deg]"
-            style={{ opacity: 0.12 }}
-          />
-          {/* Bottom Left */}
-          <img
-            src={patternLogoUrl}
-            alt=""
-            className="absolute bottom-[6%] left-[10%] w-[220px] sm:w-[280px] h-auto object-contain rotate-[6deg]"
-            style={{ opacity: 0.10 }}
-          />
-          {/* Top Right */}
-          <img
-            src={patternLogoUrl}
-            alt=""
-            className="absolute -top-4 right-[6%] w-[260px] sm:w-[340px] h-auto object-contain -rotate-[12deg]"
-            style={{ opacity: 0.12 }}
-          />
-          {/* Mid Right (behind chat card) */}
-          <img
-            src={patternLogoUrl}
-            alt=""
-            className="absolute top-[36%] -right-10 w-[300px] sm:w-[400px] h-auto object-contain rotate-[14deg]"
-            style={{ opacity: 0.14 }}
-          />
-          {/* Bottom Right */}
-          <img
-            src={patternLogoUrl}
-            alt=""
-            className="absolute -bottom-8 right-[8%] w-[280px] sm:w-[360px] h-auto object-contain -rotate-[6deg]"
-            style={{ opacity: 0.12 }}
-          />
-          {/* Center Subtle */}
-          <img
-            src={patternLogoUrl}
-            alt=""
-            className="absolute top-[68%] left-[36%] w-[180px] sm:w-[240px] h-auto object-contain -rotate-[14deg]"
-            style={{ opacity: 0.10 }}
-          />
-        </div>
-      )}
-
-      {/* Giant Watermark from template */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute right-[-40px] sm:right-[-60px] bottom-[-160px] sm:bottom-[-220px] text-[360px] sm:text-[500px] lg:text-[700px] font-extrabold leading-none select-none z-0 tracking-tighter"
-        style={{ color: brand.primaryColor, opacity: 0.04 }}
-      >
-        {brand.watermarkText || "&"}
-      </div>
-
       {/* Header */}
       <header className="relative flex-none z-20 w-full h-[60px] sm:h-[68px] px-6 sm:px-10 lg:px-12 border-b border-[#E4DED6] bg-[#F5F2EE] flex items-center justify-between">
         <div className="flex items-center gap-4 sm:gap-6 min-w-0">
