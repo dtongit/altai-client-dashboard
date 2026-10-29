@@ -224,8 +224,182 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
     setMessages([]);
   };
 
+  const patternLogoUrl =
+    brand.logoWatermarkUrl || brand.logoShowroomUrl || brand.logoBadgeUrl;
+
+  const renderIntegrationsAndDisclaimer = () => (
+    <>
+      <div className="flex flex-col gap-3.5 sm:gap-4">
+        {/* Messengers Block - clean unboxed list */}
+        <div className="space-y-1.5">
+          <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
+            Живёт там, где пишут ваши клиенты
+          </span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs sm:text-[13px] font-bold text-[#1C1B1A]">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#25D366] shrink-0" />
+              <span>WhatsApp</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#229ED9] shrink-0" />
+              <span>Telegram</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#E1306C] shrink-0" />
+              <span>Instagram</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#00AAFF] shrink-0" />
+              <span>Авито</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#7B3FF2] shrink-0" />
+              <span>MAX</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#0077FF] shrink-0" />
+              <span>VK</span>
+            </div>
+          </div>
+          <p className="text-[11px] sm:text-xs leading-snug text-[#6B645C]">
+            Вера мгновенно подхватывает обращения в любых мессенджерах и передаёт в CRM готовые заказы
+          </p>
+        </div>
+
+        {/* CRM Block */}
+        <div className="space-y-1.5">
+          <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
+            Сама ведёт базу в любой CRM
+          </span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <img
+                src="/logos/amocrm_logo.webp"
+                alt="amoCRM"
+                className="h-5 w-auto object-contain"
+              />
+              <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">amoCRM</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <img
+                src="/logos/bitrix24_logo.webp"
+                alt="Битрикс24"
+                className="h-5 w-auto object-contain"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <img
+                src="/logos/1c_logo.webp"
+                alt="1С"
+                className="h-5 w-auto object-contain"
+              />
+              <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">1С</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <img
+                src="/logos/moysklad_logo.svg"
+                alt="МойСклад"
+                className="h-5 w-auto object-contain"
+              />
+              <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">МойСклад</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <svg className="h-4.5 w-auto aspect-square shrink-0" viewBox="0 0 32 32" fill="none">
+                <rect x="2" y="4" width="28" height="24" rx="4" fill="#107C41" />
+                <rect x="18" y="9" width="9" height="14" fill="#185C37" opacity="0.3" />
+                <path d="M18 9h9v4h-9V9zm0 5h9v4h-9v-4zm0 5h9v4h-9v-4z" fill="#fff" opacity="0.25" />
+                <rect x="4" y="7" width="13" height="18" rx="2" fill="#107C41" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.25))" />
+                <path d="M7.8 11.5l2.2 3.5 2.2-3.5h2.3l-3.3 4.5 3.5 4.5h-2.3l-2.4-3.6-2.4 3.6H5.5l3.5-4.5-3.3-4.5h2.1z" fill="#fff" />
+              </svg>
+              <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">Excel</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Disclaimer */}
+      <p className="border-t border-[#E4DED6] pt-2 text-[11px] sm:text-xs text-[#6B645C] leading-relaxed">
+        Это демо-версия Веры на основе открытых материалов {displayTenant}. Для точных ответов во всех сценариях нужна полноценная интеграция от{" "}
+        <Link
+          href="https://optima.altaiweb.online"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: brand.primaryColor }}
+          className="font-bold hover:underline"
+        >
+          ALTAI Optima
+        </Link>
+      </p>
+    </>
+  );
+
   return (
     <div className="relative min-h-[100dvh] lg:h-[100dvh] lg:max-h-[100dvh] w-full flex flex-col bg-[#F5F2EE] text-[#1C1B1A] font-['Manrope',system-ui,sans-serif] overflow-y-auto lg:overflow-hidden">
+      {/* Scattered Brand Logo Pattern Background (10-15% opacity, varied sizes & positions) */}
+      {patternLogoUrl && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 overflow-hidden select-none z-0"
+        >
+          {/* Top Left */}
+          <img
+            src={patternLogoUrl}
+            alt=""
+            className="absolute -top-6 -left-8 w-[240px] sm:w-[320px] lg:w-[360px] h-auto object-contain -rotate-[8deg]"
+            style={{ opacity: 0.12 }}
+          />
+          {/* Top Center-Right */}
+          <img
+            src={patternLogoUrl}
+            alt=""
+            className="absolute top-[6%] left-[46%] w-[160px] sm:w-[220px] h-auto object-contain rotate-[9deg]"
+            style={{ opacity: 0.10 }}
+          />
+          {/* Mid Left (behind text) */}
+          <img
+            src={patternLogoUrl}
+            alt=""
+            className="absolute top-[40%] -left-6 w-[200px] sm:w-[260px] h-auto object-contain -rotate-[4deg]"
+            style={{ opacity: 0.12 }}
+          />
+          {/* Bottom Left */}
+          <img
+            src={patternLogoUrl}
+            alt=""
+            className="absolute bottom-[6%] left-[10%] w-[220px] sm:w-[280px] h-auto object-contain rotate-[6deg]"
+            style={{ opacity: 0.10 }}
+          />
+          {/* Top Right */}
+          <img
+            src={patternLogoUrl}
+            alt=""
+            className="absolute -top-4 right-[6%] w-[260px] sm:w-[340px] h-auto object-contain -rotate-[12deg]"
+            style={{ opacity: 0.12 }}
+          />
+          {/* Mid Right (behind chat card) */}
+          <img
+            src={patternLogoUrl}
+            alt=""
+            className="absolute top-[36%] -right-10 w-[300px] sm:w-[400px] h-auto object-contain rotate-[14deg]"
+            style={{ opacity: 0.14 }}
+          />
+          {/* Bottom Right */}
+          <img
+            src={patternLogoUrl}
+            alt=""
+            className="absolute -bottom-8 right-[8%] w-[280px] sm:w-[360px] h-auto object-contain -rotate-[6deg]"
+            style={{ opacity: 0.12 }}
+          />
+          {/* Center Subtle */}
+          <img
+            src={patternLogoUrl}
+            alt=""
+            className="absolute top-[68%] left-[36%] w-[180px] sm:w-[240px] h-auto object-contain -rotate-[14deg]"
+            style={{ opacity: 0.10 }}
+          />
+        </div>
+      )}
+
       {/* Giant Watermark from template */}
       <div
         aria-hidden="true"
@@ -262,8 +436,8 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
 
       {/* Main Two-Column Layout */}
       <main className="relative z-10 flex-1 min-h-0 max-w-[1440px] mx-auto w-full flex flex-col lg:flex-row gap-6 lg:gap-10 px-6 sm:px-10 lg:px-12 py-3 sm:py-4 lg:py-5">
-        {/* Left Column: Business & Integrations Info */}
-        <section className="w-full lg:w-[480px] xl:w-[520px] shrink-0 flex flex-col justify-between h-full gap-4 lg:gap-5 py-1">
+        {/* Left Column (Desktop: full height with integrations at bottom. Mobile: top text only) */}
+        <section className="w-full lg:w-[480px] xl:w-[520px] shrink-0 flex flex-col justify-between lg:h-full gap-4 lg:gap-5 py-1">
           {/* Top text block */}
           <div className="flex flex-col gap-3 sm:gap-3.5">
             {/* Heading */}
@@ -286,114 +460,16 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
             </p>
           </div>
 
-          {/* Channels & Integrations */}
-          <div className="flex flex-col gap-3.5 sm:gap-4">
-            {/* Messengers Block - clean unboxed list */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
-                Живёт там, где пишут ваши клиенты
-              </span>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs sm:text-[13px] font-bold text-[#1C1B1A]">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#25D366] shrink-0" />
-                  <span>WhatsApp</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#229ED9] shrink-0" />
-                  <span>Telegram</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#E1306C] shrink-0" />
-                  <span>Instagram</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#00AAFF] shrink-0" />
-                  <span>Авито</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#7B3FF2] shrink-0" />
-                  <span>MAX</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#0077FF] shrink-0" />
-                  <span>VK</span>
-                </div>
-              </div>
-              <p className="text-[11px] sm:text-xs leading-snug text-[#6B645C]">
-                Вера мгновенно подхватывает обращения в любых мессенджерах и передаёт в CRM готовые заказы
-              </p>
-            </div>
-
-            {/* CRM Block */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
-                Сама ведёт базу в любой CRM
-              </span>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                <div className="flex items-center gap-1.5">
-                  <img
-                    src="/logos/amocrm_logo.webp"
-                    alt="amoCRM"
-                    className="h-5 w-auto object-contain"
-                  />
-                  <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">amoCRM</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <img
-                    src="/logos/bitrix24_logo.webp"
-                    alt="Битрикс24"
-                    className="h-5 w-auto object-contain"
-                  />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <img
-                    src="/logos/1c_logo.webp"
-                    alt="1С"
-                    className="h-5 w-auto object-contain"
-                  />
-                  <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">1С</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <img
-                    src="/logos/moysklad_logo.svg"
-                    alt="МойСклад"
-                    className="h-5 w-auto object-contain"
-                  />
-                  <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">МойСклад</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <svg className="h-4.5 w-auto aspect-square shrink-0" viewBox="0 0 32 32" fill="none">
-                    <rect x="2" y="4" width="28" height="24" rx="4" fill="#107C41" />
-                    <rect x="18" y="9" width="9" height="14" fill="#185C37" opacity="0.3" />
-                    <path d="M18 9h9v4h-9V9zm0 5h9v4h-9v-4zm0 5h9v4h-9v-4z" fill="#fff" opacity="0.25" />
-                    <rect x="4" y="7" width="13" height="18" rx="2" fill="#107C41" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.25))" />
-                    <path d="M7.8 11.5l2.2 3.5 2.2-3.5h2.3l-3.3 4.5 3.5 4.5h-2.3l-2.4-3.6-2.4 3.6H5.5l3.5-4.5-3.3-4.5h2.1z" fill="#fff" />
-                  </svg>
-                  <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">Excel</span>
-                </div>
-              </div>
-            </div>
+          {/* Desktop-only: Channels, CRM and Disclaimer at bottom of left column */}
+          <div className="hidden lg:flex lg:flex-col lg:gap-4 lg:mt-auto">
+            {renderIntegrationsAndDisclaimer()}
           </div>
-
-          {/* Footer Disclaimer */}
-          <p className="border-t border-[#E4DED6] pt-2 text-[11px] sm:text-xs text-[#6B645C] leading-relaxed">
-            Это демо-версия Веры на основе открытых материалов {displayTenant}. Для точных ответов во всех сценариях нужна полноценная интеграция от{" "}
-            <Link
-              href="https://optima.altaiweb.online"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: brand.primaryColor }}
-              className="font-bold hover:underline"
-            >
-              ALTAI Optima
-            </Link>
-          </p>
         </section>
 
-        {/* Right Column: Live Interactive Chat with Vera */}
+        {/* Right Column: Live Interactive Chat with Vera (On mobile: rendered right after "Напишите ей") */}
         <section
           aria-label="Чат с Верой"
-          className="flex-1 min-w-0 h-full bg-white rounded-[24px] sm:rounded-[28px] shadow-[0_20px_50px_-20px_rgba(60,40,20,0.18),0_0_0_1px_#EAE4DC] flex flex-col overflow-hidden min-h-[480px] lg:min-h-0"
+          className="flex-1 min-w-0 h-[560px] sm:h-[620px] lg:h-full bg-white rounded-[24px] sm:rounded-[28px] shadow-[0_20px_50px_-20px_rgba(60,40,20,0.18),0_0_0_1px_#EAE4DC] flex flex-col overflow-hidden min-h-[480px] lg:min-h-0"
         >
           {/* Card Header */}
           <div className="flex-none flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-[#F0EBE5] bg-white">
@@ -440,23 +516,6 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                 Сегодня
               </span>
             </div>
-
-            {/* If no messages yet, show default warm greeting */}
-            {messages.length === 0 && !loading && (
-              <div className="space-y-4">
-                <div className="flex gap-3 items-end max-w-[85%] sm:max-w-[80%]">
-                  <img
-                    src={brand.veraAvatarUrl || "/vera_showroom_avatar.png"}
-                    alt=""
-                    className="w-8 h-8 rounded-full object-cover shrink-0"
-                  />
-                  <div className="bg-white border border-[#EDE7E0] p-3.5 sm:p-4 rounded-[20px_20px_20px_6px] text-sm sm:text-base leading-relaxed text-[#1C1B1A] shadow-2xs">
-                    {brand.welcomeMessage ||
-                      `Здравствуйте! Я Вера, консультант ${displayTenant}. Чем могу помочь вам сегодня?`}
-                  </div>
-                </div>
-              </div>
-            )}
 
             {messages.map((m) => {
               const isAssistant = m.sender === "assistant";
@@ -591,6 +650,11 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
             </form>
           </div>
         </section>
+
+        {/* Mobile-only: Channels, CRM and Disclaimer under the Chat window */}
+        <div className="flex lg:hidden flex-col gap-4 pt-2 pb-6 shrink-0">
+          {renderIntegrationsAndDisclaimer()}
+        </div>
       </main>
     </div>
   );

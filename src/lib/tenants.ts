@@ -24,6 +24,7 @@ export interface TenantBrandConfig {
   logoShowroomUrl?: string;
   veraAvatarUrl?: string;
   logoTextUrl?: string;
+  logoWatermarkUrl?: string;
   primaryColor: string;
   primaryHover: string;
   primaryRing: string;
@@ -43,6 +44,7 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
     logoShowroomUrl: "/mobel_zeit_showroom.png",
     veraAvatarUrl: "/vera_showroom_avatar.png",
     logoTextUrl: "/logos/mobel_zeit_text_white.png",
+    logoWatermarkUrl: "/logos/mobel_zeit_text_red.png",
     primaryColor: "#C8102E",
     primaryHover: "#9E0B23",
     primaryRing: "rgba(200, 16, 46, 0.35)",
@@ -65,6 +67,7 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
     logoBadgeUrl: "/logos/lagoon_resort_logo.svg",
     logoShowroomUrl: "/logos/lagoon_resort_logo.svg",
     logoTextUrl: "/logos/lagoon_resort_logo_white.svg",
+    logoWatermarkUrl: "/logos/lagoon_resort_logo.svg",
     primaryColor: "#0A5C80",
     primaryHover: "#084763",
     primaryRing: "rgba(10, 92, 128, 0.35)",
