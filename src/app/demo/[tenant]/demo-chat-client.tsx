@@ -476,7 +476,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
             <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
               <div className="relative w-11 h-11 sm:w-12 sm:h-12 shrink-0">
                 <img
-                  src={brand.veraAvatarUrl || "/vera_showroom_avatar.png"}
+                  src={brand.veraAvatarUrl || "/vera_avatar_v2.png"}
                   alt="Вера"
                   className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover shadow-xs"
                   style={{
@@ -528,7 +528,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                 >
                   {isAssistant && (
                     <img
-                      src={brand.veraAvatarUrl || "/vera_showroom_avatar.png"}
+                      src={brand.veraAvatarUrl || "/vera_avatar_v2.png"}
                       alt=""
                       className="w-8 h-8 rounded-full object-cover shrink-0"
                     />
@@ -575,7 +575,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
             {loading && (
               <div className="flex items-center gap-3">
                 <img
-                  src={brand.veraAvatarUrl || "/vera_showroom_avatar.png"}
+                  src={brand.veraAvatarUrl || "/vera_avatar_v2.png"}
                   alt=""
                   className="w-8 h-8 rounded-full object-cover shrink-0"
                 />
