@@ -16,6 +16,8 @@ export const TENANT_DISPLAY_NAMES: Record<string, string> = {
   newo_ai: "NEWO AI",
   demo_amo: "amoCRM",
   demo_b24: "Битрикс24",
+  ak: "A&K",
+  ak_relocation: "A&K",
 };
 
 export interface TenantBrandConfig {
@@ -37,6 +39,7 @@ export interface TenantBrandConfig {
   welcomeMessage?: string;
   suggestedQuestions?: string[];
   heroDescription?: string;
+  whiteBackground?: boolean;
 }
 
 export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = {
@@ -120,6 +123,60 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
     heroDescription:
       "Я уже изучила ваш бизнес и готова стать вашим лучшим сотрудником. Объединяю обаяние чуткого эксперта, острый ум и железную цифровую дисциплину. Держу в памяти историю каждого клиента, общаюсь по стандартам флагманского салона и уверенно довожу диалоги до реальных сделок в CRM.",
   },
+  ak_relocation: {
+    displayName: "A&K",
+    logoBadgeUrl: "/logos/ak_logo.png",
+    logoShowroomUrl: "/logos/ak_logo.png",
+    veraAvatarUrl: "/ak_vera_avatar.jpg",
+    veraPhotoUrl: "/ak_vera_showroom.jpg",
+    logoTextUrl: "/logos/ak_logo.png",
+    logoWatermarkUrl: "/logos/ak_logo.png",
+    primaryColor: "#0E3275",
+    primaryHover: "#0A2454",
+    primaryRing: "rgba(14, 50, 117, 0.35)",
+    primaryLightBg: "rgba(14, 50, 117, 0.08)",
+    watermarkText: "A&K",
+    hasPattern: true,
+    badgeText: "A&K",
+    whiteBackground: true,
+    placeholderText: "Спросите о лотерее Green Card, шансах, требованиях или стоимости…",
+    welcomeMessage: "",
+    suggestedQuestions: [
+      "Сколько стоит подача заявки на Green Card DV-2027 и что входит в $35?",
+      "Как вы проверяете фотографии по 30+ параметрам Госдепартамента США?",
+      "Как повысить шансы на выигрыш, если мы участвуем семьей?",
+      "Что происходит после того, как анкета заполнена и оплачена?",
+    ],
+    heroDescription:
+      "Я уже изучила ваш бизнес и готова стать вашим лучшим сотрудником. Объединяю обаяние чуткого эксперта, глубокую визовую компетенцию и железную цифровую дисциплину. Держу в памяти правила Госдепартамента США, мгновенно эскалирую сложные юридические кейсы старшим юристам и уверенно довожу диалоги до предзаписи.",
+  },
+  ak: {
+    displayName: "A&K",
+    logoBadgeUrl: "/logos/ak_logo.png",
+    logoShowroomUrl: "/logos/ak_logo.png",
+    veraAvatarUrl: "/ak_vera_avatar.jpg",
+    veraPhotoUrl: "/ak_vera_showroom.jpg",
+    logoTextUrl: "/logos/ak_logo.png",
+    logoWatermarkUrl: "/logos/ak_logo.png",
+    primaryColor: "#0E3275",
+    primaryHover: "#0A2454",
+    primaryRing: "rgba(14, 50, 117, 0.35)",
+    primaryLightBg: "rgba(14, 50, 117, 0.08)",
+    watermarkText: "A&K",
+    hasPattern: true,
+    badgeText: "A&K",
+    whiteBackground: true,
+    placeholderText: "Спросите о лотерее Green Card, шансах, требованиях или стоимости…",
+    welcomeMessage: "",
+    suggestedQuestions: [
+      "Сколько стоит подача заявки на Green Card DV-2027 и что входит в $35?",
+      "Как вы проверяете фотографии по 30+ параметрам Госдепартамента США?",
+      "Как повысить шансы на выигрыш, если мы участвуем семьей?",
+      "Что происходит после того, как анкета заполнена и оплачена?",
+    ],
+    heroDescription:
+      "Я уже изучила ваш бизнес и готова стать вашим лучшим сотрудником. Объединяю обаяние чуткого эксперта, глубокую визовую компетенцию и железную цифровую дисциплину. Держу в памяти правила Госдепартамента США, мгновенно эскалирую сложные юридические кейсы старшим юристам и уверенно довожу диалоги до предзаписи.",
+  },
 };
 
 export function getTenantDisplayName(
@@ -168,6 +225,7 @@ export function getTenantBrand(
       welcomeMessage: custom.welcomeMessage,
       suggestedQuestions: custom.suggestedQuestions,
       heroDescription: custom.heroDescription,
+      whiteBackground: custom.whiteBackground,
     };
   }
 

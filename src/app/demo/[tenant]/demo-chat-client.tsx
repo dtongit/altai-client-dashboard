@@ -273,7 +273,11 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
   );
 
   return (
-    <div className="relative min-h-[100dvh] w-full flex flex-col bg-[#F5F2EE] text-[#1C1B1A] font-['Inter',system-ui,sans-serif] overflow-y-auto overflow-x-hidden">
+    <div
+      className={`relative min-h-[100dvh] w-full flex flex-col ${
+        brand.whiteBackground ? "bg-white" : "bg-[#F5F2EE]"
+      } text-[#1C1B1A] font-['Inter',system-ui,sans-serif] overflow-y-auto overflow-x-hidden`}
+    >
       {/* Main Two-Column Layout */}
       <main className="relative z-10 flex-1 min-h-0 max-w-[1440px] mx-auto w-full flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-8 xl:gap-10 px-4 sm:px-8 lg:px-10 xl:px-12 py-5 sm:py-7 lg:py-7">
         {/* Left Column (Desktop: fixed height matching chat with integrations at bottom. Mobile: top text only) */}
@@ -302,7 +306,11 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
 
             {/* Vera Showroom / Welcome Photo */}
             {brand.veraPhotoUrl && (
-              <div className="relative w-full rounded-2xl overflow-hidden shadow-xs border border-[#E4DED6] bg-white group mt-0.5">
+              <div
+                className={`relative w-full rounded-2xl overflow-hidden shadow-xs border ${
+                  brand.whiteBackground ? "border-slate-200" : "border-[#E4DED6]"
+                } bg-white group mt-0.5`}
+              >
                 <img
                   src={brand.veraPhotoUrl}
                   alt={`Вера — консультант ${displayTenant}`}
@@ -321,7 +329,11 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
         {/* Right Column: Live Interactive Chat with Vera (Fixed height, internal scroll upwards like real messengers) */}
         <section
           aria-label="Чат с Верой"
-          className="flex-1 min-w-0 h-[560px] sm:h-[620px] lg:h-[640px] xl:h-[680px] bg-white rounded-[24px] sm:rounded-[28px] shadow-[0_20px_50px_-20px_rgba(60,40,20,0.18),0_0_0_1px_#EAE4DC] flex flex-col overflow-hidden shrink-0"
+          className={`flex-1 min-w-0 h-[560px] sm:h-[620px] lg:h-[640px] xl:h-[680px] bg-white rounded-[24px] sm:rounded-[28px] ${
+            brand.whiteBackground
+              ? "shadow-[0_20px_50px_-20px_rgba(14,50,117,0.12),0_0_0_1px_#E2E8F0]"
+              : "shadow-[0_20px_50px_-20px_rgba(60,40,20,0.18),0_0_0_1px_#EAE4DC]"
+          } flex flex-col overflow-hidden shrink-0`}
         >
           {/* Card Header */}
           <div className="flex-none flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-[#F0EBE5] bg-white">
@@ -519,7 +531,11 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
       </main>
 
       {/* Footer: Client Logo & Powered by ALTAI OPTIMA */}
-      <footer className="relative flex-none z-20 w-full h-[56px] sm:h-[64px] px-6 sm:px-10 lg:px-12 border-t border-[#E4DED6] bg-[#F5F2EE] flex items-center justify-between mt-auto">
+      <footer
+        className={`relative flex-none z-20 w-full h-[56px] sm:h-[64px] px-6 sm:px-10 lg:px-12 border-t ${
+          brand.whiteBackground ? "border-slate-100 bg-white" : "border-[#E4DED6] bg-[#F5F2EE]"
+        } flex items-center justify-between mt-auto`}
+      >
         <div className="flex items-center gap-4 sm:gap-6 min-w-0">
           <img
             src={brand.logoShowroomUrl || brand.logoBadgeUrl || "/mobel_zeit_showroom.png"}
