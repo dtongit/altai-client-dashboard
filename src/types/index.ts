@@ -122,6 +122,8 @@ export interface TeamBotConversation {
   telegram_user_id: string;
   display_name: string;
   role?: string;
+  tenant_id?: string;
+  telegram_username?: string;
   total_events: number;
   last_event_time: string;
   last_event_type: string;

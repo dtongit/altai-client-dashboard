@@ -595,6 +595,7 @@ export const api = {
 
   async listTeamChats(tenantId?: string): Promise<{
     ok: boolean;
+    bot_username?: string;
     conversations?: TeamBotConversation[];
     chats?: TeamBotConversation[];
   }> {
@@ -604,12 +605,32 @@ export const api = {
 
   async getTeamChatHistory(telegramUserId: string, limit: number = 50): Promise<{
     ok: boolean;
+    bot_username?: string;
     telegram_user_id: string;
     events: TeamBotLogEvent[];
   }> {
     return request(
       `/team-chats/${encodeURIComponent(telegramUserId)}?limit=${limit}`,
       {},
+      ADMIN_API_BASE_URL
+    );
+  },
+
+  async sendTeamChatMessage(
+    telegramUserId: string,
+    message: string,
+    tenantId?: string
+  ): Promise<{
+    ok: boolean;
+    sent?: boolean;
+    event?: TeamBotLogEvent;
+  }> {
+    return request(
+      `/team-chats/${encodeURIComponent(telegramUserId)}/send`,
+      {
+        method: "POST",
+        body: JSON.stringify({ message, tenant_id: tenantId }),
+      },
       ADMIN_API_BASE_URL
     );
   },
