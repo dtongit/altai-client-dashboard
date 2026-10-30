@@ -331,7 +331,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
   );
 
   return (
-    <div className="relative min-h-[100dvh] lg:h-[100dvh] lg:max-h-[100dvh] w-full flex flex-col bg-[#F5F2EE] text-[#1C1B1A] font-['Manrope',system-ui,sans-serif] overflow-y-auto lg:overflow-hidden">
+    <div className="relative min-h-[100dvh] w-full flex flex-col bg-[#F5F2EE] text-[#1C1B1A] font-['Manrope',system-ui,sans-serif] overflow-y-auto overflow-x-hidden">
       {/* Header */}
       <header className="relative flex-none z-20 w-full h-[60px] sm:h-[68px] px-6 sm:px-10 lg:px-12 border-b border-[#E4DED6] bg-[#F5F2EE] flex items-center justify-between">
         <div className="flex items-center gap-4 sm:gap-6 min-w-0">
@@ -358,25 +358,25 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
       </header>
 
       {/* Main Two-Column Layout */}
-      <main className="relative z-10 flex-1 min-h-0 max-w-[1440px] mx-auto w-full flex flex-col lg:flex-row gap-6 lg:gap-10 px-6 sm:px-10 lg:px-12 py-3 sm:py-4 lg:py-5">
+      <main className="relative z-10 flex-1 min-h-0 max-w-[1440px] mx-auto w-full flex flex-col lg:flex-row items-stretch gap-6 lg:gap-8 xl:gap-10 px-4 sm:px-8 lg:px-10 xl:px-12 py-3 sm:py-4 lg:py-4">
         {/* Left Column (Desktop: full height with integrations at bottom. Mobile: top text only) */}
-        <section className="w-full lg:w-[480px] xl:w-[520px] shrink-0 flex flex-col justify-between lg:h-full gap-4 lg:gap-5 py-1">
+        <section className="w-full lg:w-[460px] xl:w-[490px] shrink-0 flex flex-col justify-between gap-4 lg:gap-4 py-1">
           {/* Top text block */}
-          <div className="flex flex-col gap-3 sm:gap-3.5">
+          <div className="flex flex-col gap-2.5 sm:gap-3">
             {/* Heading */}
-            <h1 className="text-2xl sm:text-3xl lg:text-[38px] xl:text-[42px] font-extrabold leading-[1.1] tracking-[-0.02em] text-[#1C1B1A]">
+            <h1 className="text-2xl sm:text-3xl lg:text-[34px] xl:text-[38px] font-extrabold leading-[1.12] tracking-[-0.02em] text-[#1C1B1A]">
               Добрый день!{" "}
-              <span style={{ color: brand.primaryColor }}>Меня зовут Вера.</span>
+              <span style={{ color: brand.primaryColor }}>Меня зовут Вера</span>
             </h1>
 
             {/* Description */}
-            <p className="text-xs sm:text-sm lg:text-[14px] xl:text-[15px] leading-[1.55] text-[#3B3631]">
+            <p className="text-xs sm:text-sm lg:text-[13.5px] xl:text-[14.5px] leading-[1.5] text-[#3B3631]">
               Я уже изучила ваш бизнес и готова стать вашим лучшим сотрудником. Объединяю обаяние чуткого эксперта, острый ум и железную цифровую дисциплину. Держу в памяти историю каждого клиента, общаюсь по стандартам флагманского салона и уверенно довожу диалоги до реальных сделок в CRM.
             </p>
 
             {/* Cursive Handwriting Note */}
             <p
-              className="font-['Caveat',cursive] text-xl sm:text-[22px] lg:text-[23px] leading-tight"
+              className="font-['Caveat',cursive] text-lg sm:text-[20px] lg:text-[21px] leading-tight"
               style={{ color: brand.primaryColor }}
             >
               Напишите мне от лица покупателя и проверьте мой профессионализм в деле
@@ -384,14 +384,14 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
 
             {/* Vera Showroom / Welcome Photo */}
             {brand.veraPhotoUrl && (
-              <div className="relative w-full rounded-2xl overflow-hidden shadow-sm border border-[#E4DED6] bg-white group mt-1">
+              <div className="relative w-full rounded-2xl overflow-hidden shadow-xs border border-[#E4DED6] bg-white group mt-0.5">
                 <img
                   src={brand.veraPhotoUrl}
                   alt={`Вера — консультант ${displayTenant}`}
-                  className="w-full h-[180px] sm:h-[200px] lg:h-[190px] xl:h-[210px] object-cover object-[center_25%] transition-transform duration-500 group-hover:scale-[1.02]"
+                  className="w-full h-[140px] sm:h-[160px] lg:h-[155px] xl:h-[175px] object-cover object-[center_25%] transition-transform duration-500 group-hover:scale-[1.02]"
                 />
-                <div className="absolute bottom-2.5 left-3 px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-medium flex items-center gap-1.5 shadow-sm">
-                  <span className="w-2 h-2 rounded-full bg-[#1F9D55] animate-pulse" />
+                <div className="absolute bottom-2 left-2.5 px-2.5 py-0.5 rounded-full bg-slate-900/80 backdrop-blur-md text-white text-[10.5px] font-medium flex items-center gap-1.5 shadow-xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#1F9D55] animate-pulse" />
                   <span>Вера онлайн · {displayTenant}</span>
                 </div>
               </div>
@@ -399,7 +399,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
           </div>
 
           {/* Desktop-only: Channels, CRM and Disclaimer at bottom of left column */}
-          <div className="hidden lg:flex lg:flex-col lg:gap-4 lg:mt-auto">
+          <div className="hidden lg:flex lg:flex-col lg:gap-3.5 lg:mt-auto pt-1">
             {renderIntegrationsAndDisclaimer()}
           </div>
         </section>
@@ -407,7 +407,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
         {/* Right Column: Live Interactive Chat with Vera (On mobile: rendered right after "Напишите ей") */}
         <section
           aria-label="Чат с Верой"
-          className="flex-1 min-w-0 h-[560px] sm:h-[620px] lg:h-full bg-white rounded-[24px] sm:rounded-[28px] shadow-[0_20px_50px_-20px_rgba(60,40,20,0.18),0_0_0_1px_#EAE4DC] flex flex-col overflow-hidden min-h-[480px] lg:min-h-0"
+          className="flex-1 min-w-0 h-[560px] sm:h-[620px] lg:h-auto lg:min-h-[580px] xl:min-h-[640px] bg-white rounded-[24px] sm:rounded-[28px] shadow-[0_20px_50px_-20px_rgba(60,40,20,0.18),0_0_0_1px_#EAE4DC] flex flex-col overflow-hidden"
         >
           {/* Card Header */}
           <div className="flex-none flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-[#F0EBE5] bg-white">
