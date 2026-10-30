@@ -274,33 +274,8 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
 
   return (
     <div className="relative min-h-[100dvh] w-full flex flex-col bg-[#F5F2EE] text-[#1C1B1A] font-['Inter',system-ui,sans-serif] overflow-y-auto overflow-x-hidden">
-      {/* Header */}
-      <header className="relative flex-none z-20 w-full h-[60px] sm:h-[68px] px-6 sm:px-10 lg:px-12 border-b border-[#E4DED6] bg-[#F5F2EE] flex items-center justify-between">
-        <div className="flex items-center gap-4 sm:gap-6 min-w-0">
-          <img
-            src={brand.logoShowroomUrl || brand.logoBadgeUrl || "/mobel_zeit_showroom.png"}
-            alt={displayTenant}
-            className="h-7 sm:h-8 w-auto object-contain shrink-0 block"
-          />
-        </div>
-
-        <div className="flex items-center gap-4 sm:gap-6 shrink-0">
-          <Link
-            href="https://optima.altaiweb.online"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 sm:gap-2 text-[#6B645C] hover:text-[#1C1B1A] text-xs sm:text-[13px] font-medium transition-colors"
-          >
-            <span>powered by</span>
-            <span className="font-extrabold tracking-wider text-[#14213D] uppercase">
-              ALTAI OPTIMA
-            </span>
-          </Link>
-        </div>
-      </header>
-
       {/* Main Two-Column Layout */}
-      <main className="relative z-10 flex-1 min-h-0 max-w-[1440px] mx-auto w-full flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-8 xl:gap-10 px-4 sm:px-8 lg:px-10 xl:px-12 py-3 sm:py-4 lg:py-4">
+      <main className="relative z-10 flex-1 min-h-0 max-w-[1440px] mx-auto w-full flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-8 xl:gap-10 px-4 sm:px-8 lg:px-10 xl:px-12 py-5 sm:py-7 lg:py-7">
         {/* Left Column (Desktop: fixed height matching chat with integrations at bottom. Mobile: top text only) */}
         <section className="w-full lg:w-[460px] xl:w-[490px] shrink-0 flex flex-col justify-between lg:h-[640px] xl:h-[680px] gap-4 py-1">
           {/* Top text block */}
@@ -546,6 +521,31 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
           {renderIntegrationsAndDisclaimer()}
         </div>
       </main>
+
+      {/* Footer: Client Logo & Powered by ALTAI OPTIMA */}
+      <footer className="relative flex-none z-20 w-full h-[56px] sm:h-[64px] px-6 sm:px-10 lg:px-12 border-t border-[#E4DED6] bg-[#F5F2EE] flex items-center justify-between mt-auto">
+        <div className="flex items-center gap-4 sm:gap-6 min-w-0">
+          <img
+            src={brand.logoShowroomUrl || brand.logoBadgeUrl || "/mobel_zeit_showroom.png"}
+            alt={displayTenant}
+            className="h-7 sm:h-8 w-auto object-contain shrink-0 block"
+          />
+        </div>
+
+        <div className="flex items-center gap-4 sm:gap-6 shrink-0">
+          <Link
+            href="https://optima.altaiweb.online"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 sm:gap-2 text-[#6B645C] hover:text-[#1C1B1A] text-xs sm:text-[13px] font-medium transition-colors"
+          >
+            <span>powered by</span>
+            <span className="font-extrabold tracking-wider text-[#14213D] uppercase">
+              ALTAI OPTIMA
+            </span>
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }
