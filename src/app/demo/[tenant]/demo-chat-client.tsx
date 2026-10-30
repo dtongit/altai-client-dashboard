@@ -230,26 +230,37 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
   const renderIntegrationsAndDisclaimer = () => (
     <>
       <div className="flex flex-col gap-2.5 sm:gap-3 text-xs sm:text-[13px] leading-relaxed font-['Inter',sans-serif]">
-        <p>
-          <strong className="font-bold text-[#1C1B1A]">Я на связи везде:</strong>{" "}
-          <span className="text-[#5A524A]">
-            встречаю клиентов в WhatsApp, Telegram, MAX, на Авито, в VK и на сайте.
-          </span>
-        </p>
+        {brand.integrationsList && brand.integrationsList.length > 0 ? (
+          brand.integrationsList.map((item, idx) => (
+            <p key={idx}>
+              <strong className="font-bold text-[#1C1B1A]">{item.title}</strong>{" "}
+              <span className="text-[#5A524A]">{item.description}</span>
+            </p>
+          ))
+        ) : (
+          <>
+            <p>
+              <strong className="font-bold text-[#1C1B1A]">Я на связи везде:</strong>{" "}
+              <span className="text-[#5A524A]">
+                встречаю клиентов в WhatsApp, Telegram, MAX, на Авито, в VK и на сайте.
+              </span>
+            </p>
 
-        <p>
-          <strong className="font-bold text-[#1C1B1A]">Я знаю ваш продукт до мелочей:</strong>{" "}
-          <span className="text-[#5A524A]">
-            интегрируюсь с 1С, МойСклад и базами учета — проверяю наличие, свободные слоты, актуальные цены и считаю стоимость на лету.
-          </span>
-        </p>
+            <p>
+              <strong className="font-bold text-[#1C1B1A]">Я знаю ваш продукт до мелочей:</strong>{" "}
+              <span className="text-[#5A524A]">
+                интегрируюсь с 1С, МойСклад и базами учета — проверяю наличие, свободные слоты, актуальные цены и считаю стоимость на лету.
+              </span>
+            </p>
 
-        <p>
-          <strong className="font-bold text-[#1C1B1A]">Я сама веду CRM:</strong>{" "}
-          <span className="text-[#5A524A]">
-            мгновенно фиксирую контакты, историю общения и готовые сделки в Битрикс24, amoCRM или любой другой системе.
-          </span>
-        </p>
+            <p>
+              <strong className="font-bold text-[#1C1B1A]">Я сама веду CRM:</strong>{" "}
+              <span className="text-[#5A524A]">
+                мгновенно фиксирую контакты, историю общения и готовые сделки в Битрикс24, amoCRM или любой другой системе.
+              </span>
+            </p>
+          </>
+        )}
 
         <p className="text-[11.5px] sm:text-xs text-[#7A726A] leading-snug pt-0.5">
           И это лишь малая часть моих навыков. Напишите мне в чат и давайте пообщаемся поближе. Готова пройти любой стресс-тест.
