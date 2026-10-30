@@ -116,17 +116,21 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTo({
         top: chatScrollRef.current.scrollHeight,
-        behavior: "smooth",
+        behavior,
       });
     }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    scrollToBottom("smooth");
+    const t = setTimeout(() => {
+      scrollToBottom("smooth");
+    }, 50);
+    return () => clearTimeout(t);
   }, [messages, loading]);
 
   // Generate or restore session
@@ -358,9 +362,9 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
       </header>
 
       {/* Main Two-Column Layout */}
-      <main className="relative z-10 flex-1 min-h-0 max-w-[1440px] mx-auto w-full flex flex-col lg:flex-row items-stretch gap-6 lg:gap-8 xl:gap-10 px-4 sm:px-8 lg:px-10 xl:px-12 py-3 sm:py-4 lg:py-4">
-        {/* Left Column (Desktop: full height with integrations at bottom. Mobile: top text only) */}
-        <section className="w-full lg:w-[460px] xl:w-[490px] shrink-0 flex flex-col justify-between gap-4 lg:gap-4 py-1">
+      <main className="relative z-10 flex-1 min-h-0 max-w-[1440px] mx-auto w-full flex flex-col lg:flex-row lg:items-start gap-6 lg:gap-8 xl:gap-10 px-4 sm:px-8 lg:px-10 xl:px-12 py-3 sm:py-4 lg:py-4">
+        {/* Left Column (Desktop: fixed height matching chat with integrations at bottom. Mobile: top text only) */}
+        <section className="w-full lg:w-[460px] xl:w-[490px] shrink-0 flex flex-col justify-between lg:h-[640px] xl:h-[680px] gap-4 py-1">
           {/* Top text block */}
           <div className="flex flex-col gap-2.5 sm:gap-3">
             {/* Heading */}
@@ -404,10 +408,10 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
           </div>
         </section>
 
-        {/* Right Column: Live Interactive Chat with Vera (On mobile: rendered right after "Напишите ей") */}
+        {/* Right Column: Live Interactive Chat with Vera (Fixed height, internal scroll upwards like real messengers) */}
         <section
           aria-label="Чат с Верой"
-          className="flex-1 min-w-0 h-[560px] sm:h-[620px] lg:h-auto lg:min-h-[580px] xl:min-h-[640px] bg-white rounded-[24px] sm:rounded-[28px] shadow-[0_20px_50px_-20px_rgba(60,40,20,0.18),0_0_0_1px_#EAE4DC] flex flex-col overflow-hidden"
+          className="flex-1 min-w-0 h-[560px] sm:h-[620px] lg:h-[640px] xl:h-[680px] bg-white rounded-[24px] sm:rounded-[28px] shadow-[0_20px_50px_-20px_rgba(60,40,20,0.18),0_0_0_1px_#EAE4DC] flex flex-col overflow-hidden shrink-0"
         >
           {/* Card Header */}
           <div className="flex-none flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-[#F0EBE5] bg-white">
@@ -416,7 +420,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                 <img
                   src={brand.veraAvatarUrl || "/vera_avatar_v2.png"}
                   alt="Вера"
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover shadow-xs"
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover object-center shadow-xs"
                   style={{
                     boxShadow: `0 0 0 2.5px #FFFFFF, 0 0 0 4.5px ${brand.primaryColor}`,
                   }}
@@ -447,7 +451,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
           {/* Messages Stream */}
           <div
             ref={chatScrollRef}
-            className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-7 space-y-4 bg-[#FCFBF9]"
+            className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 sm:p-7 space-y-4 bg-[#FCFBF9]"
           >
             <div className="text-center">
               <span className="inline-block text-xs font-semibold text-[#8A8178] bg-[#F2EEE8] px-3 py-1 rounded-full">
@@ -468,7 +472,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                     <img
                       src={brand.veraAvatarUrl || "/vera_avatar_v2.png"}
                       alt=""
-                      className="w-8 h-8 rounded-full object-cover shrink-0"
+                      className="w-8 h-8 rounded-full object-cover object-center shrink-0"
                     />
                   )}
                   <div
@@ -515,7 +519,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                 <img
                   src={brand.veraAvatarUrl || "/vera_avatar_v2.png"}
                   alt=""
-                  className="w-8 h-8 rounded-full object-cover shrink-0"
+                  className="w-8 h-8 rounded-full object-cover object-center shrink-0"
                 />
                 <div
                   aria-label="Вера печатает"

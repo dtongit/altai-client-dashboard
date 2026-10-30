@@ -62,7 +62,7 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
     displayName: "Lagoon Resort",
     logoBadgeUrl: "/logos/lagoon_resort_logo.svg",
     logoShowroomUrl: "/logos/lagoon_resort_logo.svg",
-    veraAvatarUrl: "/lagoon_resort_vera_avatar.jpg",
+    veraAvatarUrl: "/lagoon_resort_vera_avatar.jpg?v=3",
     veraPhotoUrl: "/lagoon_resort_vera_desk.jpg",
     logoTextUrl: "/logos/lagoon_resort_logo_white.svg",
     logoWatermarkUrl: "/logos/lagoon_resort_logo.svg",
