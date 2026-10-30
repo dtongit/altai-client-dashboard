@@ -229,48 +229,30 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
 
   const renderIntegrationsAndDisclaimer = () => (
     <>
-      <div className="flex flex-col gap-2.5 sm:gap-3">
-        {/* Channels */}
-        <div className="space-y-1">
-          <span className="text-[10.5px] sm:text-[11px] font-bold tracking-[0.06em] uppercase text-[#8A8178] block">
-            Общаюсь там, где удобно вашим клиентам:
+      <div className="flex flex-col gap-2.5 sm:gap-3 text-xs sm:text-[13px] leading-relaxed font-['Inter',sans-serif]">
+        <p>
+          <strong className="font-bold text-[#1C1B1A]">Я на связи везде:</strong>{" "}
+          <span className="text-[#5A524A]">
+            встречаю клиентов в WhatsApp, Telegram, MAX, на Авито, в VK и на сайте
           </span>
-          <p className="text-xs sm:text-[13px] font-medium font-['Inter',sans-serif] text-[#8A8178] flex flex-wrap items-center gap-x-2 sm:gap-x-2.5 gap-y-0.5">
-            <span>WhatsApp</span>
-            <span className="text-[#C8C0B7] select-none font-normal">|</span>
-            <span>Telegram</span>
-            <span className="text-[#C8C0B7] select-none font-normal">|</span>
-            <span>Instagram</span>
-            <span className="text-[#C8C0B7] select-none font-normal">|</span>
-            <span>Авито</span>
-            <span className="text-[#C8C0B7] select-none font-normal">|</span>
-            <span>VK</span>
-            <span className="text-[#C8C0B7] select-none font-normal">|</span>
-            <span>Виджет на сайте и др</span>
-          </p>
-        </div>
+        </p>
 
-        {/* Database & CRM Integrations */}
-        <div className="space-y-1">
-          <span className="text-[10.5px] sm:text-[11px] font-bold tracking-[0.06em] uppercase text-[#8A8178] block">
-            Сама веду вашу CRM:
+        <p>
+          <strong className="font-bold text-[#1C1B1A]">Я знаю ваш склад наизусть:</strong>{" "}
+          <span className="text-[#5A524A]">
+            интегрируюсь с МойСклад, 1С и базами учета — проверяю наличие, подбираю комплектации и считаю стоимость на лету.
           </span>
-          <p className="text-xs sm:text-[13px] font-medium font-['Inter',sans-serif] text-[#8A8178] flex flex-wrap items-center gap-x-2 sm:gap-x-2.5 gap-y-0.5">
-            <span>amoCRM</span>
-            <span className="text-[#C8C0B7] select-none font-normal">|</span>
-            <span>Битрикс24</span>
-            <span className="text-[#C8C0B7] select-none font-normal">|</span>
-            <span>1С</span>
-            <span className="text-[#C8C0B7] select-none font-normal">|</span>
-            <span>МойСклад</span>
-            <span className="text-[#C8C0B7] select-none font-normal">|</span>
-            <span>Google Таблицы и др</span>
-          </p>
-        </div>
+        </p>
 
-        {/* Subtitle description */}
-        <p className="text-[11px] sm:text-xs text-[#6B645C] leading-snug">
-          Подхватываю входящий диалог за 60 секунд, квалифицирую покупателя и сохраняю готовую сделку в вашу систему
+        <p>
+          <strong className="font-bold text-[#1C1B1A]">Я сама веду CRM:</strong>{" "}
+          <span className="text-[#5A524A]">
+            мгновенно фиксирую контакты, историю общения и готовые сделки в Битрикс24, amoCRM или любой другой системе.
+          </span>
+        </p>
+
+        <p className="text-[11.5px] sm:text-xs text-[#7A726A] leading-snug pt-0.5">
+          И это лишь малая часть моих навыков. Напишите мне в чат, и давайте пообщаемся поближе. Готова пройти любой стресс-тест:)
         </p>
       </div>
 
@@ -349,7 +331,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                 <img
                   src={brand.veraPhotoUrl}
                   alt={`Вера — консультант ${displayTenant}`}
-                  className="w-full h-[155px] sm:h-[180px] lg:h-[180px] xl:h-[200px] object-cover object-[center_28%] transition-transform duration-500 group-hover:scale-[1.02]"
+                  className="w-full h-[155px] sm:h-[175px] lg:h-[150px] xl:h-[170px] object-cover object-[center_28%] transition-transform duration-500 group-hover:scale-[1.02]"
                 />
                 <div className="absolute bottom-2 left-2.5 px-2.5 py-0.5 rounded-full bg-slate-900/80 backdrop-blur-md text-white text-[10.5px] font-medium flex items-center gap-1.5 shadow-xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#1F9D55] animate-pulse" />
