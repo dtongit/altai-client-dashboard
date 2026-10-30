@@ -364,23 +364,38 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
           {/* Top text block */}
           <div className="flex flex-col gap-3 sm:gap-3.5">
             {/* Heading */}
-            <h1 className="text-2xl sm:text-3xl lg:text-[42px] xl:text-[46px] font-extrabold leading-[1.08] tracking-[-0.02em] text-[#1C1B1A]">
-              Вера уже изучила{" "}
-              <span style={{ color: brand.primaryColor }}>вашу компанию</span>
+            <h1 className="text-2xl sm:text-3xl lg:text-[38px] xl:text-[42px] font-extrabold leading-[1.1] tracking-[-0.02em] text-[#1C1B1A]">
+              Добрый день!{" "}
+              <span style={{ color: brand.primaryColor }}>Меня зовут Вера.</span>
             </h1>
 
             {/* Description */}
-            <p className="text-xs sm:text-sm lg:text-[15px] leading-[1.5] text-[#3B3631]">
-              Ваш новый лучший сотрудник. Обаяние чуткого эксперта, тонкий ум и железная компьютерная дисциплина. Вера помнит каждого клиента, ведёт диалог по стандартам флагманского салона и бережно доводит каждого до реальной покупки в CRM.
+            <p className="text-xs sm:text-sm lg:text-[14px] xl:text-[15px] leading-[1.55] text-[#3B3631]">
+              Я уже изучила ваш бизнес и готова стать вашим лучшим сотрудником. Объединяю обаяние чуткого эксперта, острый ум и железную цифровую дисциплину. Держу в памяти историю каждого клиента, общаюсь по стандартам флагманского салона и уверенно довожу диалоги до реальных сделок в CRM.
             </p>
 
             {/* Cursive Handwriting Note */}
             <p
-              className="font-['Caveat',cursive] text-xl sm:text-[23px] leading-tight"
+              className="font-['Caveat',cursive] text-xl sm:text-[22px] lg:text-[23px] leading-tight"
               style={{ color: brand.primaryColor }}
             >
-              Напишите ей как покупатель, она уже ждёт в чате
+              Напишите мне от лица покупателя и проверьте мой профессионализм в деле
             </p>
+
+            {/* Vera Showroom / Welcome Photo */}
+            {brand.veraPhotoUrl && (
+              <div className="relative w-full rounded-2xl overflow-hidden shadow-sm border border-[#E4DED6] bg-white group mt-1">
+                <img
+                  src={brand.veraPhotoUrl}
+                  alt={`Вера — консультант ${displayTenant}`}
+                  className="w-full h-[180px] sm:h-[200px] lg:h-[190px] xl:h-[210px] object-cover object-[center_25%] transition-transform duration-500 group-hover:scale-[1.02]"
+                />
+                <div className="absolute bottom-2.5 left-3 px-3 py-1 rounded-full bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-medium flex items-center gap-1.5 shadow-sm">
+                  <span className="w-2 h-2 rounded-full bg-[#1F9D55] animate-pulse" />
+                  <span>Вера онлайн · {displayTenant}</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Desktop-only: Channels, CRM and Disclaimer at bottom of left column */}

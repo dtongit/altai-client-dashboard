@@ -23,6 +23,7 @@ export interface TenantBrandConfig {
   logoBadgeUrl?: string;
   logoShowroomUrl?: string;
   veraAvatarUrl?: string;
+  veraPhotoUrl?: string;
   logoTextUrl?: string;
   logoWatermarkUrl?: string;
   primaryColor: string;
@@ -42,7 +43,8 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
     displayName: "möbel&zeit",
     logoBadgeUrl: "/logos/mobel_zeit_badge.png",
     logoShowroomUrl: "/mobel_zeit_showroom.png",
-    veraAvatarUrl: "/vera_avatar_v2.png",
+    veraAvatarUrl: "/mobel_zeit_vera_avatar.jpg",
+    veraPhotoUrl: "/mobel_zeit_vera_showroom.jpg",
     logoTextUrl: "/logos/mobel_zeit_text_white.png",
     logoWatermarkUrl: "/logos/mobel_zeit_text_red.png",
     primaryColor: "#C8102E",
@@ -60,7 +62,8 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
     displayName: "Lagoon Resort",
     logoBadgeUrl: "/logos/lagoon_resort_logo.svg",
     logoShowroomUrl: "/logos/lagoon_resort_logo.svg",
-    veraAvatarUrl: "/vera_avatar_v2.png",
+    veraAvatarUrl: "/lagoon_resort_vera_avatar.jpg",
+    veraPhotoUrl: "/lagoon_resort_vera_desk.jpg",
     logoTextUrl: "/logos/lagoon_resort_logo_white.svg",
     logoWatermarkUrl: "/logos/lagoon_resort_logo.svg",
     primaryColor: "#0A5C80",
@@ -109,6 +112,7 @@ export function getTenantBrand(
       logoBadgeUrl: custom.logoBadgeUrl,
       logoShowroomUrl: custom.logoShowroomUrl,
       veraAvatarUrl: custom.veraAvatarUrl,
+      veraPhotoUrl: custom.veraPhotoUrl,
       logoTextUrl: custom.logoTextUrl,
       primaryColor: custom.primaryColor,
       primaryHover: custom.primaryHover || "#b30000",
