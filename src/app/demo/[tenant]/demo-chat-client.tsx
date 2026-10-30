@@ -232,8 +232,8 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
       <div className="flex flex-col gap-2.5 sm:gap-3">
         {/* Channels */}
         <div className="space-y-1">
-          <span className="text-[10.5px] sm:text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
-            Каналы связи
+          <span className="text-[10.5px] sm:text-[11px] font-bold tracking-[0.06em] uppercase text-[#8A8178] block">
+            Общаюсь там, где удобно вашим клиентам:
           </span>
           <p className="text-xs sm:text-[13px] font-medium font-['Inter',sans-serif] text-[#8A8178] flex flex-wrap items-center gap-x-2 sm:gap-x-2.5 gap-y-0.5">
             <span>WhatsApp</span>
@@ -246,14 +246,14 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
             <span className="text-[#C8C0B7] select-none font-normal">|</span>
             <span>VK</span>
             <span className="text-[#C8C0B7] select-none font-normal">|</span>
-            <span>Виджет на сайт и др.</span>
+            <span>Виджет на сайте и др</span>
           </p>
         </div>
 
         {/* Database & CRM Integrations */}
         <div className="space-y-1">
-          <span className="text-[10.5px] sm:text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
-            Интеграция с базой
+          <span className="text-[10.5px] sm:text-[11px] font-bold tracking-[0.06em] uppercase text-[#8A8178] block">
+            Сама веду вашу CRM:
           </span>
           <p className="text-xs sm:text-[13px] font-medium font-['Inter',sans-serif] text-[#8A8178] flex flex-wrap items-center gap-x-2 sm:gap-x-2.5 gap-y-0.5">
             <span>amoCRM</span>
@@ -264,13 +264,13 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
             <span className="text-[#C8C0B7] select-none font-normal">|</span>
             <span>МойСклад</span>
             <span className="text-[#C8C0B7] select-none font-normal">|</span>
-            <span>Google Sheets / Excel и др.</span>
+            <span>Google Таблицы и др</span>
           </p>
         </div>
 
         {/* Subtitle description */}
         <p className="text-[11px] sm:text-xs text-[#6B645C] leading-snug">
-          Мгновенно подхватывает диалоги из всех соцсетей и передает готовые лиды в вашу систему учета
+          Подхватываю входящий диалог за 60 секунд, квалифицирую покупателя и сохраняю готовую сделку в вашу систему
         </p>
       </div>
 
