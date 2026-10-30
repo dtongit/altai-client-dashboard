@@ -53,14 +53,8 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
     hasPattern: true,
     badgeText: "möbel & zeit",
     placeholderText: "Спросите о моделях, тканях, ценах или доставке…",
-    welcomeMessage:
-      "Добрый день! Я Вера, консультант möbel&zeit. Рада приветствовать вас! Подбираете диван в гостиную, мастер-спальню или домашний кинотеатр? Чем могу помочь?",
-    suggestedQuestions: [
-      "Какие есть механизмы?",
-      "Сроки и доставка",
-      "Где ближайший салон?",
-      "Скидки в аутлете",
-    ],
+    welcomeMessage: "",
+    suggestedQuestions: [],
   },
   lagoon_resort: {
     displayName: "Lagoon Resort",
