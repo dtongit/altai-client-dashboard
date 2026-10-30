@@ -36,6 +36,7 @@ export interface TenantBrandConfig {
   placeholderText?: string;
   welcomeMessage?: string;
   suggestedQuestions?: string[];
+  heroDescription?: string;
 }
 
 export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = {
@@ -76,6 +77,27 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
     placeholderText: "Спросите о резиденциях, ценах, рассрочке или ВНЖ…",
     welcomeMessage: "",
     suggestedQuestions: [],
+  },
+  neometria: {
+    displayName: "Неометрия",
+    logoBadgeUrl: "/logos/neometria_logo.png",
+    logoShowroomUrl: "/logos/neometria_logo.png",
+    veraAvatarUrl: "/neometria_vera_avatar.jpg",
+    veraPhotoUrl: "/neometria_vera_showroom.jpg",
+    logoTextUrl: "/logos/neometria_logo.png",
+    logoWatermarkUrl: "/logos/neometria_logo.png",
+    primaryColor: "#E07000",
+    primaryHover: "#C45E00",
+    primaryRing: "rgba(224, 112, 0, 0.35)",
+    primaryLightBg: "rgba(224, 112, 0, 0.08)",
+    watermarkText: "НЕОМЕТРИЯ",
+    hasPattern: true,
+    badgeText: "Неометрия",
+    placeholderText: "Спросите о жилых комплексах, ценах, планировках или ипотеке…",
+    welcomeMessage: "",
+    suggestedQuestions: [],
+    heroDescription:
+      "Я уже изучила ваш бизнес и готова стать вашим лучшим сотрудником. Объединяю обаяние чуткого эксперта, острый ум и железную цифровую дисциплину. Держу в памяти историю каждого клиента, общаюсь по стандартам флагманского офиса продаж и уверенно довожу диалоги до реальных сделок в CRM.",
   },
 };
 
@@ -124,6 +146,7 @@ export function getTenantBrand(
       placeholderText: custom.placeholderText || "Задайте любой вопрос по продукции, ценам или услугам...",
       welcomeMessage: custom.welcomeMessage,
       suggestedQuestions: custom.suggestedQuestions,
+      heroDescription: custom.heroDescription,
     };
   }
 

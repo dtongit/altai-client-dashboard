@@ -276,7 +276,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
 
       {/* Footer Disclaimer */}
       <p className="border-t border-[#E4DED6] pt-2 text-[10.5px] sm:text-[11px] text-[#6B645C] leading-relaxed">
-        Это демо-версия Веры на основе открытых материалов {displayTenant}. Для точных ответов во всех сценариях нужна полноценная интеграция от{" "}
+        Это демо-версия Веры на основе открытых материалов компании {displayTenant}. Для точных ответов во всех сценариях нужна полноценная интеграция от{" "}
         <Link
           href="https://optima.altaiweb.online"
           target="_blank"
@@ -331,7 +331,8 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
 
             {/* Description */}
             <p className="text-xs sm:text-sm lg:text-[13.5px] xl:text-[14.5px] leading-[1.5] text-[#3B3631]">
-              Я уже изучила ваш бизнес и готова стать вашим лучшим сотрудником. Объединяю обаяние чуткого эксперта, острый ум и железную цифровую дисциплину. Держу в памяти историю каждого клиента, общаюсь по стандартам флагманского салона и уверенно довожу диалоги до реальных сделок в CRM.
+              {brand.heroDescription ||
+                "Я уже изучила ваш бизнес и готова стать вашим лучшим сотрудником. Объединяю обаяние чуткого эксперта, острый ум и железную цифровую дисциплину. Держу в памяти историю каждого клиента, общаюсь по стандартам флагманского салона и уверенно довожу диалоги до реальных сделок в CRM."}
             </p>
 
             {/* Cursive Handwriting Note */}
@@ -348,7 +349,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                 <img
                   src={brand.veraPhotoUrl}
                   alt={`Вера — консультант ${displayTenant}`}
-                  className="w-full h-[140px] sm:h-[160px] lg:h-[155px] xl:h-[175px] object-cover object-[center_25%] transition-transform duration-500 group-hover:scale-[1.02]"
+                  className="w-full h-[155px] sm:h-[180px] lg:h-[180px] xl:h-[200px] object-cover object-[center_28%] transition-transform duration-500 group-hover:scale-[1.02]"
                 />
                 <div className="absolute bottom-2 left-2.5 px-2.5 py-0.5 rounded-full bg-slate-900/80 backdrop-blur-md text-white text-[10.5px] font-medium flex items-center gap-1.5 shadow-xs">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#1F9D55] animate-pulse" />
@@ -522,8 +523,16 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={brand.placeholderText}
                 disabled={loading}
-                className="flex-1 bg-[#F8F6F3] border border-[#E4DED6] rounded-xl sm:rounded-2xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-[16px] sm:text-[15px] text-[#1C1B1A] outline-none focus:border-[#C8102E] transition-all placeholder:text-[#8A8178]"
+                className="flex-1 bg-[#F8F6F3] border border-[#E4DED6] rounded-xl sm:rounded-2xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-[16px] sm:text-[15px] text-[#1C1B1A] outline-none transition-all placeholder:text-[#8A8178]"
                 style={{ fontSize: "16px" }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = brand.primaryColor;
+                  e.currentTarget.style.boxShadow = `0 0 0 3px ${brand.primaryRing}`;
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = "#E4DED6";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
               />
               <button
                 type="submit"
