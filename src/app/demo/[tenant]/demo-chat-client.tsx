@@ -235,7 +235,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
           <span className="text-[10.5px] sm:text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
             Каналы связи
           </span>
-          <p className="text-xs sm:text-[13px] font-semibold text-[#1C1B1A] flex flex-wrap items-center gap-x-2 sm:gap-x-2.5 gap-y-0.5">
+          <p className="text-xs sm:text-[13px] font-medium font-['Inter',sans-serif] text-[#8A8178] flex flex-wrap items-center gap-x-2 sm:gap-x-2.5 gap-y-0.5">
             <span>WhatsApp</span>
             <span className="text-[#C8C0B7] select-none font-normal">|</span>
             <span>Telegram</span>
@@ -255,7 +255,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
           <span className="text-[10.5px] sm:text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
             Интеграция с базой
           </span>
-          <p className="text-xs sm:text-[13px] font-semibold text-[#1C1B1A] flex flex-wrap items-center gap-x-2 sm:gap-x-2.5 gap-y-0.5">
+          <p className="text-xs sm:text-[13px] font-medium font-['Inter',sans-serif] text-[#8A8178] flex flex-wrap items-center gap-x-2 sm:gap-x-2.5 gap-y-0.5">
             <span>amoCRM</span>
             <span className="text-[#C8C0B7] select-none font-normal">|</span>
             <span>Битрикс24</span>
@@ -291,7 +291,7 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
   );
 
   return (
-    <div className="relative min-h-[100dvh] w-full flex flex-col bg-[#F5F2EE] text-[#1C1B1A] font-['Manrope',system-ui,sans-serif] overflow-y-auto overflow-x-hidden">
+    <div className="relative min-h-[100dvh] w-full flex flex-col bg-[#F5F2EE] text-[#1C1B1A] font-['Inter',system-ui,sans-serif] overflow-y-auto overflow-x-hidden">
       {/* Header */}
       <header className="relative flex-none z-20 w-full h-[60px] sm:h-[68px] px-6 sm:px-10 lg:px-12 border-b border-[#E4DED6] bg-[#F5F2EE] flex items-center justify-between">
         <div className="flex items-center gap-4 sm:gap-6 min-w-0">
