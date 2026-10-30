@@ -133,20 +133,18 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
     return () => clearTimeout(t);
   }, [messages, loading]);
 
-  // Generate or restore session
+  // Generate fresh session on mount/refresh (no persistence across reloads)
   useEffect(() => {
-    const storageKey = `altai_demo_session_${tenantId}`;
-    let saved = "";
+    const freshSession = `demo_${tenantId}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    setSessionId(freshSession);
+    setMessages([]);
     if (typeof window !== "undefined") {
-      saved = localStorage.getItem(storageKey) || "";
-    }
-    if (!saved) {
-      saved = `demo_${tenantId}_${Math.random().toString(36).substring(2, 10)}`;
-      if (typeof window !== "undefined") {
-        localStorage.setItem(storageKey, saved);
+      try {
+        localStorage.removeItem(`altai_demo_session_${tenantId}`);
+      } catch {
+        // ignore
       }
     }
-    setSessionId(saved);
 
     // Load tenant config
     async function init() {
@@ -191,9 +189,6 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
 
       if (res.session_id) {
         setSessionId(res.session_id);
-        if (typeof window !== "undefined") {
-          localStorage.setItem(`altai_demo_session_${tenantId}`, res.session_id);
-        }
       }
 
       const botMsg: Message = {
@@ -220,12 +215,16 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
   };
 
   const handleReset = () => {
-    const newSession = `demo_${tenantId}_${Math.random().toString(36).substring(2, 10)}`;
-    setSessionId(newSession);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(`altai_demo_session_${tenantId}`, newSession);
-    }
+    const freshSession = `demo_${tenantId}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    setSessionId(freshSession);
     setMessages([]);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(`altai_demo_session_${tenantId}`);
+      } catch {
+        // ignore
+      }
+    }
   };
 
   const renderIntegrationsAndDisclaimer = () => (
