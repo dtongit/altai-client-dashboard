@@ -9,13 +9,7 @@ interface FormattedMessageTextProps {
   className?: string;
 }
 
-export function FormattedMessageText({
-  text,
-  isAssistant = true,
-  className = "whitespace-pre-wrap",
-}: FormattedMessageTextProps) {
-  if (!text) return null;
-
+function renderTextWithLinks(text: string, isAssistant: boolean): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -72,5 +66,37 @@ export function FormattedMessageText({
     nodes.push(text.slice(lastIndex));
   }
 
-  return <div className={className}>{nodes.length > 0 ? nodes : text}</div>;
+  return nodes.length > 0 ? nodes : [text];
+}
+
+export function FormattedMessageText({
+  text,
+  isAssistant = true,
+  className = "space-y-3",
+}: FormattedMessageTextProps) {
+  if (!text) return null;
+
+  // For assistant, strictly sanitize any em dashes (—) or en dashes (–) into regular hyphens (-)
+  const sanitizedText = isAssistant ? text.replace(/[—–]/g, "-") : text;
+
+  // Split into paragraphs by blank lines (\n\s*\n)
+  const paragraphs = sanitizedText.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
+
+  if (paragraphs.length <= 1) {
+    return (
+      <div className="whitespace-pre-line leading-relaxed">
+        {renderTextWithLinks(sanitizedText, isAssistant)}
+      </div>
+    );
+  }
+
+  return (
+    <div className={className}>
+      {paragraphs.map((p, idx) => (
+        <p key={idx} className="whitespace-pre-line leading-relaxed">
+          {renderTextWithLinks(p.trim(), isAssistant)}
+        </p>
+      ))}
+    </div>
+  );
 }
