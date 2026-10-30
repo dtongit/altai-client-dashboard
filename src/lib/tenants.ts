@@ -99,6 +99,27 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
     heroDescription:
       "Я уже изучила ваш бизнес и готова стать вашим лучшим сотрудником. Объединяю обаяние чуткого эксперта, острый ум и железную цифровую дисциплину. Держу в памяти историю каждого клиента, общаюсь по стандартам флагманского офиса продаж и уверенно довожу диалоги до реальных сделок в CRM.",
   },
+  haier: {
+    displayName: "Haier",
+    logoBadgeUrl: "/logos/haier_logo.png",
+    logoShowroomUrl: "/logos/haier_logo.png",
+    veraAvatarUrl: "/haier_vera_avatar.jpg",
+    veraPhotoUrl: "/haier_vera_showroom.jpg",
+    logoTextUrl: "/logos/haier_logo.png",
+    logoWatermarkUrl: "/logos/haier_logo.png",
+    primaryColor: "#005AAB",
+    primaryHover: "#00478A",
+    primaryRing: "rgba(0, 90, 171, 0.35)",
+    primaryLightBg: "rgba(0, 90, 171, 0.08)",
+    watermarkText: "HAIER",
+    hasPattern: true,
+    badgeText: "Haier",
+    placeholderText: "Спросите о бытовой технике, характеристиках, ценах или доставке…",
+    welcomeMessage: "",
+    suggestedQuestions: [],
+    heroDescription:
+      "Я уже изучила ваш бизнес и готова стать вашим лучшим сотрудником. Объединяю обаяние чуткого эксперта, острый ум и железную цифровую дисциплину. Держу в памяти историю каждого клиента, общаюсь по стандартам флагманского салона и уверенно довожу диалоги до реальных сделок в CRM.",
+  },
 };
 
 export function getTenantDisplayName(

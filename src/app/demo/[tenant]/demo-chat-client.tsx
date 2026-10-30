@@ -308,10 +308,6 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                   alt={`Вера — консультант ${displayTenant}`}
                   className="w-full h-[155px] sm:h-[175px] lg:h-[150px] xl:h-[170px] object-cover object-[center_28%] transition-transform duration-500 group-hover:scale-[1.02]"
                 />
-                <div className="absolute bottom-2 left-2.5 px-2.5 py-0.5 rounded-full bg-slate-900/80 backdrop-blur-md text-white text-[10.5px] font-medium flex items-center gap-1.5 shadow-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#1F9D55] animate-pulse" />
-                  <span>Вера онлайн · {displayTenant}</span>
-                </div>
               </div>
             )}
           </div>
