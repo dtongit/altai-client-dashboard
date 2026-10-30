@@ -77,14 +77,8 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
     hasPattern: true,
     badgeText: "Lagoon Resort",
     placeholderText: "Спросите о резиденциях, ценах, рассрочке или ВНЖ…",
-    welcomeMessage:
-      "Здравствуйте! Я Вера, инвестиционный консультант Lagoon Resort. Рада приветствовать вас! Рассматриваете резиденции для высокого арендного дохода с Hilton, личного отдыха или получения ВНЖ Грузии?",
-    suggestedQuestions: [
-      "В чем уникальность проекта?",
-      "Партнёрство с Hilton и доходность",
-      "Финмодель Cushman & Wakefield",
-      "Форматы резиденций и цены",
-    ],
+    welcomeMessage: "",
+    suggestedQuestions: [],
   },
 };
 

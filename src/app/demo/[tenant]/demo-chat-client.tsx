@@ -547,7 +547,8 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={brand.placeholderText}
                 disabled={loading}
-                className="flex-1 bg-[#F8F6F3] border border-[#E4DED6] rounded-xl sm:rounded-2xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm text-[#1C1B1A] outline-none focus:border-[#C8102E] transition-all placeholder:text-[#8A8178]"
+                className="flex-1 bg-[#F8F6F3] border border-[#E4DED6] rounded-xl sm:rounded-2xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-[16px] sm:text-[15px] text-[#1C1B1A] outline-none focus:border-[#C8102E] transition-all placeholder:text-[#8A8178]"
+                style={{ fontSize: "16px" }}
               />
               <button
                 type="submit"
