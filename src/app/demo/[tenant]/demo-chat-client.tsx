@@ -229,96 +229,53 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
 
   const renderIntegrationsAndDisclaimer = () => (
     <>
-      <div className="flex flex-col gap-3.5 sm:gap-4">
-        {/* Messengers Block - clean unboxed list */}
-        <div className="space-y-1.5">
-          <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
-            Живёт там, где пишут ваши клиенты
+      <div className="flex flex-col gap-2.5 sm:gap-3">
+        {/* Channels */}
+        <div className="space-y-1">
+          <span className="text-[10.5px] sm:text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
+            Каналы связи
           </span>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs sm:text-[13px] font-bold text-[#1C1B1A]">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#25D366] shrink-0" />
-              <span>WhatsApp</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#229ED9] shrink-0" />
-              <span>Telegram</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#E1306C] shrink-0" />
-              <span>Instagram</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#00AAFF] shrink-0" />
-              <span>Авито</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#7B3FF2] shrink-0" />
-              <span>MAX</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#0077FF] shrink-0" />
-              <span>VK</span>
-            </div>
-          </div>
-          <p className="text-[11px] sm:text-xs leading-snug text-[#6B645C]">
-            Вера мгновенно подхватывает обращения в любых мессенджерах и передаёт в CRM готовые заказы
+          <p className="text-xs sm:text-[13px] font-semibold text-[#1C1B1A] flex flex-wrap items-center gap-x-2 sm:gap-x-2.5 gap-y-0.5">
+            <span>WhatsApp</span>
+            <span className="text-[#C8C0B7] select-none font-normal">|</span>
+            <span>Telegram</span>
+            <span className="text-[#C8C0B7] select-none font-normal">|</span>
+            <span>Instagram</span>
+            <span className="text-[#C8C0B7] select-none font-normal">|</span>
+            <span>Авито</span>
+            <span className="text-[#C8C0B7] select-none font-normal">|</span>
+            <span>VK</span>
+            <span className="text-[#C8C0B7] select-none font-normal">|</span>
+            <span>Виджет на сайт и др.</span>
           </p>
         </div>
 
-        {/* CRM Block */}
-        <div className="space-y-1.5">
-          <span className="text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
-            Сама ведёт базу в любой CRM
+        {/* Database & CRM Integrations */}
+        <div className="space-y-1">
+          <span className="text-[10.5px] sm:text-[11px] font-bold tracking-[0.08em] uppercase text-[#8A8178] block">
+            Интеграция с базой
           </span>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <img
-                src="/logos/amocrm_logo.webp"
-                alt="amoCRM"
-                className="h-5 w-auto object-contain"
-              />
-              <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">amoCRM</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <img
-                src="/logos/bitrix24_logo.webp"
-                alt="Битрикс24"
-                className="h-5 w-auto object-contain"
-              />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <img
-                src="/logos/1c_logo.webp"
-                alt="1С"
-                className="h-5 w-auto object-contain"
-              />
-              <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">1С</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <img
-                src="/logos/moysklad_logo.svg"
-                alt="МойСклад"
-                className="h-5 w-auto object-contain"
-              />
-              <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">МойСклад</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <svg className="h-4.5 w-auto aspect-square shrink-0" viewBox="0 0 32 32" fill="none">
-                <rect x="2" y="4" width="28" height="24" rx="4" fill="#107C41" />
-                <rect x="18" y="9" width="9" height="14" fill="#185C37" opacity="0.3" />
-                <path d="M18 9h9v4h-9V9zm0 5h9v4h-9v-4zm0 5h9v4h-9v-4z" fill="#fff" opacity="0.25" />
-                <rect x="4" y="7" width="13" height="18" rx="2" fill="#107C41" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.25))" />
-                <path d="M7.8 11.5l2.2 3.5 2.2-3.5h2.3l-3.3 4.5 3.5 4.5h-2.3l-2.4-3.6-2.4 3.6H5.5l3.5-4.5-3.3-4.5h2.1z" fill="#fff" />
-              </svg>
-              <span className="text-xs sm:text-[13px] font-bold text-[#1C1B1A]">Excel</span>
-            </div>
-          </div>
+          <p className="text-xs sm:text-[13px] font-semibold text-[#1C1B1A] flex flex-wrap items-center gap-x-2 sm:gap-x-2.5 gap-y-0.5">
+            <span>amoCRM</span>
+            <span className="text-[#C8C0B7] select-none font-normal">|</span>
+            <span>Битрикс24</span>
+            <span className="text-[#C8C0B7] select-none font-normal">|</span>
+            <span>1С</span>
+            <span className="text-[#C8C0B7] select-none font-normal">|</span>
+            <span>МойСклад</span>
+            <span className="text-[#C8C0B7] select-none font-normal">|</span>
+            <span>Google Sheets / Excel и др.</span>
+          </p>
         </div>
+
+        {/* Subtitle description */}
+        <p className="text-[11px] sm:text-xs text-[#6B645C] leading-snug">
+          Мгновенно подхватывает диалоги из всех соцсетей и передает готовые лиды в вашу систему учета
+        </p>
       </div>
 
       {/* Footer Disclaimer */}
-      <p className="border-t border-[#E4DED6] pt-2 text-[11px] sm:text-xs text-[#6B645C] leading-relaxed">
+      <p className="border-t border-[#E4DED6] pt-2 text-[10.5px] sm:text-[11px] text-[#6B645C] leading-relaxed">
         Это демо-версия Веры на основе открытых материалов {displayTenant}. Для точных ответов во всех сценариях нужна полноценная интеграция от{" "}
         <Link
           href="https://optima.altaiweb.online"
