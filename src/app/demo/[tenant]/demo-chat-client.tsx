@@ -29,6 +29,122 @@ interface Message {
   } | null;
 }
 
+function buildEnrichedEscalationCard(
+  userText: string,
+  history: Message[],
+  assistantResponse: string,
+  rawReason?: string
+): string {
+  const allUserTexts = [...history.filter((m) => m.sender === "user").map((m) => m.text), userText];
+  const fullUserContext = allUserTexts.join(" ");
+
+  // 1. Name extraction
+  let name: string | null = null;
+  const namePatterns = [
+    /(?:меня зовут|мое имя|я)\s+([А-ЯЁA-Z][а-яёa-z]+)/i,
+    /(?:обраща(?:йтесь|ться)\s+(?:как|ко мне)?\s+)?([А-ЯЁA-Z][а-яёa-z]+)\s+(?:здесь|тут)/i,
+  ];
+  for (const pat of namePatterns) {
+    const m = fullUserContext.match(pat);
+    if (m && m[1]) {
+      name = m[1].charAt(0).toUpperCase() + m[1].slice(1);
+      break;
+    }
+  }
+  if (!name) {
+    const botGreetingMatch = assistantResponse.match(/^([А-ЯЁA-Z][а-яёa-z]+)[,!]/);
+    if (
+      botGreetingMatch &&
+      !["Здравствуйте", "Добрый", "Привет", "Приветствую", "Спасибо", "Поняла", "Конечно", "Уже"].includes(
+        botGreetingMatch[1]
+      )
+    ) {
+      name = botGreetingMatch[1];
+    }
+  }
+
+  // 2. Project / Business niche
+  let project: string | null = null;
+  const projectPatterns = [
+    /реклам[а-я]*\s+([а-яёa-z\s]+?)(?:\s+в|\s+на|\.|\,|$)/i,
+    /(клиник[а-я]*|медицин[а-я]*|стоматолог[а-я]*|здоровь[а-я]*)/i,
+    /(недвижим[а-я]*|резиденци[а-я]*|квартир[а-я]*|новостройк[а-я]*|жк)/i,
+    /(приложени[а-я]*|доставк[а-я]*|it-сервис|сервис[а-я]*)/i,
+    /(магазин[а-я]*|e-commerce|бренд[а-я]*|ритейл)/i,
+  ];
+  for (const pat of projectPatterns) {
+    const m = fullUserContext.match(pat);
+    if (m) {
+      if (m[0].toLowerCase().startsWith("реклам")) {
+        project = `Реклама ${m[1].trim()}`;
+      } else if (/клиник|медицин|стоматолог|здоров/i.test(m[0])) {
+        project = "Медицина / Клиники";
+      } else if (/недвижим|резиденци|квартир|новостройк|жк/i.test(m[0])) {
+        project = "Недвижимость / Резиденции";
+      } else if (/приложени|доставк/i.test(m[0])) {
+        project = "Мобильное приложение / Доставка";
+      } else if (/магазин|e-commerce|бренд|ритейл/i.test(m[0])) {
+        project = "E-commerce / Ритейл";
+      }
+      break;
+    }
+  }
+
+  // 3. Geography / Cities
+  const citiesFound: string[] = [];
+  const cityRegex = /(Москв[а-я]*|Казан[а-я]*|Санкт-Петербург[а-я]*|Питер[а-я]*|Батуми|Тбилиси|Екатеринбург[а-я]*|Новосибирск[а-я]*|Краснодар[а-я]*|Сочи[а-я]*|Нижн[а-я]*\s*Новгород[а-я]*)/gi;
+  let matchCity;
+  while ((matchCity = cityRegex.exec(fullUserContext)) !== null) {
+    let norm = matchCity[0];
+    if (/Москв/i.test(norm)) norm = "Москва";
+    else if (/Казан/i.test(norm)) norm = "Казань";
+    else if (/Санкт|Питер/i.test(norm)) norm = "Санкт-Петербург";
+    else if (/Батуми/i.test(norm)) norm = "Батуми";
+    else if (/Тбилиси/i.test(norm)) norm = "Тбилиси";
+    else if (/Екатеринбург/i.test(norm)) norm = "Екатеринбург";
+    else if (/Новосибирск/i.test(norm)) norm = "Новосибирск";
+    else if (/Краснодар/i.test(norm)) norm = "Краснодар";
+    else if (/Сочи/i.test(norm)) norm = "Сочи";
+    if (!citiesFound.includes(norm)) citiesFound.push(norm);
+  }
+  const geography = citiesFound.length > 0 ? citiesFound.join(", ") : null;
+
+  // 4. Problem summary / Issue
+  let problem = rawReason || "Срочный вопрос клиента";
+  if (
+    /деньги|списал|баланс|оплат/i.test(fullUserContext) &&
+    /встал|останов|не крут|сбой|ошибк/i.test(fullUserContext)
+  ) {
+    problem = "Кампания остановлена, средства списаны";
+  } else if (/деньги|списал|баланс|оплат/i.test(fullUserContext)) {
+    problem = "Вопрос по балансу / списанию средств";
+  } else if (/встал|останов|не крут|сбой|ошибк/i.test(fullUserContext)) {
+    problem = "Остановка открутки кампании / технический сбой";
+  } else if (/договор|акт|счет|бухгалтер/i.test(fullUserContext)) {
+    problem = "Вопрос по закрывающим документам и договору";
+  } else if (/скидк|тариф|стоимост|прайс/i.test(fullUserContext)) {
+    problem = "Запрос индивидуальных коммерческих условий";
+  }
+
+  // 5. Contacts extraction (phone, telegram, email)
+  const phoneMatch = fullUserContext.match(/(?:\+?[78][-\s(]?[0-9]{3}[-\s)]?[0-9]{3}[-\s]?[0-9]{2}[-\s]?[0-9]{2})/);
+  const tgMatch = fullUserContext.match(/@[a-zA-Z0-9_]{4,}/);
+  const emailMatch = fullUserContext.match(/[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+/);
+  const contact = phoneMatch ? phoneMatch[0] : tgMatch ? tgMatch[0] : emailMatch ? emailMatch[0] : null;
+
+  const lines: string[] = ["🚨 Срочная эскалация менеджеру (Human-in-the-Loop)\n"];
+  lines.push(`👤 Клиент: ${name || "Имя не указано"}`);
+  if (contact) lines.push(`📞 Контакт: ${contact}`);
+  if (project) lines.push(`🏢 Проект / сфера: ${project}`);
+  if (geography) lines.push(`📍 География: ${geography}`);
+  lines.push(`⚠️ Суть проблемы: ${problem}`);
+  lines.push(`💬 Сообщение: «${userText.trim()}»`);
+  lines.push(`📱 Канал: Виджет на сайте`);
+  lines.push(`⏰ Норматив реакции: < 60 секунд`);
+
+  return lines.join("\n");
+}
+
 function BrandedWatermarkPattern({
   watermarkText,
   color,
@@ -191,12 +307,24 @@ export default function DemoChatClient({ initialTenantId }: { initialTenantId?: 
         setSessionId(res.session_id);
       }
 
+      const enrichedEscalation = res.escalation
+        ? {
+            ...res.escalation,
+            alert_preview: buildEnrichedEscalationCard(
+              trimmed,
+              messages,
+              res.assistant_response || "",
+              res.escalation.reason
+            ),
+          }
+        : null;
+
       const botMsg: Message = {
         id: `a_${Date.now()}`,
         sender: "assistant",
         text: res.assistant_response || "Спасибо за обращение! Менеджер свяжется с вами.",
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        escalation: res.escalation,
+        escalation: enrichedEscalation,
       };
 
       setMessages((prev) => [...prev, botMsg]);
