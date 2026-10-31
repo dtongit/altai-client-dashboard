@@ -553,9 +553,17 @@ export const api = {
     suggested_questions: string[];
     max_message_length: number;
   }> {
-    const res = await fetch(
+    let res = await fetch(
       `${DEMO_API_BASE_URL}/config?tenant_id=${encodeURIComponent(tenantId)}`
     );
+    if (!res.ok && DEMO_API_BASE_URL.indexOf("stage-api") === -1) {
+      try {
+        const stageRes = await fetch(
+          `https://stage-api.optima.altaiweb.online/api/v1/demo/config?tenant_id=${encodeURIComponent(tenantId)}`
+        );
+        if (stageRes.ok) res = stageRes;
+      } catch {}
+    }
     if (!res.ok) {
       throw new Error("Не удалось загрузить настройки демо");
     }
@@ -581,11 +589,21 @@ export const api = {
       alert_preview?: string;
     } | null;
   }> {
-    const res = await fetch(`${DEMO_API_BASE_URL}/chat`, {
+    let res = await fetch(`${DEMO_API_BASE_URL}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    if (!res.ok && res.status === 404 && DEMO_API_BASE_URL.indexOf("stage-api") === -1) {
+      try {
+        const stageRes = await fetch("https://stage-api.optima.altaiweb.online/api/v1/demo/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (stageRes.ok) res = stageRes;
+      } catch {}
+    }
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || "Ошибка при отправке сообщения");

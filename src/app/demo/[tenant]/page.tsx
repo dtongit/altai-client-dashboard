@@ -23,6 +23,7 @@ export function generateStaticParams() {
     { tenant: "lagoon_resort" },
     { tenant: "ak" },
     { tenant: "ak_relocation" },
+    { tenant: "adiam" },
   ];
 }
 

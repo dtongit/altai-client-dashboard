@@ -17,6 +17,7 @@ export const TENANT_DISPLAY_NAMES: Record<string, string> = {
   demo_b24: "Битрикс24",
   ak: "A&K",
   ak_relocation: "A&K",
+  adiam: "ADIAM",
 };
 
 export interface TenantBrandIntegrationItem {
@@ -207,6 +208,51 @@ export const TENANT_BRAND_CONFIGS: Record<string, Partial<TenantBrandConfig>> = 
       {
         title: "Я передаю сложные вопросы человеку:",
         description: "если клиенту требуется индивидуальный разбор или он уже оплатил услугу — мгновенно эскалирую диалог персональному менеджеру.",
+      },
+    ],
+  },
+  adiam: {
+    displayName: "ADIAM",
+    logoBadgeUrl: "/logos/adiam_logo.png",
+    logoShowroomUrl: "/logos/adiam_logo.png",
+    veraAvatarUrl: "/adiam_vera_avatar.jpg",
+    veraPhotoUrl: "/adiam_vera_showroom.jpg",
+    logoTextUrl: "/logos/adiam_logo.png",
+    logoWatermarkUrl: "/logos/adiam_logo.png",
+    primaryColor: "#1F62F2",
+    primaryHover: "#154BC2",
+    primaryRing: "rgba(31, 98, 242, 0.35)",
+    primaryLightBg: "rgba(31, 98, 242, 0.08)",
+    watermarkText: "ADIAM",
+    hasPattern: true,
+    badgeText: "ADIAM",
+    whiteBackground: true,
+    placeholderText: "Спросите о Programmatic-рекламе, форматах, инвентаре или тарифах…",
+    welcomeMessage: "",
+    suggestedQuestions: [
+      "Какие рекламные форматы доступны на платформе ADIAM?",
+      "Как настроить таргетинг по поведению и интересам аудитории?",
+      "Какой минимальный бюджет нужен для старта тестовой кампании?",
+      "Как записаться на 15-минутное онлайн-демо платформы?",
+    ],
+    heroDescription:
+      "Я уже изучила ваш бизнес и готова стать вашим лучшим сотрудником. Объединяю экспертизу в AdTech, глубокое знание Programmatic-экосистемы и цифровую дисциплину. Квалифицирую медиапланы, подбираю форматы и уверенно довожу рекламодателей до записи на демо платформы.",
+    integrationsList: [
+      {
+        title: "Я на связи везде:",
+        description: "встречаю клиентов в WhatsApp, Telegram, MAX, на Авито, в VK и на сайте.",
+      },
+      {
+        title: "Я знаю ваш инвентарь до мелочей:",
+        description: "интегрируюсь с DSP/SSP, CRM и базами данных — моментально подбираю форматы, аудиторные сегменты и рассчитываю CPM/CPC.",
+      },
+      {
+        title: "Я сама веду CRM:",
+        description: "мгновенно фиксирую контакты, брифы и готовые лиды в Битрикс24, amoCRM или любой другой системе.",
+      },
+      {
+        title: "Я передаю сложные запросы человеку:",
+        description: "если клиенту требуется индивидуальный OpenRTB/Prebid сетап или он уже действующий рекламодатель — передаю диалог персональному аккаунту.",
       },
     ],
   },
