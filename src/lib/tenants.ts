@@ -4,7 +4,6 @@ export const TENANT_DISPLAY_NAMES: Record<string, string> = {
   mediasafe: "MediaSafe",
   kostis: "КОСТИС",
   tallora: "Tallora",
-  client_tallora: "Tallora",
   foxford: "Фоксфорд",
   gk_fsk: "ГК ФСК",
   neometria: "Неометрия",

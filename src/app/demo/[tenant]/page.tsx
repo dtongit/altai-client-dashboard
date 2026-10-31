@@ -7,7 +7,6 @@ export function generateStaticParams() {
   return [
     { tenant: "kostis" },
     { tenant: "tallora" },
-    { tenant: "client_tallora" },
     { tenant: "demo_amo" },
     { tenant: "demo_b24" },
     { tenant: "foxford" },
