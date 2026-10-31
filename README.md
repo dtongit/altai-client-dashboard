@@ -75,17 +75,7 @@ npm run build
 
 ---
 
-## 🐳 Сборка и деплой в Docker
-
-Сборка легковесного production-образа:
-```bash
-docker build -t altai-client-dashboard .
-```
-
-Запуск через Docker Compose:
-```bash
-docker compose up -d
-```
+Деплой: статический экспорт на Cloudflare Pages (GitHub Actions, ветки `main` / `stage`).
 
 ---
 

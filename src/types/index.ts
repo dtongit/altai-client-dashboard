@@ -475,32 +475,6 @@ export interface KnowledgeNode {
   updated_at: string;
 }
 
-export interface CatalogItem {
-  id: string;
-  tenant_id: string;
-  sku: string;
-  title: string;
-  category?: string | null;
-  description?: string | null;
-  base_price_rub?: number | null;
-  currency: string;
-  attributes?: Record<string, any>;
-  media_urls?: string[];
-  is_active: boolean;
-  updated_at: string;
-}
-
-export interface CatalogInventory {
-  id: string;
-  tenant_id: string;
-  sku: string;
-  variant_key: string;
-  is_available: boolean;
-  quantity?: number | null;
-  source: string;
-  last_synced_at: string;
-}
-
 export interface PromptModule {
   id: string;
   scope: "global" | "tenant";

@@ -23,8 +23,6 @@ import {
   TeamBotConversation,
   TeamBotLogEvent,
   KnowledgeNode,
-  CatalogItem,
-  CatalogInventory,
   PromptModule,
   SemanticSkillCard,
   PromptPreviewResponse,
@@ -687,66 +685,6 @@ export const api = {
     const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
     return request(`/knowledge/nodes/${encodeURIComponent(nodeId)}${qs}`, {
       method: "DELETE",
-    });
-  },
-
-  // ==========================================================================
-  // Universal Catalog & Live Inventory
-  // ==========================================================================
-
-  async getCatalogItems(tenantId?: string): Promise<{
-    ok: boolean;
-    tenant_id: string;
-    items: CatalogItem[];
-  }> {
-    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
-    return request(`/catalog/items${qs}`);
-  },
-
-  async upsertCatalogItem(payload: {
-    sku: string;
-    title: string;
-    category?: string | null;
-    description?: string | null;
-    base_price_rub?: number | null;
-    currency?: string;
-    attributes?: Record<string, any>;
-    media_urls?: string[];
-    is_active?: boolean;
-  }, tenantId?: string): Promise<{
-    ok: boolean;
-    item: CatalogItem;
-  }> {
-    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
-    return request(`/catalog/items${qs}`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-  },
-
-  async getCatalogInventory(tenantId?: string): Promise<{
-    ok: boolean;
-    tenant_id: string;
-    inventory: CatalogInventory[];
-  }> {
-    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
-    return request(`/catalog/inventory${qs}`);
-  },
-
-  async updateCatalogInventory(payload: {
-    sku: string;
-    variant_key: string;
-    is_available: boolean;
-    quantity?: number | null;
-  }, tenantId?: string): Promise<{
-    ok: boolean;
-    sku: string;
-    variant_key: string;
-  }> {
-    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
-    return request(`/catalog/inventory${qs}`, {
-      method: "POST",
-      body: JSON.stringify(payload),
     });
   },
 
