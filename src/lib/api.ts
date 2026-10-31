@@ -26,6 +26,8 @@ import {
   CatalogItem,
   CatalogInventory,
   PromptModule,
+  SemanticSkillCard,
+  PromptPreviewResponse,
 } from "@/types";
 
 const rawApiUrl =
@@ -794,5 +796,50 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ is_active: isActive }),
     });
+  },
+
+  // ==========================================================================
+  // Semantic Skill Cards & Prompt Preview
+  // ==========================================================================
+
+  async getSkillCards(tenantId?: string): Promise<{
+    ok: boolean;
+    tenant_id: string;
+    cards: SemanticSkillCard[];
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/skills/cards${qs}`);
+  },
+
+  async saveSkillCard(payload: {
+    group_slug: string;
+    group_name?: string;
+    prompt_rules?: string;
+    secrets?: Array<{ key_name: string; value?: string; description?: string }>;
+  }, tenantId?: string): Promise<{
+    ok: boolean;
+    group_slug: string;
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/skills/cards${qs}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getPromptPreview(params?: {
+    employee?: string;
+    role?: string;
+    channel?: string;
+    case_tag?: string;
+  }, tenantId?: string): Promise<PromptPreviewResponse> {
+    const query = new URLSearchParams();
+    if (tenantId) query.set("tenant_id", tenantId);
+    if (params?.employee) query.set("employee", params.employee);
+    if (params?.role) query.set("role", params.role);
+    if (params?.channel) query.set("channel", params.channel);
+    if (params?.case_tag) query.set("case_tag", params.case_tag);
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return request(`/prompts/preview${qs}`);
   },
 };

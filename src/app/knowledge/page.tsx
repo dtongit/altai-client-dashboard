@@ -11,9 +11,10 @@ import {
   CustomToolVersionItem,
   PromptVersionItem,
   KnowledgeNode,
-  CatalogItem,
-  CatalogInventory,
   PromptModule,
+  SemanticSkillCard,
+  TenantSecretMasked,
+  PromptPreviewResponse,
 } from "@/types";
 import {
   Sparkles,
@@ -54,6 +55,9 @@ import {
   ToggleLeft,
   ToggleRight,
   Box,
+  Code,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import { MarkdownView } from "@/components/markdown-view";
@@ -234,9 +238,7 @@ export default function EmployeeStudioPage() {
 
   const [config, setConfig] = useState<EmployeeConfigResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<
-    "architect" | "prompt" | "modules" | "kb" | "catalog" | "tools" | "secrets"
-  >("prompt");
+  const [activeTab, setActiveTab] = useState<"prompts" | "kb" | "skills">("prompts");
   const [statusBanner, setStatusBanner] = useState<{
     type: "success" | "error";
     text: string;
@@ -260,6 +262,11 @@ export default function EmployeeStudioPage() {
   });
   const [isSavingModule, setIsSavingModule] = useState(false);
 
+  // Live Prompt Preview Modal State
+  const [promptPreview, setPromptPreview] = useState<PromptPreviewResponse | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+
   // Dynamic Knowledge Base (L0/L1/L2) State
   const [knowledgeNodes, setKnowledgeNodes] = useState<KnowledgeNode[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -280,26 +287,15 @@ export default function EmployeeStudioPage() {
   });
   const [isSavingNode, setIsSavingNode] = useState(false);
 
-  // Dynamic Universal Catalog & Live Inventory State
-  const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
-  const [catalogInventory, setCatalogInventory] = useState<CatalogInventory[]>([]);
-  const [catalogSearch, setCatalogSearch] = useState("");
-  const [catalogCategoryFilter, setCatalogCategoryFilter] = useState("all");
-  const [isEditingItem, setIsEditingItem] = useState(false);
-  const [itemForm, setItemForm] = useState({
-    sku: "",
-    title: "",
-    category: "",
-    base_price_rub: 0,
-    description: "",
-    media_csv: "",
-    is_active: true,
-  });
-  const [isSavingItem, setIsSavingItem] = useState(false);
-  const [quickVariantSku, setQuickVariantSku] = useState<string | null>(null);
-  const [quickVariantKey, setQuickVariantKey] = useState("");
-  const [quickVariantQty, setQuickVariantQty] = useState(10);
-  const [isAddingVariant, setIsAddingVariant] = useState(false);
+  // Semantic Skill Cards & Integrations State
+  const [skillCards, setSkillCards] = useState<SemanticSkillCard[]>([]);
+  const [selectedCardSlug, setSelectedCardSlug] = useState<string>("tilda_moysklad");
+  const [editingCardRules, setEditingCardRules] = useState<string>("");
+  const [isSavingCardRules, setIsSavingCardRules] = useState(false);
+  const [cardSecretKey, setCardSecretKey] = useState("");
+  const [cardSecretVal, setCardSecretVal] = useState("");
+  const [revealedToolCodes, setRevealedToolCodes] = useState<Record<string, boolean>>({});
+  const [copiedPreview, setCopiedPreview] = useState(false);
 
   // 1. Configurator Architect Chat state
   const [chatMessages, setChatMessages] = useState<StudioChatMessage[]>([
@@ -339,18 +335,83 @@ export default function EmployeeStudioPage() {
 
   const loadDynamicData = async () => {
     try {
-      const [pmRes, knRes, ciRes, invRes] = await Promise.all([
+      const [pmRes, knRes, cardsRes] = await Promise.all([
         api.getPromptModules().catch(() => ({ ok: false, modules: [] })),
         api.getKnowledgeNodes().catch(() => ({ ok: false, nodes: [] })),
-        api.getCatalogItems().catch(() => ({ ok: false, items: [] })),
-        api.getCatalogInventory().catch(() => ({ ok: false, inventory: [] })),
+        api.getSkillCards().catch(() => ({ ok: false, cards: [] })),
       ]);
       if (pmRes.modules) setPromptModules(pmRes.modules);
       if (knRes.nodes) setKnowledgeNodes(knRes.nodes);
-      if (ciRes.items) setCatalogItems(ciRes.items);
-      if (invRes.inventory) setCatalogInventory(invRes.inventory);
+      if (cardsRes.cards) {
+        setSkillCards(cardsRes.cards);
+        if (cardsRes.cards.length > 0) {
+          const current = cardsRes.cards.find((c) => c.group_slug === selectedCardSlug) || cardsRes.cards[0];
+          setSelectedCardSlug(current.group_slug);
+          setEditingCardRules(current.prompt_rules || "");
+        }
+      }
     } catch (e: any) {
       console.error("Failed to load dynamic studio data:", e);
+    }
+  };
+
+  const selectCard = (card: SemanticSkillCard) => {
+    setSelectedCardSlug(card.group_slug);
+    setEditingCardRules(card.prompt_rules || "");
+  };
+
+  const handleSaveCardRules = async () => {
+    if (!selectedCardSlug) return;
+    setIsSavingCardRules(true);
+    try {
+      await api.saveSkillCard({
+        group_slug: selectedCardSlug,
+        prompt_rules: editingCardRules,
+      });
+      showToast("success", "Правила навыка успешно сохранены!");
+      await loadDynamicData();
+    } catch (e: any) {
+      showToast("error", e?.message || "Ошибка сохранения правил навыка");
+    } finally {
+      setIsSavingCardRules(false);
+    }
+  };
+
+  const handleAddSecretToCard = async () => {
+    if (!selectedCardSlug || !cardSecretKey.trim() || !cardSecretVal.trim()) return;
+    try {
+      await api.saveSkillCard({
+        group_slug: selectedCardSlug,
+        secrets: [
+          {
+            key_name: cardSecretKey.trim().toUpperCase(),
+            value: cardSecretVal.trim(),
+          },
+        ],
+      });
+      setCardSecretKey("");
+      setCardSecretVal("");
+      showToast("success", `Ключ ${cardSecretKey.trim().toUpperCase()} сохранен в карточке!`);
+      await loadDynamicData();
+    } catch (e: any) {
+      showToast("error", e?.message || "Ошибка сохранения ключа");
+    }
+  };
+
+  const handleFetchPromptPreview = async () => {
+    setLoadingPreview(true);
+    setShowPreviewModal(true);
+    try {
+      const res = await api.getPromptPreview({
+        employee: "vera",
+        role: "client",
+        channel: "telegram",
+      });
+      setPromptPreview(res);
+    } catch (e: any) {
+      showToast("error", e?.message || "Ошибка загрузки предпросмотра промпта");
+    } finally {
+      setLoadingPreview(false);
     }
   };
 
@@ -723,122 +784,7 @@ export default function EmployeeStudioPage() {
     }
   };
 
-  // -------------------------------------------------------------------------
-  // Universal Catalog & Live Inventory Handlers
-  // -------------------------------------------------------------------------
-  const handleToggleInventory = async (
-    sku: string,
-    variantKey: string,
-    currentStatus: boolean
-  ) => {
-    const newStatus = !currentStatus;
-    // Optimistic UI update
-    setCatalogInventory((prev) =>
-      prev.map((inv) =>
-        inv.sku === sku && inv.variant_key === variantKey
-          ? { ...inv, is_available: newStatus }
-          : inv
-      )
-    );
-    try {
-      await api.updateCatalogInventory({
-        sku,
-        variant_key: variantKey,
-        is_available: newStatus,
-      });
-      showToast(
-        "success",
-        `Остаток ${sku} [${variantKey}]: ${newStatus ? "В наличии" : "Нет в наличии"}`
-      );
-    } catch (err: any) {
-      setCatalogInventory((prev) =>
-        prev.map((inv) =>
-          inv.sku === sku && inv.variant_key === variantKey
-            ? { ...inv, is_available: currentStatus }
-            : inv
-        )
-      );
-      showToast("error", err?.message || "Ошибка обновления наличия");
-    }
-  };
 
-  const handleStartEditItem = (item?: CatalogItem) => {
-    if (item) {
-      setItemForm({
-        sku: item.sku,
-        title: item.title,
-        category: item.category || "",
-        base_price_rub: item.base_price_rub || 0,
-        description: item.description || "",
-        media_csv: (item.media_urls || []).join(", "),
-        is_active: item.is_active,
-      });
-    } else {
-      setItemForm({
-        sku: "",
-        title: "",
-        category: "",
-        base_price_rub: 0,
-        description: "",
-        media_csv: "",
-        is_active: true,
-      });
-    }
-    setIsEditingItem(true);
-  };
-
-  const handleSaveItem = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!itemForm.sku.trim() || !itemForm.title.trim()) {
-      showToast("error", "Заполните артикул (SKU) и название");
-      return;
-    }
-    setIsSavingItem(true);
-    try {
-      const mediaUrls = itemForm.media_csv
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      await api.upsertCatalogItem({
-        sku: itemForm.sku.trim(),
-        title: itemForm.title.trim(),
-        category: itemForm.category.trim() || null,
-        base_price_rub: Number(itemForm.base_price_rub) || 0,
-        description: itemForm.description.trim() || null,
-        media_urls: mediaUrls,
-        is_active: itemForm.is_active,
-      });
-      await loadDynamicData();
-      setIsEditingItem(false);
-      showToast("success", `Товар «${itemForm.title}» сохранен`);
-    } catch (err: any) {
-      showToast("error", err?.message || "Ошибка сохранения товара");
-    } finally {
-      setIsSavingItem(false);
-    }
-  };
-
-  const handleQuickAddVariant = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!quickVariantSku || !quickVariantKey.trim()) return;
-    setIsAddingVariant(true);
-    try {
-      await api.updateCatalogInventory({
-        sku: quickVariantSku,
-        variant_key: quickVariantKey.trim(),
-        is_available: true,
-        quantity: Number(quickVariantQty) || 10,
-      });
-      await loadDynamicData();
-      setQuickVariantKey("");
-      setQuickVariantSku(null);
-      showToast("success", `Вариант «${quickVariantKey.trim()}» добавлен в остатки`);
-    } catch (err: any) {
-      showToast("error", err?.message || "Ошибка добавления варианта");
-    } finally {
-      setIsAddingVariant(false);
-    }
-  };
 
   const quickArchitectPrompts = [
     "Добавь в регламент скидку 10% при заказе от 300 000 руб.",
@@ -876,35 +822,18 @@ export default function EmployeeStudioPage() {
           </div>
         </div>
 
-        {/* Studio Navigation Tabs */}
+        {/* Studio Navigation Tabs: Strictly 3 Tabs */}
         <div className="flex flex-wrap items-center gap-1.5 bg-zinc-200/70 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-300/60 dark:border-zinc-800">
           <button
-            onClick={() => setActiveTab("prompt")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "prompt"
+            onClick={() => setActiveTab("prompts")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === "prompts"
                 ? "bg-amber-500 text-zinc-950 shadow-sm"
                 : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
             }`}
           >
-            <FileText className="h-3.5 w-3.5" />
-            <span>Инструкция</span>
-            {config?.prompt?.versions?.length ? (
-              <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-black/10 dark:bg-white/10 font-mono">
-                v{config.prompt.versions[0]?.version || 1}
-              </span>
-            ) : null}
-          </button>
-
-          <button
-            onClick={() => setActiveTab("modules")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "modules"
-                ? "bg-amber-500 text-zinc-950 shadow-sm"
-                : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
-            }`}
-          >
-            <Sliders className="h-3.5 w-3.5" />
-            <span>Слои промптов</span>
+            <Sliders className="h-4 w-4" />
+            <span>Промпты</span>
             <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-black/10 dark:bg-white/10 font-bold">
               {promptModules.length}
             </span>
@@ -912,13 +841,13 @@ export default function EmployeeStudioPage() {
 
           <button
             onClick={() => setActiveTab("kb")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "kb"
                 ? "bg-amber-500 text-zinc-950 shadow-sm"
                 : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
             }`}
           >
-            <FolderTree className="h-3.5 w-3.5" />
+            <FolderTree className="h-4 w-4" />
             <span>База знаний (Mind-Map)</span>
             <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-black/10 dark:bg-white/10 font-bold">
               {knowledgeNodes.length}
@@ -926,45 +855,18 @@ export default function EmployeeStudioPage() {
           </button>
 
           <button
-            onClick={() => setActiveTab("catalog")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "catalog"
+            onClick={() => setActiveTab("skills")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === "skills"
                 ? "bg-amber-500 text-zinc-950 shadow-sm"
                 : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
             }`}
           >
-            <ShoppingBag className="h-3.5 w-3.5" />
-            <span>Каталог и остатки</span>
+            <Layers className="h-4 w-4" />
+            <span>Навыки и интеграции</span>
             <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-black/10 dark:bg-white/10 font-bold">
-              {catalogItems.length}
+              {skillCards.length}
             </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("tools")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "tools"
-                ? "bg-amber-500 text-zinc-950 shadow-sm"
-                : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
-            }`}
-          >
-            <Layers className="h-3.5 w-3.5" />
-            <span>Навыки</span>
-            <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-black/10 dark:bg-white/10 font-bold">
-              {config?.custom_tools?.length || 0}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("secrets")}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "secrets"
-                ? "bg-amber-500 text-zinc-950 shadow-sm"
-                : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
-            }`}
-          >
-            <KeyRound className="h-3.5 w-3.5" />
-            <span>Пароли ({config?.secrets?.length || 0})</span>
           </button>
         </div>
       </div>
@@ -996,506 +898,9 @@ export default function EmployeeStudioPage() {
       )}
 
       {/* ==================================================================== */}
-      {/* TAB 1: AI ARCHITECT CHAT + LIVE OVERVIEW                             */}
+      {/* TAB 1: MODULAR PROMPTS STUDIO & LIVE PREVIEW                          */}
       {/* ==================================================================== */}
-      {activeTab === "architect" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left 8 cols: Interactive Architect Chat */}
-          <div className="lg:col-span-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm flex flex-col h-[680px] overflow-hidden">
-            {/* Chat Header */}
-            <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/50 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-xl bg-amber-500 text-zinc-950 flex items-center justify-center font-bold shadow-sm">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-bold text-zinc-900 dark:text-white">
-                      Чат с ИИ-Архитектором Веры
-                    </h2>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
-                      Автоматическая настройка логики
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    Опишите бизнес-задачу обычным языком — Архитектор скорректирует регламент или подключит нужный расчет
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() =>
-                  setChatMessages([
-                    {
-                      id: "welcome",
-                      role: "assistant",
-                      text: "Диалог очищен. Напишите, какие изменения внести в регламент или какой расчет настроить для Веры!",
-                      time: "Сейчас",
-                    },
-                  ])
-                }
-                className="p-2 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                title="Очистить историю диалога"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-zinc-50/40 dark:bg-zinc-950/30">
-              {chatMessages.map((msg) => {
-                const isAssistant = msg.role === "assistant";
-                return (
-                  <div key={msg.id} className="space-y-3">
-                    <div
-                      className={`flex items-start gap-3 ${
-                        isAssistant ? "" : "flex-row-reverse"
-                      }`}
-                    >
-                      <div
-                        className={`h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          isAssistant
-                            ? "bg-amber-500 text-zinc-950"
-                            : "bg-zinc-800 dark:bg-zinc-200 text-white dark:text-zinc-900"
-                        }`}
-                      >
-                        {isAssistant ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
-                      </div>
-
-                      <div
-                        className={`max-w-[85%] rounded-2xl px-4 py-3 text-xs leading-relaxed shadow-sm ${
-                          isAssistant
-                            ? "bg-white dark:bg-zinc-800/90 text-zinc-800 dark:text-zinc-100 border border-zinc-200/80 dark:border-zinc-700/60"
-                            : "bg-amber-500 text-zinc-950 font-medium"
-                        }`}
-                      >
-                        <p className="whitespace-pre-wrap">{msg.text}</p>
-                        <div
-                          className={`mt-1.5 text-[10px] text-right ${
-                            isAssistant ? "text-zinc-400" : "text-zinc-950/60"
-                          }`}
-                        >
-                          {msg.time}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action Cards executed by Configurator */}
-                    {msg.actions && msg.actions.length > 0 && (
-                      <div className="pl-10 space-y-3">
-                        {msg.actions.map((act, idx) => {
-                          const isPromptUpdate =
-                            act.action === "update_prompt" ||
-                            (act as any).action_type === "prompt_updated";
-                          const isToolUpdate =
-                            act.action === "upsert_custom_tool" ||
-                            (act as any).action_type === "code_updated";
-
-                          return (
-                            <div
-                              key={idx}
-                              className="rounded-2xl border border-amber-500/30 bg-amber-500/5 dark:bg-amber-950/20 p-4 space-y-2.5 text-xs"
-                            >
-                              {isPromptUpdate && (
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-300">
-                                      <FileText className="h-4 w-4" />
-                                      <span>
-                                        {act.title ||
-                                          `Регламент обновлен (версия v${
-                                            act.new_version || act.version || 1
-                                          })`}
-                                      </span>
-                                    </div>
-                                    <button
-                                      onClick={() => setActiveTab("prompt")}
-                                      className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
-                                    >
-                                      <span>Открыть регламент</span>
-                                      <ArrowRight className="h-3 w-3" />
-                                    </button>
-                                  </div>
-                                  {(act.change_description || act.summary) && (
-                                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                                      {act.change_description || act.summary}
-                                    </p>
-                                  )}
-                                </div>
-                              )}
-
-                              {isToolUpdate && (
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-300">
-                                      <Layers className="h-4 w-4" />
-                                      <span>
-                                        Навык настроен: {act.tool_name || "Калькулятор"}
-                                      </span>
-                                    </div>
-                                    <button
-                                      onClick={() => setActiveTab("tools")}
-                                      className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
-                                    >
-                                      <span>Перейти к описанию навыка</span>
-                                      <ArrowRight className="h-3 w-3" />
-                                    </button>
-                                  </div>
-                                  {(act.summary || act.change_description) && (
-                                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-                                      {act.summary || act.change_description}
-                                    </p>
-                                  )}
-                                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[11px] font-medium border border-emerald-500/20">
-                                    <CheckCircle2 className="h-3.5 w-3.5" />
-                                    <span>Успешно проверен в изолированной песочнице</span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {isSendingChat && (
-                <div className="flex items-start gap-3">
-                  <div className="h-7 w-7 rounded-lg bg-amber-500 text-zinc-950 flex items-center justify-center flex-shrink-0">
-                    <Bot className="h-4 w-4" />
-                  </div>
-                  <div className="rounded-2xl bg-white dark:bg-zinc-800/90 border border-zinc-200 dark:border-zinc-700 px-4 py-3 text-xs text-zinc-500 flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
-                    <span>Архитектор обновляет логику и проверяет настройки...</span>
-                  </div>
-                </div>
-              )}
-
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Quick Prompt Chips */}
-            <div className="px-4 py-2 border-t border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center gap-2 overflow-x-auto text-[11px]">
-              {quickArchitectPrompts.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => handleSendChat(undefined, p)}
-                  disabled={isSendingChat}
-                  className="px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 whitespace-nowrap transition-colors flex-shrink-0"
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-
-            {/* Input Form */}
-            <form
-              onSubmit={(e) => handleSendChat(e)}
-              className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center gap-2"
-            >
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Например: «Добавь в регламент скидку 10% при заказе от 50 шт...»"
-                disabled={isSendingChat}
-                className="flex-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-3 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:border-amber-500 focus:outline-none"
-              />
-              <button
-                type="submit"
-                disabled={isSendingChat || !chatInput.trim()}
-                className="px-4 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-zinc-950 transition-all font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20"
-              >
-                <Send className="h-4 w-4" />
-                <span className="hidden sm:inline">Поручить</span>
-              </button>
-            </form>
-          </div>
-
-          {/* Right 4 cols: Active Skills & Prompt Version Overview */}
-          <div className="lg:col-span-4 space-y-5">
-            {/* Active Skills Card */}
-            <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-amber-500" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
-                    Активные навыки Веры ({config?.custom_tools?.length || 0})
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setActiveTab("tools")}
-                  className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
-                >
-                  <span>Все навыки</span>
-                  <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
-
-              {config?.custom_tools && config.custom_tools.length > 0 ? (
-                <div className="space-y-2.5">
-                  {config.custom_tools.map((t) => {
-                    const exp = getToolExplanation(t);
-                    return (
-                      <div
-                        key={t.id}
-                        onClick={() => {
-                          selectToolForView(t);
-                          setActiveTab("tools");
-                        }}
-                        className="p-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-amber-500/50 bg-zinc-50/70 dark:bg-zinc-950/50 cursor-pointer transition-all space-y-1.5"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-zinc-900 dark:text-white">
-                            {exp.title}
-                          </span>
-                          <span
-                            className={`h-2 w-2 rounded-full ${
-                              t.is_active ? "bg-emerald-500" : "bg-zinc-400"
-                            }`}
-                            title={t.is_active ? "Навык активен" : "Навык приостановлен"}
-                          />
-                        </div>
-                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2">
-                          {exp.purpose}
-                        </p>
-                        <div className="flex items-center justify-between pt-1 text-[10px] text-zinc-400">
-                          <span className="font-mono">{t.name}</span>
-                          <span className="font-medium text-amber-600 dark:text-amber-400">
-                            Подробнее →
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 p-4 text-center space-y-2">
-                  <p className="text-xs text-zinc-500">У Веры пока нет специализированных навыков</p>
-                  <p className="text-[11px] text-zinc-400">
-                    Напишите задачу Архитектору в чате слева, чтобы создать калькулятор или интеграцию
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Prompt Versions Card */}
-            <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <History className="h-4 w-4 text-amber-500" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
-                    Журнал версий регламента
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setActiveTab("prompt")}
-                  className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline"
-                >
-                  Регламент →
-                </button>
-              </div>
-
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {config?.prompt?.versions && config.prompt.versions.length > 0 ? (
-                  config.prompt.versions.slice(0, 5).map((v) => (
-                    <div
-                      key={v.version}
-                      className="p-2.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-2 text-xs"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-bold text-amber-600 dark:text-amber-400">
-                            v{v.version}
-                          </span>
-                          <span className="text-zinc-700 dark:text-zinc-300 truncate">
-                            {v.change_description || "Обновление регламента"}
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-zinc-400 mt-0.5">
-                          {v.created_at ? new Date(v.created_at).toLocaleDateString("ru-RU") : "Активна"}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setViewingVersion(v);
-                          setActiveTab("prompt");
-                        }}
-                        className="px-2 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 flex-shrink-0"
-                      >
-                        Открыть
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-zinc-500">Базовый регламент активен</p>
-                )}
-              </div>
-            </div>
-
-            {/* Hardware Isolation Guarantee */}
-            <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-5 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                <span>Защищенная среда вычислений</span>
-              </div>
-              <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Все расчеты и интеграции выполняются в изолированной песочнице с нулевым хранением
-                персональных данных на диске и защитой от сетевых угроз (152-ФЗ compliant).
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ==================================================================== */}
-      {/* TAB 2: PROMPT & KNOWLEDGE BASE WITH VERSION JOURNAL                  */}
-      {/* ==================================================================== */}
-      {activeTab === "prompt" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
-            {/* Prompt Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-100 dark:border-zinc-800">
-              <div>
-                <h2 className="text-base font-bold text-zinc-900 dark:text-white">
-                  Основная инструкция
-                </h2>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleCopyPrompt(currentPromptText)}
-                  className="px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-                  title="Скопировать текст инструкции"
-                >
-                  {copiedPrompt ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 text-emerald-500" />
-                      <span>Скопировано</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5" />
-                      <span>Скопировать</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Notice if viewing an archive version */}
-            {viewingVersion && (
-              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs text-amber-900 dark:text-amber-200">
-                  <History className="h-4 w-4 text-amber-500" />
-                  <span>
-                    Просмотр архивной версии: <strong>v{viewingVersion.version}</strong> (
-                    {viewingVersion.change_description || "Архивная копия"})
-                  </span>
-                </div>
-                <button
-                  onClick={() => setViewingVersion(null)}
-                  className="text-xs font-bold text-amber-700 dark:text-amber-400 hover:underline cursor-pointer"
-                >
-                  Вернуться к актуальной
-                </button>
-              </div>
-            )}
-
-            {/* Beautiful Markdown Rendering Box */}
-            <div className="relative rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950 p-6 overflow-y-auto max-h-[580px] select-text selection:bg-amber-500/30">
-              <MarkdownView content={currentPromptText} />
-            </div>
-          </div>
-
-          {/* Right 4 cols: Version History & Rollback */}
-          <div className="lg:col-span-4 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
-            <div className="flex items-center gap-2 pb-2 border-b border-zinc-100 dark:border-zinc-800">
-              <History className="h-4 w-4 text-amber-500" />
-              <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
-                Журнал версий регламента
-              </h3>
-            </div>
-
-            <p className="text-xs text-zinc-500 leading-relaxed">
-              История каждого обновления базы знаний с возможностью просмотра и быстрого отката
-            </p>
-
-            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-              {config?.prompt?.versions && config.prompt.versions.length > 0 ? (
-                config.prompt.versions.map((v) => {
-                  const isCurrent =
-                    !viewingVersion && v.version === config.prompt?.versions?.[0]?.version;
-                  const isViewing = viewingVersion?.version === v.version;
-
-                  return (
-                    <div
-                      key={v.version}
-                      className={`p-3.5 rounded-2xl border transition-all space-y-2.5 ${
-                        isViewing
-                          ? "border-amber-500 bg-amber-500/10"
-                          : "border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-950/50"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
-                          <span className="px-2 py-0.5 rounded-lg bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold text-xs">
-                            Версия v{v.version}
-                          </span>
-                          {isCurrent && (
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
-                              Активна
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setViewingVersion(v)}
-                            className="px-2 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-[10px] font-semibold text-zinc-700 dark:text-zinc-300 transition-colors"
-                          >
-                            Просмотр
-                          </button>
-                          {!isCurrent && (
-                            <button
-                              onClick={() => handleRollbackPrompt(v.version)}
-                              className="px-2 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 text-[10px] font-bold transition-colors"
-                              title="Восстановить эту версию как активную"
-                            >
-                              Откатить
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <p className="text-xs font-medium text-zinc-800 dark:text-zinc-200 leading-snug">
-                        {v.change_description || "Плановое обновление базы знаний"}
-                      </p>
-
-                      <div className="flex items-center justify-between text-[10px] text-zinc-400">
-                        <span>Автор: {v.author || "Архитектор"}</span>
-                        <span>
-                          {v.created_at ? new Date(v.created_at).toLocaleString("ru-RU") : ""}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="py-8 text-center text-xs text-zinc-500">
-                  Базовая версия регламента зафиксирована.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ==================================================================== */}
-      {/* TAB: MODULAR PROMPTS STUDIO                                          */}
-      {/* ==================================================================== */}
-      {activeTab === "modules" && (
+      {activeTab === "prompts" && (
         <div className="space-y-6">
           {/* Header & Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
@@ -1508,13 +913,22 @@ export default function EmployeeStudioPage() {
                 Иерархическая сборка: глобальная библиотека правил (безопасность, Ritz-Carlton, BANT) + персональные тенантные оверрайды.
               </p>
             </div>
-            <button
-              onClick={() => handleStartEditModule()}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer self-start sm:self-auto"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Создать слой</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleFetchPromptPreview}
+                className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <Eye className="h-4 w-4 text-amber-500" />
+                <span>👁 Live Предпросмотр</span>
+              </button>
+              <button
+                onClick={() => handleStartEditModule()}
+                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Создать слой</span>
+              </button>
+            </div>
           </div>
 
           {/* Filter Bar */}
@@ -2329,727 +1743,383 @@ export default function EmployeeStudioPage() {
       )}
 
       {/* ==================================================================== */}
-      {/* TAB: UNIVERSAL CATALOG & LIVE INVENTORY                              */}
+      {/* TAB: SEMANTIC SKILL CARDS & INTEGRATIONS                             */}
       {/* ==================================================================== */}
-      {activeTab === "catalog" && (
+      {activeTab === "skills" && (
         <div className="space-y-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
             <div>
               <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                <ShoppingBag className="h-4 w-4 text-amber-500" />
-                <span>Универсальный каталог товаров и живые остатки</span>
+                <Box className="h-4 w-4 text-amber-500" />
+                <span>Навыки и интеграции Веры</span>
               </h2>
               <p className="text-xs text-zinc-500 mt-1">
-                Моментальное переключение наличия размеров и вариантов. Вера проверяет наличие перед подтверждением заказа.
+                Семантические карточки интеграций: специализированные промпт-правила, исполняемые функции песочницы и защищенные API-ключи.
               </p>
             </div>
-            <button
-              onClick={() => handleStartEditItem()}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer self-start sm:self-auto"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Добавить товар</span>
-            </button>
           </div>
 
-          {/* Filters & Search */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative flex-1 min-w-[200px] max-w-sm">
-              <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-              <input
-                type="text"
-                value={catalogSearch}
-                onChange={(e) => setCatalogSearch(e.target.value)}
-                placeholder="Поиск по артикулу (SKU) или названию..."
-                className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs"
-              />
-            </div>
-
-            <div className="flex items-center gap-1.5 ml-auto">
-              <span className="text-xs text-zinc-400">Категория:</span>
-              <select
-                value={catalogCategoryFilter}
-                onChange={(e) => setCatalogCategoryFilter(e.target.value)}
-                className="text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-zinc-800 dark:text-zinc-200"
-              >
-                <option value="all">Все категории</option>
-                {Array.from(new Set(catalogItems.map((i) => i.category).filter(Boolean))).map(
-                  (cat) => (
-                    <option key={cat!} value={cat!}>
-                      {cat}
-                    </option>
-                  )
-                )}
-              </select>
-            </div>
-          </div>
-
-          {/* Catalog Items Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {catalogItems
-              .filter(
-                (item) =>
-                  catalogCategoryFilter === "all" || item.category === catalogCategoryFilter
-              )
-              .filter((item) => {
-                if (!catalogSearch.trim()) return true;
-                const q = catalogSearch.toLowerCase();
-                return (
-                  item.title.toLowerCase().includes(q) ||
-                  item.sku.toLowerCase().includes(q) ||
-                  (item.description || "").toLowerCase().includes(q)
-                );
-              })
-              .map((item) => {
-                const variants = catalogInventory.filter((inv) => inv.sku === item.sku);
-                const hasMedia = item.media_urls && item.media_urls.length > 0;
-                return (
-                  <div
-                    key={item.id}
-                    className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4 shadow-sm flex flex-col justify-between"
-                  >
-                    <div className="space-y-3">
-                      {/* Image / Media Preview */}
-                      {hasMedia ? (
-                        <div className="w-full h-36 rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800">
-                          <img
-                            src={item.media_urls![0]}
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.currentTarget as any).style.display = "none";
-                            }}
-                          />
-                        </div>
-                      ) : null}
-
-                      {/* Header */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 font-semibold">
-                              #{item.sku}
-                            </span>
-                            {item.category && (
-                              <span className="text-[10px] px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-400 font-medium">
-                                {item.category}
-                              </span>
-                            )}
-                          </div>
-                          <h3 className="text-sm font-bold text-zinc-900 dark:text-white mt-1.5">
-                            {item.title}
-                          </h3>
-                        </div>
-
-                        <div className="text-right">
-                          <div className="text-sm font-extrabold text-zinc-900 dark:text-white">
-                            {item.base_price_rub != null
-                              ? `${item.base_price_rub.toLocaleString("ru-RU")} ₽`
-                              : "—"}
-                          </div>
-                        </div>
-                      </div>
-
-                      {item.description && (
-                        <p className="text-xs text-zinc-500 line-clamp-2">
-                          {item.description}
-                        </p>
-                      )}
-
-                      {/* Live Inventory Matrix */}
-                      <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
-                        <div className="flex items-center justify-between text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-2">
-                          <span>Наличие вариантов (размеры):</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setQuickVariantSku(item.sku);
-                              setQuickVariantKey("");
-                              setQuickVariantQty(10);
-                            }}
-                            className="text-[10px] text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-0.5 cursor-pointer lowercase"
-                          >
-                            <Plus className="h-3 w-3" />
-                            <span>размер</span>
-                          </button>
-                        </div>
-
-                        {variants.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {variants.map((v) => (
-                              <button
-                                key={v.id}
-                                type="button"
-                                onClick={() =>
-                                  handleToggleInventory(v.sku, v.variant_key, v.is_available)
-                                }
-                                className={`px-2.5 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                                  v.is_available
-                                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25"
-                                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border border-zinc-200 dark:border-zinc-700 line-through opacity-70 hover:opacity-100"
-                                }`}
-                                title={
-                                  v.is_available
-                                    ? `В наличии (нажмите, чтобы снять): ${v.variant_key}`
-                                    : `Нет в наличии (нажмите, чтобы включить): ${v.variant_key}`
-                                }
-                              >
-                                <span>{v.variant_key}</span>
-                                {v.is_available ? (
-                                  <Check className="h-3 w-3 text-emerald-500" />
-                                ) : (
-                                  <X className="h-3 w-3 text-zinc-400" />
-                                )}
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-[11px] text-zinc-400 italic">
-                            Варианты еще не добавлены
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs">
-                      <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                          item.is_active
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"
-                        }`}
-                      >
-                        {item.is_active ? "В каталоге" : "Скрыт"}
-                      </span>
-                      <button
-                        onClick={() => handleStartEditItem(item)}
-                        className="text-amber-600 dark:text-amber-400 hover:underline text-xs font-semibold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                        <span>Изменить</span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-
-          {/* Quick Add Variant Modal */}
-          {quickVariantSku && (
-            <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-              <div className="w-full max-w-sm rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-xl">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
-                    Добавить размер / вариант для #{quickVariantSku}
-                  </h3>
-                  <button
-                    onClick={() => setQuickVariantSku(null)}
-                    className="p-1 text-zinc-400 hover:text-zinc-600 rounded-lg"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <form onSubmit={handleQuickAddVariant} className="space-y-3">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
-                      Размер / Вариант (ключ)
-                    </label>
-                    <input
-                      type="text"
-                      value={quickVariantKey}
-                      onChange={(e) => setQuickVariantKey(e.target.value)}
-                      placeholder="38 (или Черный, M, 250 мл)"
-                      autoFocus
-                      className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
-                      Количество (шт.)
-                    </label>
-                    <input
-                      type="number"
-                      value={quickVariantQty}
-                      onChange={(e) => setQuickVariantQty(parseInt(e.target.value) || 1)}
-                      className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 pt-2">
-                    <button
-                      type="submit"
-                      disabled={isAddingVariant || !quickVariantKey.trim()}
-                      className="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs shadow-sm cursor-pointer disabled:opacity-40"
-                    >
-                      {isAddingVariant ? "Добавление..." : "Добавить в остатки"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setQuickVariantSku(null)}
-                      className="px-3.5 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold cursor-pointer"
-                    >
-                      Отмена
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-
-          {/* Edit / Create Item Modal */}
-          {isEditingItem && (
-            <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-              <div className="w-full max-w-lg rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-                  <h3 className="text-base font-bold text-zinc-900 dark:text-white">
-                    {itemForm.sku ? `Товар #${itemForm.sku}` : "Новый товар"}
-                  </h3>
-                  <button
-                    onClick={() => setIsEditingItem(false)}
-                    className="p-1 text-zinc-400 hover:text-zinc-600 rounded-lg"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-
-                <form onSubmit={handleSaveItem} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
-                        Артикул (SKU)
-                      </label>
-                      <input
-                        type="text"
-                        value={itemForm.sku}
-                        onChange={(e) => setItemForm({ ...itemForm, sku: e.target.value })}
-                        placeholder="TAL-001"
-                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 font-mono text-xs"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
-                        Категория
-                      </label>
-                      <input
-                        type="text"
-                        value={itemForm.category}
-                        onChange={(e) =>
-                          setItemForm({ ...itemForm, category: e.target.value })
-                        }
-                        placeholder="Обувь / Ботильоны"
-                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
-                        Название товара
-                      </label>
-                      <input
-                        type="text"
-                        value={itemForm.title}
-                        onChange={(e) => setItemForm({ ...itemForm, title: e.target.value })}
-                        placeholder="Кожаные ботильоны Velvet"
-                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
-                        Базовая цена (₽)
-                      </label>
-                      <input
-                        type="number"
-                        value={itemForm.base_price_rub}
-                        onChange={(e) =>
-                          setItemForm({
-                            ...itemForm,
-                            base_price_rub: parseFloat(e.target.value) || 0,
-                          })
-                        }
-                        placeholder="18500"
-                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
-                      Ссылки на фото / медиа (через запятую)
-                    </label>
-                    <input
-                      type="text"
-                      value={itemForm.media_csv}
-                      onChange={(e) => setItemForm({ ...itemForm, media_csv: e.target.value })}
-                      placeholder="https://example.com/shoes-1.jpg, https://example.com/shoes-2.jpg"
-                      className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
-                      Описание товара
-                    </label>
-                    <textarea
-                      value={itemForm.description}
-                      onChange={(e) =>
-                        setItemForm({ ...itemForm, description: e.target.value })
-                      }
-                      rows={3}
-                      placeholder="Материал: натуральная кожа, подкладка байка..."
-                      className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-3 text-xs"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="itemActive"
-                      checked={itemForm.is_active}
-                      onChange={(e) =>
-                        setItemForm({ ...itemForm, is_active: e.target.checked })
-                      }
-                      className="rounded border-zinc-300 text-amber-500 focus:ring-amber-500"
-                    />
-                    <label
-                      htmlFor="itemActive"
-                      className="text-xs text-zinc-700 dark:text-zinc-300 font-medium cursor-pointer"
-                    >
-                      Товар активен в каталоге и доступен Вере
-                    </label>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-2">
-                    <button
-                      type="submit"
-                      disabled={isSavingItem}
-                      className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs shadow-sm cursor-pointer disabled:opacity-40"
-                    >
-                      {isSavingItem ? "Сохранение..." : "Сохранить товар"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingItem(false)}
-                      className="px-4 py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold cursor-pointer"
-                    >
-                      Отмена
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ==================================================================== */}
-      {/* TAB 3: HUMAN-READABLE TOOLS & DIGITAL SKILLS SPECIFICATION            */}
-      {/* ==================================================================== */}
-      {activeTab === "tools" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left 4 cols: Skills Catalog */}
-          <div className="lg:col-span-4 space-y-5">
-            <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4 shadow-sm">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-amber-500" />
-                  <span>Навыки Веры</span>
-                </h3>
-                <span className="text-xs text-zinc-500 font-mono">
-                  {config?.custom_tools?.length || 0} подкл.
-                </span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Left 4 cols: Cards Selector */}
+            <div className="lg:col-span-4 space-y-3">
+              <div className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider px-1">
+                Подключенные сервисы ({skillCards.length})
               </div>
 
-              <p className="text-xs text-zinc-500">
-                Калькуляторы, формулы и правила, которые Вера автоматически применяет в диалогах
-              </p>
-
-              <div className="space-y-2.5">
-                {config?.custom_tools && config.custom_tools.length > 0 ? (
-                  config.custom_tools.map((t) => {
-                    const isSelected = selectedToolId === t.id;
-                    const exp = getToolExplanation(t);
+              {skillCards.length > 0 ? (
+                <div className="space-y-2.5">
+                  {skillCards.map((card) => {
+                    const isSelected = selectedCardSlug === card.group_slug;
                     return (
                       <div
-                        key={t.id}
-                        onClick={() => selectToolForView(t)}
-                        className={`p-3.5 rounded-2xl border cursor-pointer transition-all space-y-2.5 ${
+                        key={card.group_slug}
+                        onClick={() => selectCard(card)}
+                        className={`p-4 rounded-2xl border cursor-pointer transition-all space-y-2 ${
                           isSelected
-                            ? "border-amber-500 bg-amber-500/10 shadow-sm"
-                            : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-950/40"
+                            ? "border-amber-500 bg-amber-500/10 shadow-sm ring-1 ring-amber-500/20"
+                            : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 bg-white dark:bg-zinc-900"
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <span className="text-xs font-bold text-zinc-900 dark:text-white block leading-snug">
-                              {exp.title}
-                            </span>
-                            <span className="font-mono text-[10px] text-zinc-400 mt-0.5 block">
-                              {t.name}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteTool(t.id);
-                              }}
-                              className="p-1 text-zinc-400 hover:text-red-500 transition-colors cursor-pointer"
-                              title="Удалить навык"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-
-                        <p className="text-[11px] text-zinc-600 dark:text-zinc-400 line-clamp-2 leading-relaxed">
-                          {exp.purpose}
-                        </p>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="py-8 text-center text-xs text-zinc-500">
-                    Навыки пока не подключены.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Right 8 cols: Detailed Readable Specification */}
-          <div className="lg:col-span-8 space-y-6">
-            {selectedTool && toolExplanation ? (
-              <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 sm:p-7 space-y-6 shadow-sm">
-                {/* Tool Title Header */}
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 border-b border-zinc-100 dark:border-zinc-800">
-                  <div className="space-y-1.5">
-                    <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
-                      {toolExplanation.title}
-                    </h2>
-                    <div className="flex items-center gap-2 text-xs text-zinc-500">
-                      <span className="font-mono text-[11px]">Системный ключ: {selectedTool.name}</span>
-                      <span>•</span>
-                      <span>Версия v{selectedTool.version || selectedTool.current_version || 1}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 1. Purpose */}
-                <div className="space-y-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    <span>1. Назначение и бизнес-польза</span>
-                  </h3>
-                  <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed bg-zinc-50/70 dark:bg-zinc-950/50 p-4 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80">
-                    {toolExplanation.purpose}
-                  </p>
-                </div>
-
-                {/* 2. Triggers */}
-                <div className="space-y-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                    <HelpCircle className="h-4 w-4" />
-                    <span>2. Когда Вера применяет этот навык</span>
-                  </h3>
-                  <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed bg-zinc-50/70 dark:bg-zinc-950/50 p-4 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80">
-                    {toolExplanation.trigger}
-                  </p>
-                </div>
-
-                {/* 3. Parameters Table */}
-                <div className="space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                    <Sliders className="h-4 w-4" />
-                    <span>3. Входные параметры из диалога</span>
-                  </h3>
-                  <div className="space-y-2">
-                    {toolExplanation.parameters.map((p) => (
-                      <div
-                        key={p.key}
-                        className="p-3.5 rounded-2xl bg-zinc-50/70 dark:bg-zinc-950/50 border border-zinc-200/60 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-zinc-900 dark:text-white">
-                              {p.name}
-                            </span>
-                            <span className="font-mono text-[10px] text-zinc-400">({p.key})</span>
-                            <span
-                              className={`text-[10px] font-semibold px-2 py-0.2 rounded-full ${
-                                p.required
-                                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
-                                  : "bg-zinc-200/70 dark:bg-zinc-800 text-zinc-500"
-                              }`}
-                            >
-                              {p.required ? "Обязательный" : "Опциональный"}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                            {p.description} • {p.source}
-                          </p>
-                        </div>
-                        <div className="text-[11px] font-medium text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 flex-shrink-0">
-                          Пример: {p.example}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 4. Algorithm Walkthrough */}
-                <div className="space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                    <Calculator className="h-4 w-4" />
-                    <span>4. Пошаговый алгоритм работы</span>
-                  </h3>
-                  <div className="space-y-2">
-                    {toolExplanation.algorithmSteps.map((step, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-start gap-3 p-3 rounded-2xl bg-zinc-50/50 dark:bg-zinc-950/40 border border-zinc-100 dark:border-zinc-800/60 text-xs text-zinc-700 dark:text-zinc-300"
-                      >
-                        <span className="flex h-5 w-5 rounded-full bg-amber-500/20 text-amber-800 dark:text-amber-300 items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">
-                          {idx + 1}
-                        </span>
-                        <span className="leading-relaxed">{step}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 5. Output Summary */}
-                <div className="space-y-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                    <Bot className="h-4 w-4" />
-                    <span>5. Что получает покупатель в ответе</span>
-                  </h3>
-                  <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed bg-zinc-50/70 dark:bg-zinc-950/50 p-4 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80">
-                    {toolExplanation.outputSummary}
-                  </p>
-                </div>
-
-                {/* 6. Changelog */}
-                {toolVersions.length > 0 && (
-                  <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500">
-                      История обновлений навыка
-                    </h4>
-                    <div className="space-y-1.5">
-                      {toolVersions.map((tv) => (
-                        <div
-                          key={tv.id}
-                          className="flex items-center justify-between p-2 rounded-xl bg-zinc-50 dark:bg-zinc-950/40 text-xs"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-amber-500">v{tv.version}</span>
-                            <span className="text-zinc-700 dark:text-zinc-300">
-                              {tv.change_description || "Плановое обновление параметров"}
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-zinc-400">
-                            {tv.created_at ? new Date(tv.created_at).toLocaleDateString("ru-RU") : ""}
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-bold text-zinc-900 dark:text-white">
+                            {card.group_name}
+                          </h4>
+                          <span className="font-mono text-[10px] text-zinc-400">
+                            {card.group_slug}
                           </span>
                         </div>
-                      ))}
+
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                            {card.tools.length} инстр.
+                          </span>
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                            {card.secrets.length} ключей
+                          </span>
+                          {card.prompt_rules && card.prompt_rules.trim() ? (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                              Правила активны
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-400">
+                              Без правил
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-xs text-zinc-500 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
+                  Карточки интеграций не найдены
+                </div>
+              )}
+
+              <div className="p-4 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 space-y-1.5">
+                <div className="font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                  <span>Нужна новая интеграция?</span>
+                </div>
+                <p className="text-[11px] leading-relaxed">
+                  Попросите ИИ-Архитектора в чате подключить новую CRM, склад или платежную систему — он автоматически создаст карточку, код навыка и правила диалога.
+                </p>
+              </div>
+            </div>
+
+            {/* Right 8 cols: Selected Card Detailed Content */}
+            <div className="lg:col-span-8 space-y-6">
+              {(() => {
+                const currentCard = skillCards.find((c) => c.group_slug === selectedCardSlug);
+                if (!currentCard) {
+                  return (
+                    <div className="p-12 text-center text-xs text-zinc-400 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                      Выберите карточку интеграции слева для настройки
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-6">
+                    {/* Card Header */}
+                    <div className="p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                          <span>{currentCard.group_name}</span>
+                        </h3>
+                        <span className="font-mono text-xs px-2.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+                          {currentCard.group_slug}
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-500">
+                        Управление поведением Веры, расчетными алгоритмами и API-ключами данной интеграции.
+                      </p>
+                    </div>
+
+                    {/* Section 1: Prompt Rules */}
+                    <div className="p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                            <Layers className="h-3.5 w-3.5 text-amber-500" />
+                            <span>1. Промпт-правила интеграции (System Prompt Rules)</span>
+                          </h4>
+                          <p className="text-[11px] text-zinc-500 mt-0.5">
+                            Специализированные инструкции (English/Russian), автоматически добавляемые в системный промпт Веры.
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleSaveCardRules}
+                          disabled={isSavingCardRules}
+                          className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs shadow-sm transition-all cursor-pointer disabled:opacity-40"
+                        >
+                          {isSavingCardRules ? "Сохранение..." : "Сохранить правила"}
+                        </button>
+                      </div>
+
+                      <textarea
+                        value={editingCardRules}
+                        onChange={(e) => setEditingCardRules(e.target.value)}
+                        rows={8}
+                        placeholder="### PROTOCOL FOR THIS INTEGRATION:\n1. When user asks about availability, call match_tallora_shoes...\n2. Never invent stock..."
+                        className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 font-mono text-xs leading-relaxed text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                      />
+                    </div>
+
+                    {/* Section 2: Connected Sandbox Tools */}
+                    <div className="p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                            <Cpu className="h-3.5 w-3.5 text-amber-500" />
+                            <span>2. Инструменты песочницы ({currentCard.tools.length})</span>
+                          </h4>
+                          <p className="text-[11px] text-zinc-500 mt-0.5">
+                            Исполняются в изолированной среде altai-sandboxd с аппаратным тайм-аутом и защитой сети.
+                          </p>
+                        </div>
+                      </div>
+
+                      {currentCard.tools.length > 0 ? (
+                        <div className="space-y-3">
+                          {currentCard.tools.map((t) => {
+                            const isCodeShown = revealedToolCodes[t.id];
+                            return (
+                              <div
+                                key={t.id}
+                                className="p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-950/40 space-y-3"
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-xs font-bold text-zinc-900 dark:text-white">
+                                        {t.name}
+                                      </span>
+                                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                                        JavaScript
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">
+                                      {t.description || "Пользовательский инструмент"}
+                                    </p>
+                                  </div>
+
+                                  <button
+                                    onClick={() =>
+                                      setRevealedToolCodes((prev) => ({
+                                        ...prev,
+                                        [t.id]: !prev[t.id],
+                                      }))
+                                    }
+                                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 bg-zinc-100 dark:bg-zinc-800 flex items-center gap-1 cursor-pointer transition-colors"
+                                  >
+                                    <Code className="h-3 w-3" />
+                                    <span>{isCodeShown ? "Скрыть код" : "Код функции"}</span>
+                                    {isCodeShown ? (
+                                      <ChevronUp className="h-3 w-3" />
+                                    ) : (
+                                      <ChevronDown className="h-3 w-3" />
+                                    )}
+                                  </button>
+                                </div>
+
+                                {t.parameters_schema && Object.keys(t.parameters_schema).length > 0 && (
+                                  <div className="text-[11px] text-zinc-500 font-mono bg-white dark:bg-zinc-900 p-2 rounded-xl border border-zinc-200/60 dark:border-zinc-800/60">
+                                    Параметры: {JSON.stringify(t.parameters_schema)}
+                                  </div>
+                                )}
+
+                                {isCodeShown && (
+                                  <pre className="p-3.5 rounded-xl bg-zinc-950 text-amber-300 font-mono text-[11px] leading-relaxed overflow-x-auto border border-zinc-800">
+                                    {t.code}
+                                  </pre>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-6 text-center text-xs text-zinc-400 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                          В этой интеграции нет инструментов.
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Section 3: Integration Secrets */}
+                    <div className="p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-4">
+                      <div>
+                        <h4 className="text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                          <KeyRound className="h-3.5 w-3.5 text-amber-500" />
+                          <span>3. Защищенные ключи и токены ({currentCard.secrets.length})</span>
+                        </h4>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">
+                          Передаются напрямую в защищенную песочницу и никогда не раскрываются клиенту.
+                        </p>
+                      </div>
+
+                      {currentCard.secrets.length > 0 ? (
+                        <div className="space-y-2">
+                          {currentCard.secrets.map((s) => (
+                            <div
+                              key={s.key_name}
+                              className="p-3 rounded-2xl border border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/60 dark:bg-zinc-950/40 flex items-center justify-between"
+                            >
+                              <div>
+                                <span className="font-mono text-xs font-bold text-zinc-900 dark:text-white">
+                                  {s.key_name}
+                                </span>
+                                <span className="font-mono text-[11px] text-zinc-400 ml-3">
+                                  {s.is_set ? "••••••••••••••••" : "Не задан"}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteSecret(s.key_name)}
+                                className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                                title="Удалить ключ"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-4 text-center text-xs text-zinc-400 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                          API-ключи для этой карточки не заданы.
+                        </div>
+                      )}
+
+                      {/* Add Secret Inline Form */}
+                      <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 space-y-3">
+                        <div className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">
+                          Добавить ключ в эту карточку
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <input
+                            type="text"
+                            value={cardSecretKey}
+                            onChange={(e) => setCardSecretKey(e.target.value.toUpperCase())}
+                            placeholder="API_KEY_NAME"
+                            className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 font-mono text-xs"
+                          />
+                          <input
+                            type="password"
+                            value={cardSecretVal}
+                            onChange={(e) => setCardSecretVal(e.target.value)}
+                            placeholder="••••••••••••••••"
+                            className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 font-mono text-xs"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddSecretToCard}
+                          disabled={!cardSecretKey.trim() || !cardSecretVal.trim()}
+                          className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-zinc-950 font-bold text-xs shadow-sm transition-all cursor-pointer"
+                        >
+                          Сохранить ключ в карточку
+                        </button>
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-12 text-center text-xs text-zinc-500">
-                Выберите навык из списка слева, чтобы ознакомиться с его описанием и правилами работы.
-              </div>
-            )}
+                );
+              })()}
+            </div>
           </div>
         </div>
       )}
 
       {/* ==================================================================== */}
-      {/* TAB 4: INTEGRATION SECRETS (CRM TOKENS, ERP KEYS)                    */}
+      {/* MODAL: LIVE ASSEMBLED SYSTEM PROMPT PREVIEW                          */}
       {/* ==================================================================== */}
-      {activeTab === "secrets" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-5 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
-            <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-              <KeyRound className="h-5 w-5 text-amber-500" />
-              <span>Добавить пароль или ключ API</span>
-            </h2>
-            <p className="text-xs text-zinc-500 leading-relaxed">
-              API-ключи и пароли передаются напрямую в изолированную защищенную песочницу и никогда не попадают в публичный контекст переписки.
-            </p>
-
-            <form onSubmit={handleSaveSecret} className="space-y-3">
-              <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
-                  Название ключа (UPPER_SNAKE_CASE)
-                </label>
-                <input
-                  type="text"
-                  value={newSecretKey}
-                  onChange={(e) => setNewSecretKey(e.target.value.toUpperCase())}
-                  placeholder="MOYSKLAD_API_TOKEN"
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2.5 font-mono text-xs"
-                />
+      {showPreviewModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl max-h-[90vh] rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl flex flex-col overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <h3 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-amber-500" />
+                  <span>Live Предпросмотр системного промпта</span>
+                </h3>
+                <p className="text-xs text-zinc-500">
+                  {promptPreview
+                    ? `Сотрудник: ${promptPreview.employee} | Роль: ${promptPreview.role} | Строк: ${promptPreview.lines_count} | Символов: ${promptPreview.character_count}`
+                    : "Сборка всех слоев и контекста тенанта..."}
+                </p>
               </div>
-              <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
-                  Секретное значение (токен)
-                </label>
-                <input
-                  type="password"
-                  value={newSecretVal}
-                  onChange={(e) => setNewSecretVal(e.target.value)}
-                  placeholder="••••••••••••••••"
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2.5 font-mono text-xs"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isSavingSecret || !newSecretKey.trim() || !newSecretVal.trim()}
-                className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-zinc-950 font-bold text-xs shadow-md shadow-amber-500/20 transition-all"
-              >
-                {isSavingSecret ? "Сохранение..." : "Сохранить ключ в защищенное хранилище"}
-              </button>
-            </form>
-          </div>
 
-          <div className="lg:col-span-7 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
-            <h3 className="text-base font-bold text-zinc-900 dark:text-white">
-              Сохраненные пароли и ключи ({config?.secrets?.length || 0})
-            </h3>
-            {config?.secrets && config.secrets.length > 0 ? (
-              <div className="space-y-2.5">
-                {config.secrets.map((s) => (
-                  <div
-                    key={s.key_name}
-                    className="p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-950/50 flex items-center justify-between"
+              <div className="flex items-center gap-2">
+                {promptPreview && (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(promptPreview.assembled_prompt);
+                      setCopiedPreview(true);
+                      setTimeout(() => setCopiedPreview(false), 2000);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
                   >
-                    <div>
-                      <div className="font-mono text-xs font-bold text-zinc-900 dark:text-white">
-                        {s.key_name}
-                      </div>
-                      <div className="font-mono text-[11px] text-zinc-400 mt-0.5">
-                        Значение: {s.masked_value}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteSecret(s.key_name)}
-                      className="p-2 rounded-xl text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                      title="Удалить ключ"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
+                    {copiedPreview ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-emerald-500" />
+                        <span>Скопировано!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" />
+                        <span>Скопировать</span>
+                      </>
+                    )}
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowPreviewModal(false)}
+                  className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-            ) : (
-              <div className="py-12 text-center text-xs text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
-                Ключи интеграций еще не добавлены.
-              </div>
-            )}
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {loadingPreview ? (
+                <div className="py-20 text-center text-xs text-zinc-400 space-y-2">
+                  <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-amber-500 border-t-transparent" />
+                  <p>Генерация системного промпта из базы данных...</p>
+                </div>
+              ) : promptPreview ? (
+                <div className="space-y-4">
+                  {/* Prompt Text */}
+                  <pre className="font-mono text-xs whitespace-pre-wrap leading-relaxed text-zinc-800 dark:text-zinc-200 bg-zinc-50 dark:bg-zinc-950 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 select-text overflow-x-auto">
+                    {promptPreview.assembled_prompt}
+                  </pre>
+                </div>
+              ) : (
+                <div className="py-12 text-center text-xs text-zinc-400">
+                  Не удалось загрузить системный промпт.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

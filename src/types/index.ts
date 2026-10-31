@@ -291,6 +291,9 @@ export interface CustomToolItem {
   current_version?: number;
   is_active: boolean;
   timeout_ms?: number;
+  group_slug?: string;
+  group_name?: string;
+  prompt_rules?: string | null;
   last_test_status?: string | null;
   last_test_output?: SandboxExecutionResult | null;
   updated_at?: string | null;
@@ -517,5 +520,36 @@ export interface PromptModule {
   created_at: string;
   updated_at: string;
 }
+
+export interface TenantSecretMasked {
+  id: number;
+  tenant_id: string;
+  key_name: string;
+  is_set: boolean;
+  group_slug: string;
+  group_name: string;
+  description?: string | null;
+  updated_at: string;
+}
+
+export interface SemanticSkillCard {
+  group_slug: string;
+  group_name: string;
+  prompt_rules: string;
+  tools: CustomToolItem[];
+  secrets: TenantSecretMasked[];
+}
+
+export interface PromptPreviewResponse {
+  ok: boolean;
+  tenant_id: string;
+  employee: string;
+  role: string;
+  channel: string;
+  assembled_prompt: string;
+  character_count: number;
+  lines_count: number;
+}
+
 
 
