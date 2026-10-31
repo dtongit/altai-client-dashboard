@@ -553,15 +553,20 @@ export const api = {
     suggested_questions: string[];
     max_message_length: number;
   }> {
-    let res = await fetch(
-      `${DEMO_API_BASE_URL}/config?tenant_id=${encodeURIComponent(tenantId)}`
-    );
-    if (!res.ok && DEMO_API_BASE_URL.indexOf("stage-api") === -1) {
+    const stageTenants = ["lagoon_resort", "adiam"];
+    const isStageFirst = stageTenants.includes(tenantId);
+    const primary = isStageFirst
+      ? "https://stage-api.optima.altaiweb.online/api/v1/demo"
+      : DEMO_API_BASE_URL;
+    const secondary = isStageFirst
+      ? DEMO_API_BASE_URL
+      : "https://stage-api.optima.altaiweb.online/api/v1/demo";
+
+    let res = await fetch(`${primary}/config?tenant_id=${encodeURIComponent(tenantId)}`);
+    if (!res.ok) {
       try {
-        const stageRes = await fetch(
-          `https://stage-api.optima.altaiweb.online/api/v1/demo/config?tenant_id=${encodeURIComponent(tenantId)}`
-        );
-        if (stageRes.ok) res = stageRes;
+        const secRes = await fetch(`${secondary}/config?tenant_id=${encodeURIComponent(tenantId)}`);
+        if (secRes.ok) res = secRes;
       } catch {}
     }
     if (!res.ok) {
@@ -589,19 +594,28 @@ export const api = {
       alert_preview?: string;
     } | null;
   }> {
-    let res = await fetch(`${DEMO_API_BASE_URL}/chat`, {
+    const stageTenants = ["lagoon_resort", "adiam"];
+    const isStageFirst = stageTenants.includes(payload.tenant_id);
+    const primary = isStageFirst
+      ? "https://stage-api.optima.altaiweb.online/api/v1/demo"
+      : DEMO_API_BASE_URL;
+    const secondary = isStageFirst
+      ? DEMO_API_BASE_URL
+      : "https://stage-api.optima.altaiweb.online/api/v1/demo";
+
+    let res = await fetch(`${primary}/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok && res.status === 404 && DEMO_API_BASE_URL.indexOf("stage-api") === -1) {
+    if (!res.ok) {
       try {
-        const stageRes = await fetch("https://stage-api.optima.altaiweb.online/api/v1/demo/chat", {
+        const secRes = await fetch(`${secondary}/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        if (stageRes.ok) res = stageRes;
+        if (secRes.ok) res = secRes;
       } catch {}
     }
     if (!res.ok) {
