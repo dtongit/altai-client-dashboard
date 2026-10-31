@@ -22,6 +22,10 @@ import {
   ChannelWorkMode,
   TeamBotConversation,
   TeamBotLogEvent,
+  KnowledgeNode,
+  CatalogItem,
+  CatalogInventory,
+  PromptModule,
 } from "@/types";
 
 const rawApiUrl =
@@ -633,5 +637,162 @@ export const api = {
       },
       ADMIN_API_BASE_URL
     );
+  },
+
+  // ==========================================================================
+  // Dynamic Knowledge Base (Mind-Map & L0/L1/L2)
+  // ==========================================================================
+
+  async getKnowledgeNodes(tenantId?: string): Promise<{
+    ok: boolean;
+    tenant_id: string;
+    nodes: KnowledgeNode[];
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/knowledge/nodes${qs}`);
+  },
+
+  async upsertKnowledgeNode(payload: {
+    path: string;
+    title: string;
+    summary: string;
+    content: string;
+    parent_path?: string | null;
+    node_type?: string;
+    tier?: string;
+    media_attachments?: any[];
+    high_confidence_triggers?: string[];
+    allowed_employees?: string[];
+    allowed_roles?: string[];
+    valid_from?: string | null;
+    valid_until?: string | null;
+    change_description?: string;
+  }, tenantId?: string): Promise<{
+    ok: boolean;
+    node: KnowledgeNode;
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/knowledge/nodes${qs}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async deleteKnowledgeNode(nodeId: string, tenantId?: string): Promise<{
+    ok: boolean;
+    node_id: string;
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/knowledge/nodes/${encodeURIComponent(nodeId)}${qs}`, {
+      method: "DELETE",
+    });
+  },
+
+  // ==========================================================================
+  // Universal Catalog & Live Inventory
+  // ==========================================================================
+
+  async getCatalogItems(tenantId?: string): Promise<{
+    ok: boolean;
+    tenant_id: string;
+    items: CatalogItem[];
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/catalog/items${qs}`);
+  },
+
+  async upsertCatalogItem(payload: {
+    sku: string;
+    title: string;
+    category?: string | null;
+    description?: string | null;
+    base_price_rub?: number | null;
+    currency?: string;
+    attributes?: Record<string, any>;
+    media_urls?: string[];
+    is_active?: boolean;
+  }, tenantId?: string): Promise<{
+    ok: boolean;
+    item: CatalogItem;
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/catalog/items${qs}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async getCatalogInventory(tenantId?: string): Promise<{
+    ok: boolean;
+    tenant_id: string;
+    inventory: CatalogInventory[];
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/catalog/inventory${qs}`);
+  },
+
+  async updateCatalogInventory(payload: {
+    sku: string;
+    variant_key: string;
+    is_available: boolean;
+    quantity?: number | null;
+  }, tenantId?: string): Promise<{
+    ok: boolean;
+    sku: string;
+    variant_key: string;
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/catalog/inventory${qs}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  // ==========================================================================
+  // Modular Prompts Studio
+  // ==========================================================================
+
+  async getPromptModules(tenantId?: string): Promise<{
+    ok: boolean;
+    tenant_id: string;
+    modules: PromptModule[];
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/prompts/modules${qs}`);
+  },
+
+  async upsertPromptModule(payload: {
+    slug: string;
+    name: string;
+    override_mode?: string;
+    category?: string;
+    priority_order?: number;
+    allowed_employees?: string[];
+    allowed_roles?: string[];
+    allowed_channels?: string[];
+    case_tags?: string[];
+    content: string;
+    change_description?: string;
+  }, tenantId?: string): Promise<{
+    ok: boolean;
+    module: PromptModule;
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/prompts/modules${qs}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async togglePromptModule(slug: string, isActive: boolean, tenantId?: string): Promise<{
+    ok: boolean;
+    slug: string;
+    is_active: boolean;
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/prompts/modules/${encodeURIComponent(slug)}/toggle${qs}`, {
+      method: "POST",
+      body: JSON.stringify({ is_active: isActive }),
+    });
   },
 };

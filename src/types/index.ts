@@ -447,3 +447,75 @@ export interface AdminChatTraceResponse {
   turns: AdminInteractionLogTurn[];
 }
 
+// ============================================================================
+// DYNAMIC KNOWLEDGE BASE & CATALOG & MODULAR PROMPTS
+// ============================================================================
+
+export interface KnowledgeNode {
+  id: string;
+  tenant_id: string;
+  path: string;
+  parent_path?: string | null;
+  title: string;
+  node_type: string;
+  tier: "L0" | "L1" | "L2" | string;
+  summary: string;
+  content: string;
+  media_attachments?: Array<{ type: string; url: string; caption?: string }>;
+  high_confidence_triggers?: string[];
+  allowed_employees?: string[];
+  allowed_roles?: string[];
+  valid_from?: string | null;
+  valid_until?: string | null;
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CatalogItem {
+  id: string;
+  tenant_id: string;
+  sku: string;
+  title: string;
+  category?: string | null;
+  description?: string | null;
+  base_price_rub?: number | null;
+  currency: string;
+  attributes?: Record<string, any>;
+  media_urls?: string[];
+  is_active: boolean;
+  updated_at: string;
+}
+
+export interface CatalogInventory {
+  id: string;
+  tenant_id: string;
+  sku: string;
+  variant_key: string;
+  is_available: boolean;
+  quantity?: number | null;
+  source: string;
+  last_synced_at: string;
+}
+
+export interface PromptModule {
+  id: string;
+  scope: "global" | "tenant";
+  tenant_id?: string | null;
+  slug: string;
+  name: string;
+  category: string;
+  override_mode: "replace" | "append" | "prepend" | "disabled" | string;
+  priority_order: number;
+  allowed_employees?: string[];
+  allowed_roles?: string[];
+  allowed_channels?: string[];
+  case_tags?: string[];
+  content: string;
+  is_active: boolean;
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+
