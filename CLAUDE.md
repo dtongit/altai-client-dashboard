@@ -24,8 +24,8 @@ NEXT_PUBLIC_API_URL="http://localhost:8000/api/v1/client" npm run dev
 - Demos are **not** part of the dashboard any more (moved to the `optima` repo, 2026-11-01). `public/_redirects` sends `/demo/*` to `https://optima.altaiweb.online/demo/?t=<tenant>`.
 
 ## Structure
-- `src/lib/api.ts` — the only HTTP client. Base URL from `NEXT_PUBLIC_API_URL`; derives `/api/v1/admin` and
-  `/api/v1/demo`. Token + tenant kept in memory and `localStorage` (`altai_token`, `altai_tenant`); sends
+- `src/lib/api.ts` — the only HTTP client. Base URL from `NEXT_PUBLIC_API_URL`; derives `/api/v1/admin`.
+  Token + tenant kept in memory and `localStorage` (`altai_token`, `altai_tenant`); sends
   `Authorization: Bearer` and `X-Tenant-ID`.
 - `src/lib/auth-context.tsx` (`useAuth`), `src/lib/theme-context.tsx`, .
 - `src/types/index.ts` — keep in sync with Rust DTOs in `altai-core/src/models/mod.rs` and handler JSON in
