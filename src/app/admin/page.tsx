@@ -33,6 +33,13 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     crm_credentials: { mock: true },
     llm_provider: "openrouter",
     llm_model: "deepseek/deepseek-chat",
+    kind: "live",
+    source_tenant_id: null,
+    demo_config: {},
+  },
+  "api-keys": {
+    name: "Алина (демо-менеджер)",
+    scope: "demo_manager",
   },
   users: {
     username: "new_operator",
@@ -40,7 +47,7 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     password: "ChangeMe123!",
     is_active: true,
     is_admin: false,
-    role: "client_admin",
+    role: "client_admin", // client_admin | client_operator | demo_manager (demo_manager: tenant_id = null)
     tenant_id: "demo_amo",
   },
   "openrouter-models": {
@@ -126,6 +133,8 @@ export default function SuperadminConsolePage() {
   const [editingId, setEditingId] = useState<string | number | null>(null);
   const [jsonEditorText, setJsonEditorText] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
+  // One-time plaintext of a freshly issued API key (the backend stores only its hash)
+  const [issuedKey, setIssuedKey] = useState<string | null>(null);
 
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(
     null
@@ -216,8 +225,13 @@ export default function SuperadminConsolePage() {
       }
 
       if (modalMode === "create") {
-        await api.createAdminCrud(selectedResource, parsed);
-        showToast("success", "Запись успешно создана в БД");
+        const created = await api.createAdminCrud(selectedResource, parsed);
+        if (created.api_key) {
+          setIssuedKey(created.api_key);
+          showToast("success", "Ключ выпущен — скопируйте его сейчас, повторно он не показывается");
+        } else {
+          showToast("success", "Запись успешно создана в БД");
+        }
       } else if (editingId !== null) {
         await api.updateAdminCrud(selectedResource, editingId, parsed);
         showToast("success", `Запись #${editingId} успешно обновлена`);
@@ -583,6 +597,36 @@ export default function SuperadminConsolePage() {
           </div>
         </div>
       </div>
+
+      {/* One-time API key display */}
+      {issuedKey && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 space-y-4">
+            <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Новый API-ключ демо-менеджера</h3>
+            <p className="text-xs text-zinc-500">
+              Ключ показывается один раз, в базе хранится только его хеш. Передайте владельцу по защищённому каналу.
+              Отозвать ключ — удалить строку в таблице «API Keys».
+            </p>
+            <code className="block break-all rounded-2xl border border-zinc-800 bg-zinc-950 p-3 font-mono text-xs text-emerald-300 select-all">
+              {issuedKey}
+            </code>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => navigator.clipboard?.writeText(issuedKey)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+              >
+                Скопировать
+              </button>
+              <button
+                onClick={() => setIssuedKey(null)}
+                className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold"
+              >
+                Готово
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create / Edit JSON Modal */}
       {modalOpen && (

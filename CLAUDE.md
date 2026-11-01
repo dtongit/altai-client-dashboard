@@ -4,6 +4,7 @@ Next.js 16 (App Router, Turbopack) + React 19 + TypeScript + Tailwind v4. Separa
 Verified 2026-10-31; replaces the old `AGENTS.md`.
 
 ## Design and development rules
+0. Whenever the backend DB schema changes, `/admin` (`src/app/admin/page.tsx`, `src/types/index.ts`) must be updated in the same change (see `altai-core/CLAUDE.md` rule 0).
 1. Every component must style both light (`bg-white text-zinc-900 border-zinc-200`) and dark (`dark:bg-zinc-900 dark:text-white dark:border-zinc-800`) modes; brand accent is amber-500.
 2. All user-facing copy is polished business Russian.
 3. Before committing frontend changes `npm run build` must pass with zero TypeScript/Turbopack errors.
@@ -20,21 +21,19 @@ NEXT_PUBLIC_API_URL="http://localhost:8000/api/v1/client" npm run dev
   `scripts/deploy.py` in the root repo pushes this repo's HEAD to those branches.
 - The stale `Dockerfile`/`docker-compose.yml` were removed (2026-10-31); a static export can't run in them.
 - Static export => no server code, no middleware, no API routes, no runtime env. `NEXT_PUBLIC_*` are baked at build.
-- `/demo/[tenant]` is pre-rendered only for the ids in `generateStaticParams` (`src/app/demo/[tenant]/page.tsx`);
-  other tenants fall back via `public/_redirects` to `/demo/` (generic page reads tenant from the URL client-side).
-  Adding a tenant with its own OG metadata = add it to `generateStaticParams` + `src/lib/tenants.ts`.
+- Demos are **not** part of the dashboard any more (moved to the `optima` repo, 2026-11-01). `public/_redirects` sends `/demo/*` to `https://optima.altaiweb.online/demo/?t=<tenant>`.
 
 ## Structure
 - `src/lib/api.ts` — the only HTTP client. Base URL from `NEXT_PUBLIC_API_URL`; derives `/api/v1/admin` and
   `/api/v1/demo`. Token + tenant kept in memory and `localStorage` (`altai_token`, `altai_tenant`); sends
   `Authorization: Bearer` and `X-Tenant-ID`.
-- `src/lib/auth-context.tsx` (`useAuth`), `src/lib/theme-context.tsx`, `src/lib/tenants.ts` (display names / brand
-  configs per demo tenant — the one sanctioned place for tenant branding in the frontend).
+- `src/lib/auth-context.tsx` (`useAuth`), `src/lib/theme-context.tsx`, .
 - `src/types/index.ts` — keep in sync with Rust DTOs in `altai-core/src/models/mod.rs` and handler JSON in
   `altai-core/src/api/*.rs`.
 - Pages: `/` showcase, `/login`, `/vera` KPIs, `/chats` live dialogs + takeover, `/simulator`, `/settings`,
   `/knowledge` Employee Studio (**3 tabs**: `prompts`, `kb`, `skills` — ~107 KB single file), `/admin` (+ `/admin/chats`,
-  `/admin/team-chats`), `/demo`, `/demo/[tenant]`.
+  `/admin/team-chats`). `/admin` also manages `kind`/`source_tenant_id`/`demo_config` of tenants and the one-time issuing of demo API keys (resource `api-keys`).
+- Users with role `demo_manager` have no tenant: the backend limits them to `kind=demo` tenants (picker comes from `available_tenants`).
 - Big single-file pages (`knowledge/page.tsx`, `admin/chats/page.tsx`): prefer targeted edits; extract components
   only when asked.
 

@@ -38,7 +38,6 @@ const API_BASE_URL = rawApiUrl.replace(
 );
 
 const ADMIN_API_BASE_URL = API_BASE_URL.replace(/\/api\/v1\/client\/?$/, "/api/v1/admin");
-const DEMO_API_BASE_URL = API_BASE_URL.replace(/\/api\/v1\/client\/?$/, "/api/v1/demo");
 
 // In-memory token storage (also mirrored in localStorage in browser)
 let authToken: string | null = null;
@@ -485,7 +484,7 @@ export const api = {
   async createAdminCrud(
     resource: string,
     body: Record<string, any>
-  ): Promise<{ ok: boolean; item: Record<string, any> }> {
+  ): Promise<{ ok: boolean; item: Record<string, any>; api_key?: string }> {
     return request(
       `/crud/${encodeURIComponent(resource)}`,
       {
@@ -544,85 +543,6 @@ export const api = {
 
   async getAdminChatTrace(sessionId: string): Promise<AdminChatTraceResponse> {
     return request(`/chats/${encodeURIComponent(sessionId)}`, {}, ADMIN_API_BASE_URL);
-  },
-
-  async getDemoConfig(tenantId: string): Promise<{
-    tenant_id: string;
-    business_name: string;
-    welcome_message: string;
-    suggested_questions: string[];
-    max_message_length: number;
-  }> {
-    const stageTenants = ["lagoon_resort", "adiam"];
-    const isStageFirst = stageTenants.includes(tenantId);
-    const primary = isStageFirst
-      ? "https://stage-api.optima.altaiweb.online/api/v1/demo"
-      : DEMO_API_BASE_URL;
-    const secondary = isStageFirst
-      ? DEMO_API_BASE_URL
-      : "https://stage-api.optima.altaiweb.online/api/v1/demo";
-
-    let res = await fetch(`${primary}/config?tenant_id=${encodeURIComponent(tenantId)}`);
-    if (!res.ok) {
-      try {
-        const secRes = await fetch(`${secondary}/config?tenant_id=${encodeURIComponent(tenantId)}`);
-        if (secRes.ok) res = secRes;
-      } catch {}
-    }
-    if (!res.ok) {
-      throw new Error("Не удалось загрузить настройки демо");
-    }
-    return res.json();
-  },
-
-  async sendDemoChat(payload: {
-    tenant_id: string;
-    message: string;
-    session_id?: string;
-  }): Promise<{
-    ok: boolean;
-    session_id: string;
-    tenant_id: string;
-    assistant_response: string;
-    latency_ms: number;
-    waited_seconds: number;
-    status: string;
-    error?: string | null;
-    escalation?: {
-      escalated: boolean;
-      reason: string;
-      alert_preview?: string;
-    } | null;
-  }> {
-    const stageTenants = ["lagoon_resort", "adiam"];
-    const isStageFirst = stageTenants.includes(payload.tenant_id);
-    const primary = isStageFirst
-      ? "https://stage-api.optima.altaiweb.online/api/v1/demo"
-      : DEMO_API_BASE_URL;
-    const secondary = isStageFirst
-      ? DEMO_API_BASE_URL
-      : "https://stage-api.optima.altaiweb.online/api/v1/demo";
-
-    let res = await fetch(`${primary}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      try {
-        const secRes = await fetch(`${secondary}/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (secRes.ok) res = secRes;
-      } catch {}
-    }
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || "Ошибка при отправке сообщения");
-    }
-    return res.json();
   },
 
   // ==========================================================================

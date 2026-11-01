@@ -3,7 +3,7 @@ export interface User {
   username: string;
   email: string;
   is_admin: boolean;
-  role: "superadmin" | "client_admin" | "client_operator" | "tester";
+  role: "superadmin" | "client_admin" | "client_operator" | "tester" | "demo_manager";
   tenant_id: string;
 }
 
@@ -13,6 +13,18 @@ export interface Tenant {
   is_active: boolean;
   crm_type: string;
   llm_model: string;
+  /** "live" (default) or "demo" (read-only tools, managed with demo keys). */
+  kind?: "live" | "demo";
+}
+
+/** Row of /admin/crud/api-keys (the hash is never returned). */
+export interface AdminApiKey {
+  id: string;
+  name: string;
+  scope: string;
+  created_at: string;
+  revoked_at: string | null;
+  last_used_at: string | null;
 }
 
 export interface OverviewKPIs {

@@ -1,2 +1,4 @@
-/demo/*  /demo/  200
-/demo/*  /demo/index.html  200
+# Demos moved to the landing repo (optima.altaiweb.online)
+/demo/:tenant/  https://optima.altaiweb.online/demo/?t=:tenant  301
+/demo/:tenant  https://optima.altaiweb.online/demo/?t=:tenant  301
+/demo  https://optima.altaiweb.online/demo/  301

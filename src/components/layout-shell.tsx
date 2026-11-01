@@ -24,32 +24,25 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   const cleanPath = rawPath.replace(/\/+$/, "") || "/";
 
   const isLoginPage = cleanPath === "/login" || cleanPath.startsWith("/login");
-  const isDemoPage = cleanPath === "/demo" || cleanPath.startsWith("/demo");
   const isStartPage =
     cleanPath === "/" || cleanPath === "" || cleanPath === "/index.html";
   const isAdminPage = cleanPath.startsWith("/admin");
-  const showSidebar = !isLoginPage && !isStartPage && !isAdminPage && !isDemoPage;
+  const showSidebar = !isLoginPage && !isStartPage && !isAdminPage;
 
   useEffect(() => {
     if (!loading && mounted) {
-      if (!user && !isLoginPage && !isDemoPage) {
+      if (!user && !isLoginPage) {
         router.replace("/login");
       } else if (user && isLoginPage) {
         router.replace("/");
       }
     }
-  }, [loading, mounted, user, isLoginPage, isDemoPage, router]);
+  }, [loading, mounted, user, isLoginPage, router]);
 
-  // If on login or public demo page, render directly without blocking auth
-  if (isLoginPage || isDemoPage) {
+  // If on the login page, render directly without blocking auth
+  if (isLoginPage) {
     return (
-      <div
-        className={
-          isDemoPage
-            ? "min-h-screen w-full flex flex-col bg-[#F5F2EE] text-[#1C1B1A]"
-            : "min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors"
-        }
-      >
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
         {children}
       </div>
     );
