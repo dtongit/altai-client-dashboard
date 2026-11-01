@@ -1,4 +1,4 @@
-# Demos moved to the landing repo (optima.altaiweb.online)
-/demo/:tenant/  https://optima.altaiweb.online/demo/?t=:tenant  301
-/demo/:tenant  https://optima.altaiweb.online/demo/?t=:tenant  301
+# Demos moved to the landing repo (optima.altaiweb.online); its 404.html maps /demo/<tenant> to /demo/?t=<tenant>
+/demo/:tenant/  https://optima.altaiweb.online/demo/:tenant  301
+/demo/:tenant  https://optima.altaiweb.online/demo/:tenant  301
 /demo  https://optima.altaiweb.online/demo/  301
