@@ -286,14 +286,14 @@ export default function SuperadminConsolePage() {
     if (typeof val === "object") {
       const s = JSON.stringify(val);
       return (
-        <code className="text-[11px] font-mono text-amber-700 dark:text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded">
+        <code className="block truncate text-[11px] font-mono text-amber-700 dark:text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded" title={s}>
           {s.length > 48 ? `${s.slice(0, 48)}…` : s}
         </code>
       );
     }
     const str = String(val);
     return (
-      <span className="truncate block max-w-[260px]" title={str}>
+      <span className="truncate block" title={str}>
         {str.length > 64 ? `${str.slice(0, 64)}…` : str}
       </span>
     );
@@ -382,7 +382,7 @@ export default function SuperadminConsolePage() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 p-6 sm:p-8 space-y-6 overflow-x-hidden">
+      <div className="flex-1 min-w-0 p-6 sm:p-8 space-y-6 overflow-x-hidden">
         {/* Top System Telemetry Bar */}
         {stats && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -513,16 +513,16 @@ export default function SuperadminConsolePage() {
 
         {/* Data Table */}
         <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="w-full">
+            <table className="w-full table-fixed text-left border-collapse">
               <thead>
                 <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/60 text-[11px] font-bold uppercase tracking-wider text-zinc-500">
                   {visibleColumns.map((col) => (
-                    <th key={col} className="py-3.5 px-4">
+                    <th key={col} className="py-3.5 px-3 truncate" title={col}>
                       {col}
                     </th>
                   ))}
-                  <th className="py-3.5 px-4 text-right">Действия</th>
+                  <th className="py-3.5 px-3 text-right w-44">Действия</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200/70 dark:divide-zinc-800/70 text-xs">
@@ -554,12 +554,12 @@ export default function SuperadminConsolePage() {
                         className="hover:bg-zinc-50/90 dark:hover:bg-zinc-800/40 transition-colors"
                       >
                         {visibleColumns.map((col) => (
-                          <td key={col} className="py-3 px-4 align-middle">
+                          <td key={col} className="py-3 px-3 align-middle overflow-hidden">
                             {formatCellValue(row[col])}
                           </td>
                         ))}
-                        <td className="py-3 px-4 text-right whitespace-nowrap">
-                          <div className="inline-flex items-center gap-1.5">
+                        <td className="py-3 px-3 text-right">
+                          <div className="inline-flex flex-wrap justify-end items-center gap-1.5">
                             {selectedResource === "interaction-logs" && row.session_id && (
                               <Link
                                 href={`/admin/chats/?session_id=${encodeURIComponent(row.session_id)}`}
