@@ -538,7 +538,7 @@ export default function ChatsPage() {
                                 <span>Голосовое сообщение</span>
                               </div>
                             )}
-                            <div className="rounded-2xl rounded-tl-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 px-4 py-3 text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed shadow-sm">
+                            <div className="rounded-2xl rounded-tl-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 px-4 py-3 text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed shadow-sm whitespace-pre-wrap break-words">
                               {turn.user_message.replace(/^\[Голосовое сообщение\]:\s*/, "")}
                             </div>
                             <div className="text-[10px] text-zinc-400 dark:text-zinc-500 pl-1">
@@ -569,7 +569,7 @@ export default function ChatsPage() {
                             <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20 text-[10px] font-medium mb-1">
                               <span>Менеджер</span>
                             </div>
-                            <div className="rounded-2xl rounded-tr-sm bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/40 px-4 py-3 text-xs text-zinc-900 dark:text-zinc-100 text-left leading-relaxed shadow-sm">
+                            <div className="rounded-2xl rounded-tr-sm bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/40 px-4 py-3 text-xs text-zinc-900 dark:text-zinc-100 text-left leading-relaxed shadow-sm whitespace-pre-wrap break-words">
                               {turn.assistant_response}
                             </div>
                             <div className="text-[10px] text-zinc-400 dark:text-zinc-500 pr-1">
@@ -583,7 +583,7 @@ export default function ChatsPage() {
                       ) : turn.assistant_response ? (
                         <div className="flex items-start justify-end gap-3 max-w-xl ml-auto">
                           <div className="space-y-1 text-right">
-                            <div className="rounded-2xl rounded-tr-sm bg-amber-500/10 dark:bg-gradient-to-br dark:from-amber-500/10 dark:to-amber-600/10 border border-amber-500/20 px-4 py-3 text-xs text-zinc-900 dark:text-zinc-100 text-left leading-relaxed shadow-sm">
+                            <div className="rounded-2xl rounded-tr-sm bg-amber-500/10 dark:bg-gradient-to-br dark:from-amber-500/10 dark:to-amber-600/10 border border-amber-500/20 px-4 py-3 text-xs text-zinc-900 dark:text-zinc-100 text-left leading-relaxed shadow-sm whitespace-pre-wrap break-words">
                               {turn.assistant_response}
                             </div>
                             <div className="flex items-center justify-end gap-2 text-[10px] text-zinc-400 dark:text-zinc-500 pr-1">
