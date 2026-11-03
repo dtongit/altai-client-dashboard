@@ -48,7 +48,7 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     is_active: true,
     is_admin: false,
     role: "client_admin", // client_admin | client_operator | demo_manager (demo_manager: tenant_id = null)
-    tenant_id: "demo_amo",
+    tenant_id: "your_tenant_id",
   },
   "openrouter-models": {
     id: "openai/gpt-4o-mini",
@@ -60,9 +60,9 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
   },
   "prompt-modules": {
     scope: "tenant",
-    tenant_id: "demo_amo",
+    tenant_id: "your_tenant_id",
     slug: "custom_rules",
-    name: "Кастомные правила для demo_amo",
+    name: "Кастомные правила для your_tenant_id",
     category: "custom",
     override_mode: "replace",
     priority_order: 60,
@@ -73,7 +73,7 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     is_active: true,
   },
   "knowledge-nodes": {
-    tenant_id: "demo_amo",
+    tenant_id: "your_tenant_id",
     path: "company/about",
     parent_path: null,
     title: "О компании",
@@ -86,7 +86,7 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     is_active: true,
   },
   "tenant-secrets": {
-    tenant_id: "demo_amo",
+    tenant_id: "your_tenant_id",
     key_name: "MOYSKLAD_API_TOKEN",
     secret_value: "token_value_here",
     group_slug: "tilda_moysklad",
@@ -94,7 +94,7 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     description: "API-токен для доступа к остаткам",
   },
   "tenant-employees": {
-    tenant_id: "demo_amo",
+    tenant_id: "your_tenant_id",
     employee_slug: "vera",
     display_name: "Вера (AI SDR)",
     role_title: "AI SDR & Продажи",
@@ -102,7 +102,7 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     is_active: true,
   },
   "custom-tools": {
-    tenant_id: "demo_amo",
+    tenant_id: "your_tenant_id",
     employee_id: "vera",
     name: "custom_calculator",
     description: "Расчет стоимости заказа",
@@ -111,7 +111,7 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     is_active: true,
   },
   campaigns: {
-    tenant_id: "demo_amo",
+    tenant_id: "your_tenant_id",
     name: "Осенняя B2B акция",
     status: "draft",
   },

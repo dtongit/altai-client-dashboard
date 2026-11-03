@@ -111,7 +111,7 @@ export default function VeraOverviewPage() {
   }
 
   const { kpis: rawKpis, channel_breakdown, daily_timeline: rawTimeline } = data;
-  const tenantId = data.tenant_id || tenant?.id || "demo_amo";
+  const tenantId = data.tenant_id || tenant?.id || "";
   const isTgSubscribed = data.telegram_bot?.has_subscribers ?? false;
 
   // Defensive filtering: strictly exclude simulators, demos, and testing channels

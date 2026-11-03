@@ -141,7 +141,7 @@ export default function SimulatorPage() {
     sessionId ||
     (tenant?.id
       ? `${tenant.id}:web_simulator:client_sim_${user?.username || "admin"}`
-      : "demo_amo:web_simulator:client_sim_admin");
+      : "altai_optima:web_simulator:client_sim_admin");
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto flex flex-col h-[calc(100vh-4rem)]">

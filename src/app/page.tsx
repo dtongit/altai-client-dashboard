@@ -65,7 +65,7 @@ export default function AIStaffManagementPage() {
     );
   }
 
-  const tenantId = data?.tenant_id || tenant?.id || "demo_amo";
+  const tenantId = data?.tenant_id || tenant?.id || "";
   const isTgSubscribed = data?.telegram_bot?.has_subscribers ?? false;
 
   return (
