@@ -119,7 +119,7 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-6 text-center text-[11px] text-zinc-500">
-          Защищенная среда Altai Optima. Платформа соответствует стандартам 152-ФЗ.
+          Защищенная среда Altai Optima.
         </p>
       </div>
     </div>
