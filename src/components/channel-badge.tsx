@@ -28,6 +28,7 @@ export function ChannelBadge({ channel, showIcon = true }: ChannelBadgeProps) {
   }
 
   if (norm.includes("instagram")) {
+    const isComment = norm === "instagram_comment";
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-gradient-to-r from-pink-500/15 via-rose-500/15 to-amber-500/15 text-pink-700 dark:text-pink-300 border border-pink-500/30">
         {showIcon && (
@@ -37,7 +38,7 @@ export function ChannelBadge({ channel, showIcon = true }: ChannelBadgeProps) {
             <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
           </svg>
         )}
-        <span>Instagram</span>
+        <span>{isComment ? "Instagram · комментарий" : "Instagram"}</span>
       </span>
     );
   }

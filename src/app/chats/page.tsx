@@ -29,6 +29,8 @@ import { formatRelativeTime, formatDateTime } from "@/lib/utils";
 function formatClientTitle(channel?: string, userId?: string, clientName?: string | null) {
   if (clientName && clientName !== userId) return clientName;
   if (!userId) return "Клиент";
+  // Comment chats are `{lead}~{post source}`: show the lead like Direct does.
+  if (userId.includes("~")) userId = userId.split("~")[0];
   const ch = (channel || "").toLowerCase();
   if (ch.includes("instagram") || userId === "68544160") {
     if (userId === "68544160") return "@jwa71008";
@@ -77,7 +79,7 @@ export default function ChatsPage() {
             sess.startsWith("simulator:") ||
             sess.startsWith("aitest:");
           if (isSim) return false;
-          if (channelFilter && !ch.includes(channelFilter.toLowerCase())) return false;
+          if (channelFilter && ch !== channelFilter.toLowerCase()) return false;
           return true;
         });
         setChats(liveChats);
@@ -303,7 +305,8 @@ export default function ChatsPage() {
                 <option value="">Все каналы</option>
                 <option value="telegram">Telegram</option>
                 <option value="whatsapp">WhatsApp</option>
-                <option value="instagram">Instagram</option>
+                <option value="instagram">Instagram Direct</option>
+                <option value="instagram_comment">Instagram · комментарии</option>
                 <option value="avito">Avito</option>
                 <option value="max">MAX</option>
                 <option value="web">Сайт / Web</option>
