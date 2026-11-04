@@ -372,6 +372,30 @@ export interface AdminCrudResourceSchema {
   columns: string[];
 }
 
+/** Row of /admin/crud/context-changesets (read-only: proposals of the team bot, #138). */
+export interface AdminContextChangeset {
+  id: string;
+  tenant_id: string;
+  requester_member_id: string;
+  requester_tg_id: string;
+  requester_name: string;
+  status: "draft" | "in_review" | "awaiting_confirm" | "applied" | "rejected" | "expired" | "rolled_back" | "failed";
+  summary: string;
+  /** Typed edits with base_version and diff. */
+  edits: Record<string, any>[];
+  reviewer_verdict: string | null;
+  reviewer_reasons: string[];
+  review_rounds: number;
+  failure_reason: string | null;
+  applied_by: string | null;
+  applied_versions: Record<string, any>[];
+  created_at: string;
+  updated_at: string;
+  expires_at: string | null;
+  applied_at: string | null;
+  rolled_back_at: string | null;
+}
+
 export interface AdminLLMStep {
   step: string;
   model?: string;
