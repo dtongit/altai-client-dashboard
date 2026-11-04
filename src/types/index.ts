@@ -130,6 +130,81 @@ export interface TeamBotLogEvent {
   created_at: string;
 }
 
+/** Row of /admin/crud/team-trace-steps and a step in the team-bot trace (read-only debug trace of a turn). */
+export interface TeamTraceStep {
+  id: string;
+  tenant_id: string;
+  telegram_user_id: string;
+  turn_id: string | null;
+  seq: number;
+  kind: "prompt" | "llm" | "tool" | "reviewer" | "changeset" | string;
+  model: string | null;
+  input: any;
+  output: any;
+  prompt_tokens: number;
+  completion_tokens: number;
+  cost_rub: number;
+  latency_ms: number;
+  error: string | null;
+  changeset_id: string | null;
+  created_at: string;
+  /** Only on `changeset` steps in the trace API: the changeset as it is now (edits with diffs). */
+  changeset?: {
+    id: string;
+    status: string;
+    summary: string;
+    requester_name: string;
+    reviewer_verdict: string | null;
+    review_rounds: number;
+    failure_reason: string | null;
+    edits: Array<{ description: string; targets: string[]; diff: string }>;
+  } | null;
+}
+
+export interface TeamTraceModelTotals {
+  model: string;
+  calls: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  cost_rub: number;
+}
+
+/** A turn of the trace: the `team_bot_logs` row plus its ordered steps. */
+export interface TeamTraceTurn extends TeamBotLogEvent {
+  type: "turn";
+  turn_id: string | null;
+  has_trace: boolean;
+  has_error: boolean;
+  trace_totals: {
+    llm_calls: number;
+    prompt_tokens: number;
+    completion_tokens: number;
+    cost_rub: number;
+    models: TeamTraceModelTotals[];
+  };
+  steps: TeamTraceStep[];
+}
+
+/** A changeset transition outside a turn (button press, undo, expiry). */
+export interface TeamTraceEvent extends TeamTraceStep {
+  type: "changeset_event";
+}
+
+export interface TeamTraceResponse {
+  ok: boolean;
+  telegram_user_id: string;
+  tenant_id?: string | null;
+  totals: {
+    turns: number;
+    llm_calls: number;
+    prompt_tokens: number;
+    completion_tokens: number;
+    cost_rub: number;
+    models: TeamTraceModelTotals[];
+  };
+  items: Array<TeamTraceTurn | TeamTraceEvent>;
+}
+
 export interface TeamBotConversation {
   telegram_user_id: string;
   display_name: string;

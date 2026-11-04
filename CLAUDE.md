@@ -33,6 +33,7 @@ NEXT_PUBLIC_API_URL="http://localhost:8000/api/v1/client" npm run dev
 - Pages: `/` showcase, `/login`, `/vera` KPIs, `/chats` live dialogs + takeover, `/simulator`, `/settings`,
   `/knowledge` Employee Studio (**3 tabs**: `prompts`, `kb`, `skills` — ~107 KB single file), `/admin` (+ `/admin/chats`,
   `/admin/team-chats`). `/admin` also manages `kind`/`source_tenant_id`/`demo_config` of tenants and the one-time issuing of demo API keys (resource `api-keys`) and the read-only `knowledge-node-versions` (KB history, #185). In `/knowledge` kb tab a node has «История» / «Восстановить» (versions API in `altai-core/CLAUDE.md`).
+- `/admin/team-chats` has a «Чат» | «Трейс» switch in the conversation header. «Трейс» (`team-chats/trace-view.tsx`, API `getTeamChatTrace`, types `TeamTrace*`) is the debug view of a manager's conversation with Vera: totals + per-model chips, turns newest first (collapsed row, expanded numbered steps: prompt, LLM, tool, reviewer, changeset with diffs), standalone changeset events. Backend in `altai-core/CLAUDE.md` (`services/team_trace.rs`); `/admin` shows the read-only resource `team-trace-steps`.
 - Users with role `demo_manager` have no tenant: the backend limits them to `kind=demo` tenants (picker comes from `available_tenants`).
 - Big single-file pages (`knowledge/page.tsx`, `admin/chats/page.tsx`): prefer targeted edits; extract components
   only when asked.

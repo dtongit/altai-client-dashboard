@@ -15,6 +15,7 @@ import {
   AdminCrudResourceSchema,
   InstagramStatus,
   AdminChatTraceResponse,
+  TeamTraceResponse,
   TeamMember,
   TeamInviteResponse,
   TeamMembersResponse,
@@ -553,6 +554,16 @@ export const api = {
   }> {
     return request(
       `/team-chats/${encodeURIComponent(telegramUserId)}?limit=${limit}`,
+      {},
+      ADMIN_API_BASE_URL
+    );
+  },
+
+  async getTeamChatTrace(telegramUserId: string, tenantId?: string, limit: number = 50): Promise<TeamTraceResponse> {
+    const q = new URLSearchParams({ limit: String(limit) });
+    if (tenantId) q.append("tenant_id", tenantId);
+    return request(
+      `/team-chats/${encodeURIComponent(telegramUserId)}/trace?${q.toString()}`,
       {},
       ADMIN_API_BASE_URL
     );

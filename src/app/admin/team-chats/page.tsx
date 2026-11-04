@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { TeamBotConversation, TeamBotLogEvent } from "@/types";
 import { formatDateTime, formatRelativeTime } from "@/lib/utils";
+import TeamTraceView from "./trace-view";
 import {
   ArrowLeft,
   Search,
@@ -41,6 +42,7 @@ export default function AdminTeamChatsPage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [expandedPayloads, setExpandedPayloads] = useState<Record<string, boolean>>({});
+  const [view, setView] = useState<"chat" | "trace">("chat");
   const [botUsername, setBotUsername] = useState<string>("altai_optima_vera_bot");
 
   // Outbound Message State
@@ -465,7 +467,29 @@ export default function AdminTeamChatsPage() {
                 </div>
               </div>
 
+              {/* View switch: chat | debug trace */}
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 text-xs self-start">
+                {([
+                  { id: "chat", label: "Чат" },
+                  { id: "trace", label: "Трейс" },
+                ] as const).map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setView(v.id)}
+                    className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+                      view === v.id
+                        ? "bg-amber-500 text-zinc-950 shadow-sm font-semibold"
+                        : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+
               {/* Event Type Filter Pills */}
+              {view === "chat" && (
               <div className="flex items-center gap-1.5 flex-wrap">
                 {[
                   { id: "all", label: "Все события" },
@@ -497,8 +521,14 @@ export default function AdminTeamChatsPage() {
                   <RefreshCw className={`h-3.5 w-3.5 ${loadingEvents ? "animate-spin" : ""}`} />
                 </button>
               </div>
+              )}
             </header>
 
+            {view === "trace" && (
+              <TeamTraceView telegramUserId={selectedConv.telegram_user_id} tenantId={selectedConv.tenant_id} />
+            )}
+
+            {view === "chat" && (<>
             {/* Event Timeline (Latest-on-Top) */}
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
               {loadingEvents ? (
@@ -676,6 +706,7 @@ export default function AdminTeamChatsPage() {
                 </button>
               </div>
             </div>
+            </>)}
           </>
         ) : (
           <div className="h-full flex flex-col items-center justify-center p-8 text-center text-zinc-400 space-y-3">
