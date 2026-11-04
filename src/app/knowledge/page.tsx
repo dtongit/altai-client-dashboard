@@ -10,6 +10,7 @@ import {
   CustomToolVersionItem,
   PromptVersionItem,
   KnowledgeNode,
+  KnowledgeNodeVersion,
   PromptModule,
   SemanticSkillCard,
   TenantSecretMasked,
@@ -277,6 +278,9 @@ export default function EmployeeStudioPage() {
     change_description: "",
   });
   const [isSavingNode, setIsSavingNode] = useState(false);
+  const [nodeHistory, setNodeHistory] = useState<KnowledgeNodeVersion[] | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [restoringVersionId, setRestoringVersionId] = useState<number | null>(null);
 
   // Semantic Skill Cards & Integrations State
   const [skillCards, setSkillCards] = useState<SemanticSkillCard[]>([]);
@@ -613,6 +617,7 @@ export default function EmployeeStudioPage() {
   // Dynamic Knowledge Base Handlers
   // -------------------------------------------------------------------------
   const handleStartEditNode = (node?: KnowledgeNode) => {
+    setNodeHistory(null);
     if (node) {
       setSelectedNodeId(node.id);
       setNodeForm({
@@ -681,6 +686,38 @@ export default function EmployeeStudioPage() {
       showToast("error", err?.message || "Ошибка сохранения узла");
     } finally {
       setIsSavingNode(false);
+    }
+  };
+
+  const handleToggleNodeHistory = async (node: KnowledgeNode) => {
+    if (nodeHistory) {
+      setNodeHistory(null);
+      return;
+    }
+    setIsLoadingHistory(true);
+    try {
+      const res = await api.getKnowledgeNodeVersions(node.id);
+      setNodeHistory(res.versions || []);
+    } catch (err: any) {
+      showToast("error", err?.message || "Не удалось загрузить историю");
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const handleRestoreNodeVersion = async (node: KnowledgeNode, v: KnowledgeNodeVersion) => {
+    if (!confirm(`Восстановить версию v${v.version} узла «${node.title}»? Текущее состояние сохранится в истории.`)) return;
+    setRestoringVersionId(v.id);
+    try {
+      await api.restoreKnowledgeNodeVersion(node.id, v.id);
+      const res = await api.getKnowledgeNodeVersions(node.id);
+      setNodeHistory(res.versions || []);
+      await loadDynamicData();
+      showToast("success", `Версия v${v.version} восстановлена`);
+    } catch (err: any) {
+      showToast("error", err?.message || "Ошибка восстановления версии");
+    } finally {
+      setRestoringVersionId(null);
     }
   };
 
@@ -1299,6 +1336,7 @@ export default function EmployeeStudioPage() {
                       key={node.id}
                       onClick={() => {
                         setSelectedNodeId(node.id);
+                        setNodeHistory(null);
                         setIsEditingNode(false);
                       }}
                       className={`p-4 rounded-2xl border transition-all cursor-pointer ${
@@ -1562,6 +1600,14 @@ export default function EmployeeStudioPage() {
                             <span>Редактировать</span>
                           </button>
                           <button
+                            onClick={() => handleToggleNodeHistory(node)}
+                            disabled={isLoadingHistory}
+                            className="px-3 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40"
+                          >
+                            <History className="h-3.5 w-3.5" />
+                            <span>{nodeHistory ? "Скрыть историю" : "История"}</span>
+                          </button>
+                          <button
                             onClick={() => handleDeleteNode(node)}
                             className="p-2 rounded-xl text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
                             title="Удалить узел"
@@ -1570,6 +1616,40 @@ export default function EmployeeStudioPage() {
                           </button>
                         </div>
                       </div>
+
+                      {nodeHistory && (
+                        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800 overflow-hidden">
+                          {nodeHistory.length === 0 && (
+                            <div className="p-3 text-xs text-zinc-500">История пока пуста</div>
+                          )}
+                          {nodeHistory.map((v) => (
+                            <div key={v.id} className="flex items-center justify-between gap-3 p-3 text-xs">
+                              <div className="min-w-0">
+                                <div className="font-semibold text-zinc-900 dark:text-white">
+                                  v{v.version}
+                                  {v.is_deleted && (
+                                    <span className="ml-2 text-[10px] font-bold uppercase text-red-600 dark:text-red-400">удаление</span>
+                                  )}
+                                  {v.change_kind === "restore" && (
+                                    <span className="ml-2 text-[10px] font-bold uppercase text-amber-600 dark:text-amber-400">восстановление</span>
+                                  )}
+                                </div>
+                                <div className="text-zinc-500 dark:text-zinc-400 truncate">
+                                  {v.author || "—"} · {new Date(v.created_at).toLocaleString("ru-RU")}
+                                  {v.change_description ? ` · ${v.change_description}` : ""}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleRestoreNodeVersion(node, v)}
+                                disabled={restoringVersionId !== null}
+                                className="shrink-0 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs transition-all cursor-pointer disabled:opacity-40"
+                              >
+                                {restoringVersionId === v.id ? "Восстановление..." : "Восстановить"}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
 
                       {node.summary && (
                         <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800/80 text-xs text-zinc-600 dark:text-zinc-300">

@@ -459,6 +459,25 @@ export interface KnowledgeNode {
   updated_at: string;
 }
 
+export interface KnowledgeNodeVersion {
+  id: number;
+  node_id: string;
+  tenant_id: string;
+  version: number;
+  summary: string;
+  content: string;
+  author?: string | null;
+  change_description?: string | null;
+  created_at: string;
+  path?: string | null;
+  /** Full node state after this change; null on legacy rows. */
+  snapshot?: Record<string, unknown> | null;
+  /** upsert | toggle | delete | restore | baseline | seed; null on legacy rows. */
+  change_kind?: string | null;
+  /** Tombstone: this change deleted the node. */
+  is_deleted: boolean;
+}
+
 export interface PromptModule {
   id: string;
   scope: "global" | "tenant";

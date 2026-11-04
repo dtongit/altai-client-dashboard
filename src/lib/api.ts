@@ -22,6 +22,7 @@ import {
   TeamBotConversation,
   TeamBotLogEvent,
   KnowledgeNode,
+  KnowledgeNodeVersion,
   PromptModule,
   SemanticSkillCard,
   PromptPreviewResponse,
@@ -622,6 +623,27 @@ export const api = {
     const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
     return request(`/knowledge/nodes/${encodeURIComponent(nodeId)}${qs}`, {
       method: "DELETE",
+    });
+  },
+
+  async getKnowledgeNodeVersions(nodeId: string, tenantId?: string): Promise<{
+    ok: boolean;
+    node_id: string;
+    current_version: number | null;
+    versions: KnowledgeNodeVersion[];
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/knowledge/nodes/${encodeURIComponent(nodeId)}/versions${qs}`);
+  },
+
+  async restoreKnowledgeNodeVersion(nodeId: string, versionId: number, tenantId?: string): Promise<{
+    ok: boolean;
+    node: KnowledgeNode;
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/knowledge/nodes/${encodeURIComponent(nodeId)}/restore${qs}`, {
+      method: "POST",
+      body: JSON.stringify({ version_id: versionId }),
     });
   },
 
