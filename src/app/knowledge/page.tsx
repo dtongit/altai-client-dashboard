@@ -6,7 +6,6 @@ import { api } from "@/lib/api";
 import {
   EmployeeConfigResponse,
   CustomToolItem,
-  ConfiguratorActionResult,
   SandboxExecutionResult,
   CustomToolVersionItem,
   PromptVersionItem,
@@ -61,14 +60,6 @@ import {
 } from "lucide-react";
 
 import { MarkdownView } from "@/components/markdown-view";
-
-interface StudioChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  time: string;
-  actions?: ConfiguratorActionResult[];
-}
 
 interface ToolExplanation {
   title: string;
@@ -297,19 +288,6 @@ export default function EmployeeStudioPage() {
   const [revealedToolCodes, setRevealedToolCodes] = useState<Record<string, boolean>>({});
   const [copiedPreview, setCopiedPreview] = useState(false);
 
-  // 1. Configurator Architect Chat state
-  const [chatMessages, setChatMessages] = useState<StudioChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      text: "Здравствуйте! Я ИИ-Архитектор поведения и навыков Веры.\n\nВы можете поручить мне:\n• Скорректировать корпоративные правила, прайс-лист, скрипт квалификации или отработку возражений в системном регламенте Веры;\n• Настроить новый расчетный навык (например, калькулятор скидок, доставку или интеграцию с вашей CRM);\n• Обновить алгоритм любого существующего инструмента.\n\nЧто настроим для Веры?",
-      time: "Сейчас",
-    },
-  ]);
-  const [chatInput, setChatInput] = useState("");
-  const [isSendingChat, setIsSendingChat] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
   // 2. Read-only Prompt & Version Preview state
   const [viewingVersion, setViewingVersion] = useState<PromptVersionItem | null>(null);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
@@ -442,10 +420,6 @@ export default function EmployeeStudioPage() {
     loadConfig(false);
   }, [tenant?.id]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages, isSendingChat]);
-
   const selectToolForView = async (tool: CustomToolItem) => {
     setSelectedToolId(tool.id);
     const explanation = getToolExplanation(tool);
@@ -524,68 +498,6 @@ export default function EmployeeStudioPage() {
       showToast("error", err?.message || "Ошибка запуска проверки в песочнице");
     } finally {
       setIsRunningTest(false);
-    }
-  };
-
-  // Send message to AI Architect
-  const handleSendChat = async (e?: React.FormEvent, preset?: string) => {
-    if (e) e.preventDefault();
-    const text = (preset || chatInput).trim();
-    if (!text || isSendingChat) return;
-
-    const userMsg: StudioChatMessage = {
-      id: `u-${Date.now()}`,
-      role: "user",
-      text,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
-
-    setChatMessages((prev) => [...prev, userMsg]);
-    setChatInput("");
-    setIsSendingChat(true);
-
-    try {
-      const historyPayload = chatMessages.slice(-8).map((m) => ({
-        role: m.role,
-        content: m.text,
-      }));
-      const res = await api.sendConfiguratorChat(employeeId, text, historyPayload);
-
-      const replyText = res.reply || res.response || "";
-      const actionsList = res.actions_executed || res.actions || [];
-
-      const assistantMsg: StudioChatMessage = {
-        id: `a-${Date.now()}`,
-        role: "assistant",
-        text: replyText,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        actions: actionsList,
-      };
-      setChatMessages((prev) => [...prev, assistantMsg]);
-
-      if (res.prompt_updated || res.tools_updated || res.secrets_updated) {
-        await loadConfig(false);
-        showToast(
-          "success",
-          res.secrets_updated
-            ? "ИИ-Архитектор сохранил ключ интеграции!"
-            : res.tools_updated
-            ? "ИИ-Архитектор обновил навык и проверил расчет в песочнице!"
-            : "ИИ-Архитектор обновил системный регламент Веры!"
-        );
-      }
-    } catch (err: any) {
-      setChatMessages((prev) => [
-        ...prev,
-        {
-          id: `err-${Date.now()}`,
-          role: "assistant",
-          text: `Ошибка при выполнении запроса: ${err?.message || "Неизвестная ошибка"}`,
-          time: "Ошибка",
-        },
-      ]);
-    } finally {
-      setIsSendingChat(false);
     }
   };
 
@@ -784,14 +696,6 @@ export default function EmployeeStudioPage() {
     }
   };
 
-
-
-  const quickArchitectPrompts = [
-    "Добавь в регламент скидку 10% при заказе от 300 000 руб.",
-    "Настрой навык расчета курьерской доставки по весу и городу",
-    "Усиль отработку возражения «Дорого» с акцентом на окупаемость",
-    "Добавь в регламент квалификации вопрос про сроки запуска проекта",
-  ];
 
   const selectedTool = config?.custom_tools?.find((t) => t.id === selectedToolId) || null;
   const toolExplanation = selectedTool ? getToolExplanation(selectedTool) : null;
@@ -1823,7 +1727,7 @@ export default function EmployeeStudioPage() {
                   <span>Нужна новая интеграция?</span>
                 </div>
                 <p className="text-[11px] leading-relaxed">
-                  Попросите ИИ-Архитектора в чате подключить новую CRM, склад или платежную систему — он автоматически создаст карточку, код навыка и правила диалога.
+                  Карточки навыков описывают, как Вера работает с CRM, складом или платежной системой.
                 </p>
               </div>
             </div>

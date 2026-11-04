@@ -9,7 +9,6 @@ import {
   SimulatorResponse,
   SimulatorHistoryResponse,
   EmployeeConfigResponse,
-  ConfiguratorChatResponse,
   CustomToolItem,
   CustomToolVersionItem,
   SandboxExecutionResult,
@@ -343,25 +342,11 @@ export const api = {
   },
 
   // ==========================================================================
-  // Employee Configurator & Custom JS Sandbox Tools Studio
+  // Employee config & Custom JS Sandbox Tools Studio
   // ==========================================================================
 
   async getEmployeeConfig(employeeId: string = "vera"): Promise<EmployeeConfigResponse> {
     return request<EmployeeConfigResponse>(`/employees/${encodeURIComponent(employeeId)}/config`);
-  },
-
-  async sendConfiguratorChat(
-    employeeId: string,
-    message: string,
-    history: Array<{ role: string; content: string }> = []
-  ): Promise<ConfiguratorChatResponse> {
-    return request<ConfiguratorChatResponse>(
-      `/employees/${encodeURIComponent(employeeId)}/configurator/chat`,
-      {
-        method: "POST",
-        body: JSON.stringify({ message, history }),
-      }
-    );
   },
 
   async rollbackEmployeePrompt(
