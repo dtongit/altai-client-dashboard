@@ -559,11 +559,18 @@ export default function ChatsPage() {
                             <span>Ответ сформирован и ожидает одобрения супервизором в Telegram</span>
                           </span>
                         </div>
+                      ) : turn.status === "draft_outdated" ? (
+                        <div className="flex items-center justify-center py-2">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 text-[11px] font-medium">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            <span>Черновик устарел и не был отправлен клиенту</span>
+                          </span>
+                        </div>
                       ) : turn.status === "paused_takeover" ? (
                         <div className="flex items-center justify-center py-2">
                           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-500/20 text-[11px]">
                             <PauseCircle className="h-3 w-3" />
-                            <span>Сообщение принято, автоответ ИИ остановлен ручной паузой</span>
+                            <span>Сообщение принято, Вера не отвечает: диалог у менеджера</span>
                           </span>
                         </div>
                       ) : turn.status === "channel_off" ? (

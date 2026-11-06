@@ -11,6 +11,7 @@ import {
   PromptVersionItem,
   KnowledgeNode,
   KnowledgeNodeVersion,
+  DeletedKnowledgeNode,
   PromptModule,
   SemanticSkillCard,
   TenantSecretMasked,
@@ -276,11 +277,18 @@ export default function EmployeeStudioPage() {
     triggers_csv: "",
     media_csv: "",
     change_description: "",
+    // Kept from the loaded node and sent back on save so an edit does not reset them (#187).
+    allowed_employees: undefined as string[] | undefined,
+    allowed_roles: undefined as string[] | undefined,
+    valid_from: undefined as string | null | undefined,
+    valid_until: undefined as string | null | undefined,
   });
   const [isSavingNode, setIsSavingNode] = useState(false);
   const [nodeHistory, setNodeHistory] = useState<KnowledgeNodeVersion[] | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [restoringVersionId, setRestoringVersionId] = useState<number | null>(null);
+  const [deletedNodes, setDeletedNodes] = useState<DeletedKnowledgeNode[]>([]);
+  const [restoringDeletedId, setRestoringDeletedId] = useState<number | null>(null);
 
   // Semantic Skill Cards & Integrations State
   const [skillCards, setSkillCards] = useState<SemanticSkillCard[]>([]);
@@ -317,13 +325,15 @@ export default function EmployeeStudioPage() {
 
   const loadDynamicData = async () => {
     try {
-      const [pmRes, knRes, cardsRes] = await Promise.all([
+      const [pmRes, knRes, delRes, cardsRes] = await Promise.all([
         api.getPromptModules().catch(() => ({ ok: false, modules: [] })),
         api.getKnowledgeNodes().catch(() => ({ ok: false, nodes: [] })),
+        api.getDeletedKnowledgeNodes().catch(() => ({ ok: false, nodes: [] as DeletedKnowledgeNode[] })),
         api.getSkillCards().catch(() => ({ ok: false, cards: [] })),
       ]);
       if (pmRes.modules) setPromptModules(pmRes.modules);
       if (knRes.nodes) setKnowledgeNodes(knRes.nodes);
+      setDeletedNodes(delRes.nodes || []);
       if (cardsRes.cards) {
         setSkillCards(cardsRes.cards);
         if (cardsRes.cards.length > 0) {
@@ -631,6 +641,10 @@ export default function EmployeeStudioPage() {
         triggers_csv: (node.high_confidence_triggers || []).join(", "),
         media_csv: (node.media_attachments || []).map((m: any) => m.url || m).join(", "),
         change_description: "",
+        allowed_employees: node.allowed_employees,
+        allowed_roles: node.allowed_roles,
+        valid_from: node.valid_from ?? null,
+        valid_until: node.valid_until ?? null,
       });
     } else {
       setSelectedNodeId(null);
@@ -645,6 +659,10 @@ export default function EmployeeStudioPage() {
         triggers_csv: "",
         media_csv: "",
         change_description: "Создание нового узла",
+        allowed_employees: undefined,
+        allowed_roles: undefined,
+        valid_from: undefined,
+        valid_until: undefined,
       });
     }
     setIsEditingNode(true);
@@ -677,6 +695,10 @@ export default function EmployeeStudioPage() {
         content: nodeForm.content,
         high_confidence_triggers: triggers,
         media_attachments: media,
+        allowed_employees: nodeForm.allowed_employees,
+        allowed_roles: nodeForm.allowed_roles,
+        valid_from: nodeForm.valid_from,
+        valid_until: nodeForm.valid_until,
         change_description: nodeForm.change_description || "Обновление узла базы знаний",
       });
       await loadDynamicData();
@@ -718,6 +740,20 @@ export default function EmployeeStudioPage() {
       showToast("error", err?.message || "Ошибка восстановления версии");
     } finally {
       setRestoringVersionId(null);
+    }
+  };
+
+  const handleRestoreDeletedNode = async (d: DeletedKnowledgeNode) => {
+    if (!confirm(`Восстановить удалённый узел «${d.title}» (${d.path})?`)) return;
+    setRestoringDeletedId(d.version_id);
+    try {
+      await api.restoreKnowledgeNodeVersion(d.node_id, d.version_id);
+      await loadDynamicData();
+      showToast("success", `Узел «${d.title}» восстановлен`);
+    } catch (err: any) {
+      showToast("error", err?.message || "Ошибка восстановления узла");
+    } finally {
+      setRestoringDeletedId(null);
     }
   };
 
@@ -1383,6 +1419,36 @@ export default function EmployeeStudioPage() {
                     </div>
                   );
                 })}
+
+              {deletedNodes.length > 0 && (
+                <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4 space-y-2">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                    Удалённые узлы ({deletedNodes.length})
+                  </h4>
+                  {deletedNodes.map((d) => (
+                    <div
+                      key={d.version_id}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">{d.title}</div>
+                        <div className="text-[10px] font-mono text-zinc-400 truncate">{d.path}</div>
+                        <div className="text-[10px] text-zinc-400">
+                          {d.deleted_at}
+                          {d.deleted_by ? ` · ${d.deleted_by}` : ""}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleRestoreDeletedNode(d)}
+                        disabled={restoringDeletedId !== null}
+                        className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-50"
+                      >
+                        {restoringDeletedId === d.version_id ? "Восстановление..." : "Восстановить"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Right 7 cols: Detail / Form */}

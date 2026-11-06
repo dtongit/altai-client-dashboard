@@ -26,6 +26,7 @@ import {
   TeamBotLogEvent,
   KnowledgeNode,
   KnowledgeNodeVersion,
+  DeletedKnowledgeNode,
   PromptModule,
   SemanticSkillCard,
   PromptPreviewResponse,
@@ -591,6 +592,14 @@ export const api = {
   }> {
     const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
     return request(`/knowledge/nodes${qs}`);
+  },
+
+  async getDeletedKnowledgeNodes(tenantId?: string): Promise<{
+    ok: boolean;
+    nodes: DeletedKnowledgeNode[];
+  }> {
+    const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return request(`/knowledge/nodes/deleted${qs}`);
   },
 
   async upsertKnowledgeNode(payload: {

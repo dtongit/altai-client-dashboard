@@ -132,6 +132,7 @@ export default function SuperadminConsolePage() {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("edit");
   const [editingId, setEditingId] = useState<string | number | null>(null);
+  const [editingRowGlobal, setEditingRowGlobal] = useState(false);
   const [jsonEditorText, setJsonEditorText] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
   // One-time plaintext of a freshly issued API key (the backend stores only its hash)
@@ -205,9 +206,14 @@ export default function SuperadminConsolePage() {
     setModalOpen(true);
   };
 
+  // Global prompt modules come from git and are rewritten on every boot (#246).
+  const isGlobalModule = (row: Record<string, any> | null) =>
+    currentSchema?.resource === "prompt-modules" && row?.scope === "global";
+
   const openEditModal = (row: Record<string, any>) => {
     const pk = currentSchema?.primary_key || "id";
     setModalMode("edit");
+    setEditingRowGlobal(isGlobalModule(row));
     setEditingId(row[pk]);
     setJsonEditorText(JSON.stringify(row, null, 2));
     setModalOpen(true);
@@ -597,16 +603,18 @@ export default function SuperadminConsolePage() {
                             >
                               <Edit3 className="h-3 w-3" />
                               <span>
-                                {currentSchema?.read_only ? "JSON" : "Изменить"}
+                                {currentSchema?.read_only || isGlobalModule(row) ? "JSON" : "Изменить"}
                               </span>
                             </button>
-                            <button
-                              onClick={() => handleDeleteRow(row)}
-                              className="p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                              title="Удалить запись"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
+                            {!isGlobalModule(row) && (
+                              <button
+                                onClick={() => handleDeleteRow(row)}
+                                className="p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                                title="Удалить запись"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -704,7 +712,12 @@ export default function SuperadminConsolePage() {
               >
                 Закрыть
               </button>
-              {!currentSchema?.read_only && (
+              {modalMode === "edit" && editingRowGlobal && (
+                <p className="mr-auto text-[11px] text-zinc-500 dark:text-zinc-400">
+                  Глобальный модуль только для чтения: текст меняется в seeds/global_prompt_modules.json и выкатывается деплоем.
+                </p>
+              )}
+              {!currentSchema?.read_only && !(modalMode === "edit" && editingRowGlobal) && (
                 <button
                   onClick={handleSaveModal}
                   disabled={saving}

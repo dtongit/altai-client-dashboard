@@ -89,6 +89,7 @@ export default function SimulatorPage() {
           role: "assistant",
           text: res.response,
           latency_ms: res.latency_ms,
+          technical: res.technical,
           created_at: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, botMsg]);
@@ -233,6 +234,15 @@ export default function SimulatorPage() {
           ) : (
             messages.map((msg, idx) => {
               const isUser = msg.role === "user";
+              if (msg.technical) {
+                return (
+                  <div key={msg.id || idx} className="flex justify-center py-1">
+                    <span className="max-w-lg px-3 py-1.5 rounded-xl bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 text-[11px] text-center">
+                      {msg.text}
+                    </span>
+                  </div>
+                );
+              }
               return (
                 <div
                   key={msg.id || idx}

@@ -352,6 +352,8 @@ export interface SimulatorMessage {
   text: string;
   created_at?: string | null;
   latency_ms?: number | null;
+  /** System note instead of a reply from Vera (escalation, #142). */
+  technical?: boolean;
 }
 
 export interface SimulatorQualification {
@@ -367,6 +369,8 @@ export interface SimulatorResponse {
   ok: boolean;
   session_id: string;
   response: string;
+  /** `response` is a system note, not a reply from Vera. */
+  technical?: boolean;
   latency_ms: number;
   status: string;
   qualification: SimulatorQualification;
@@ -582,6 +586,18 @@ export interface KnowledgeNode {
   version: number;
   created_at: string;
   updated_at: string;
+}
+
+/** Deleted KB node (newest tombstone, no live node at that path). */
+export interface DeletedKnowledgeNode {
+  node_id: string;
+  version_id: number;
+  path: string | null;
+  title: string;
+  tier?: string | null;
+  summary: string;
+  deleted_by?: string | null;
+  deleted_at: string;
 }
 
 export interface KnowledgeNodeVersion {
