@@ -13,13 +13,15 @@ import {
   CustomToolVersionItem,
   SandboxExecutionResult,
   AdminCrudResourceSchema,
-  InstagramStatus,
+  ChannelsResponse,
+  ChannelMode,
+  SetChannelModeResponse,
+  UmnicoStatus,
   AdminChatTraceResponse,
   TeamTraceResponse,
   TeamMember,
   TeamInviteResponse,
   TeamMembersResponse,
-  ChannelWorkMode,
   TeamBotConversation,
   TeamBotLogEvent,
   KnowledgeNode,
@@ -311,35 +313,25 @@ export const api = {
     });
   },
 
-  async getInstagramStatus(): Promise<InstagramStatus> {
-    return request<InstagramStatus>("/instagram/status");
+  async getChannels(): Promise<ChannelsResponse> {
+    return request<ChannelsResponse>("/channels");
   },
 
-  async connectInstagramUmnico(apiToken: string, replyToComments: boolean = false): Promise<{
-    ok: boolean;
-    message: string;
-    user_id?: number;
-    user_name?: string;
-    instagram_login?: string;
-    webhook_id?: number;
-    enabled: boolean;
-  }> {
-    return request("/instagram/connect", {
+  async setChannelMode(id: string, mode: ChannelMode): Promise<SetChannelModeResponse> {
+    return request<SetChannelModeResponse>(`/channels/${encodeURIComponent(id)}/mode`, {
       method: "POST",
-      body: JSON.stringify({ api_token: apiToken, reply_to_comments: replyToComments }),
+      body: JSON.stringify({ mode }),
     });
   },
 
-  async toggleInstagram(enabled: boolean, mode?: ChannelWorkMode): Promise<{
-    ok: boolean;
-    enabled: boolean;
-    mode?: ChannelWorkMode;
-    require_approval?: boolean;
-    message: string;
-  }> {
-    return request("/instagram/toggle", {
+  async getUmnicoStatus(): Promise<UmnicoStatus> {
+    return request<UmnicoStatus>("/umnico/status");
+  },
+
+  async connectUmnico(apiToken: string): Promise<{ ok: boolean; message?: string }> {
+    return request("/umnico/connect", {
       method: "POST",
-      body: JSON.stringify({ enabled, mode }),
+      body: JSON.stringify({ api_token: apiToken }),
     });
   },
 

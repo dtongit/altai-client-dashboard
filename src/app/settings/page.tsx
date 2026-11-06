@@ -3,10 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
-import { SystemStatusResponse, InstagramStatus, ChannelWorkMode, TeamMember } from "@/types";
+import { SystemStatusResponse, ChannelsResponse, ChannelMode, UmnicoStatus, TeamMember } from "@/types";
+import ChannelCard from "./ChannelCard";
+import InstagramCard from "./InstagramCard";
+import UmnicoCard from "./UmnicoCard";
+import { channelLabel, sortChannels } from "./channel-meta";
 import {
-  CheckCircle2,
-  XCircle,
   Building2,
   RefreshCw,
   Send,
@@ -16,9 +18,6 @@ import {
   AlertTriangle,
   Copy,
   Check,
-  ShieldCheck,
-  Power,
-  KeyRound,
   Users,
   Crown,
   Shield,
@@ -28,17 +27,16 @@ import {
 } from "lucide-react";
 
 export default function SettingsPage() {
-  const { tenant } = useAuth();
+  const { tenant, user } = useAuth();
+  const isSuperadmin = Boolean(user?.is_admin);
   const [statusData, setStatusData] = useState<SystemStatusResponse | null>(null);
-  const [instagramStatus, setInstagramStatus] = useState<InstagramStatus | null>(null);
-  const [tokenInput, setTokenInput] = useState("");
-  const [savingToken, setSavingToken] = useState(false);
-  const [togglingIg, setTogglingIg] = useState(false);
-  const [igMessage, setIgMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [replyToComments, setReplyToComments] = useState(false);
-  const [copiedWebhook, setCopiedWebhook] = useState(false);
+  const [channelsData, setChannelsData] = useState<ChannelsResponse | null>(null);
+  const [channelsError, setChannelsError] = useState<string | null>(null);
+  const [umnicoStatus, setUmnicoStatus] = useState<UmnicoStatus | null>(null);
+  const [savingIds, setSavingIds] = useState<Record<string, boolean>>({});
+  const [modeErrors, setModeErrors] = useState<Record<string, string | undefined>>({});
+  const [pendingAutoId, setPendingAutoId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showAutoConfirmModal, setShowAutoConfirmModal] = useState(false);
 
   // Colleague Team Bot State
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -67,15 +65,20 @@ export default function SettingsPage() {
   const loadStatus = async () => {
     setLoading(true);
     try {
-      const [res, igRes] = await Promise.all([
-        api.getSystemStatus(),
-        api.getInstagramStatus().catch(() => null),
+      const [res, ch, um] = await Promise.all([
+        api.getSystemStatus().catch(() => null),
+        api.getChannels().catch((e: any) => {
+          setChannelsError(e?.message || "Не удалось загрузить каналы");
+          return null;
+        }),
+        api.getUmnicoStatus().catch(() => null),
       ]);
-      setStatusData(res);
-      if (igRes) {
-        setInstagramStatus(igRes);
-        setReplyToComments(Boolean(igRes.reply_to_comments));
+      if (res) setStatusData(res);
+      if (ch) {
+        setChannelsData(ch);
+        setChannelsError(null);
       }
+      setUmnicoStatus(um);
       await loadTeam();
     } catch (e) {
       console.error("Failed to load status:", e);
@@ -127,65 +130,34 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSaveToken = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!tokenInput.trim()) return;
-    setSavingToken(true);
-    setIgMessage(null);
+  const applyMode = async (id: string, mode: ChannelMode) => {
+    setSavingIds((p) => ({ ...p, [id]: true }));
+    setModeErrors((p) => ({ ...p, [id]: undefined }));
     try {
-      const res = await api.connectInstagramUmnico(tokenInput.trim(), replyToComments);
-      setIgMessage({ type: "success", text: res.message || "Umnico успешно подключен. Автоответы выключены (безопасный режим)." });
-      setTokenInput("");
-      const updated = await api.getInstagramStatus();
-      setInstagramStatus(updated);
+      const res = await api.setChannelMode(id, mode);
+      const serverMode = res.mode ?? mode;
+      setChannelsData((prev) =>
+        prev ? { ...prev, channels: prev.channels.map((c) => (c.id === id ? { ...c, mode: serverMode } : c)) } : prev
+      );
     } catch (err: any) {
-      setIgMessage({ type: "error", text: err?.detail || err?.message || "Ошибка подключения к Umnico API" });
+      setModeErrors((p) => ({
+        ...p,
+        [id]: err?.message || "Не удалось изменить режим канала. Попробуйте ещё раз.",
+      }));
     } finally {
-      setSavingToken(false);
+      setSavingIds((p) => ({ ...p, [id]: false }));
+      setPendingAutoId(null);
     }
   };
 
-  const currentMode: ChannelWorkMode = !instagramStatus?.enabled
-    ? "stop"
-    : instagramStatus?.require_approval
-    ? "hitl"
-    : "auto";
-
-  const handleSelectMode = async (mode: ChannelWorkMode) => {
-    if (!instagramStatus?.has_token) {
-      setIgMessage({ type: "error", text: "Сначала укажите и сохраните API-токен Umnico" });
-      return;
-    }
+  const handleSelectMode = (id: string, mode: ChannelMode) => {
+    const current = channelsData?.channels.find((c) => c.id === id);
+    if (!current || current.mode === mode) return;
     if (mode === "auto") {
-      setShowAutoConfirmModal(true);
+      setPendingAutoId(id);
       return;
     }
-    await applyMode(mode);
-  };
-
-  const applyMode = async (mode: ChannelWorkMode) => {
-    setTogglingIg(true);
-    setIgMessage(null);
-    try {
-      const enabled = mode !== "stop";
-      const res = await api.toggleInstagram(enabled, mode);
-      setIgMessage({ type: "success", text: res.message });
-      const updated = await api.getInstagramStatus();
-      setInstagramStatus(updated);
-      await loadStatus();
-    } catch (err: any) {
-      setIgMessage({ type: "error", text: err?.detail || err?.message || "Ошибка изменения режима канала" });
-    } finally {
-      setTogglingIg(false);
-      setShowAutoConfirmModal(false);
-    }
-  };
-
-  const handleCopyWebhook = () => {
-    const url = instagramStatus?.webhook_url || `https://api.optima.altaiweb.online/api/v1/webhook/umnico/${tenant?.id || "tallora"}`;
-    navigator.clipboard.writeText(url);
-    setCopiedWebhook(true);
-    setTimeout(() => setCopiedWebhook(false), 2000);
+    void applyMode(id, mode);
   };
 
   useEffect(() => {
@@ -247,7 +219,7 @@ export default function SettingsPage() {
           <span>Выключатели</span>
         </h1>
         <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-          Управление каналами связи Веры, подключением CRM и режимами автоответов
+          Управление каналами связи Веры, интеграциями и режимами автоответов
         </p>
       </div>
 
@@ -256,10 +228,10 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
-              Подключенные каналы коммуникации
+              Подключенные каналы
             </h3>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-              Статусы каналов связи Веры для приема заявок и консультации клиентов
+              Режим работы Веры в каждом канале: от полного отключения до автопилота
             </p>
           </div>
           <button
@@ -271,298 +243,55 @@ export default function SettingsPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {[
-            {
-              name: "Telegram",
-              type: "telegram",
-              configured: statusData?.channels?.find((c) => c.type === "telegram")?.configured ?? true,
-              detail: statusData?.channels?.find((c) => c.type === "telegram")?.detail ?? "Бот подключен и принимает входящие сообщения",
-            },
-            {
-              name: "WhatsApp",
-              type: "whatsapp",
-              configured: statusData?.channels?.find((c) => c.type === "whatsapp")?.configured ?? false,
-              detail: statusData?.channels?.find((c) => c.type === "whatsapp")?.detail ?? "Ожидает подключения бизнес-номера",
-            },
-            {
-              name: "MAX",
-              type: "max",
-              configured: statusData?.channels?.find((c) => c.type === "max")?.configured ?? false,
-              detail: statusData?.channels?.find((c) => c.type === "max")?.detail ?? "Корпоративный мессенджер не настроен",
-            },
-            {
-              name: "Instagram Direct",
-              type: "instagram",
-              configured: instagramStatus?.configured ?? (statusData?.channels?.find((c) => c.type === "instagram")?.configured ?? false),
-              enabled: instagramStatus?.enabled ?? false,
-              detail: instagramStatus?.enabled
-                ? `В эфире (@${instagramStatus.instagram_login || "tallora.ru"})`
-                : (instagramStatus?.configured || instagramStatus?.has_token)
-                ? `Безопасный режим: @${instagramStatus.instagram_login || "подключен"} (отправка выключена)`
-                : (statusData?.channels?.find((c) => c.type === "instagram")?.detail ?? "Direct-сообщения не настроены"),
-            },
-            {
-              name: "Ваш сайт",
-              type: "web",
-              configured: statusData?.channels?.find((c) => c.type === "web")?.configured ?? true,
-              enabled: true,
-              detail: statusData?.channels?.find((c) => c.type === "web")?.detail ?? "Интерактивный виджет на сайте активен",
-            },
-            {
-              name: "Email",
-              type: "email",
-              configured: statusData?.channels?.find((c) => c.type === "email")?.configured ?? false,
-              enabled: false,
-              detail: statusData?.channels?.find((c) => c.type === "email")?.detail ?? "Корпоративная почта не настроена",
-            },
-          ].map((ch) => (
-            <div
-              key={ch.name}
-              className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/60 p-4 space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-zinc-900 dark:text-white">{ch.name}</span>
-                {ch.type === "instagram" ? (
-                  ch.enabled ? (
-                    <span className="flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      <span>В эфире</span>
-                    </span>
-                  ) : ch.configured ? (
-                    <span className="flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-400 font-medium">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      <span>Безопасный режим</span>
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-[11px] text-zinc-500">
-                      <XCircle className="h-3.5 w-3.5" />
-                      <span>Не настроен</span>
-                    </span>
-                  )
-                ) : ch.configured ? (
-                  <span className="flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    <span>Активен</span>
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-1 text-[11px] text-zinc-500">
-                    <XCircle className="h-3.5 w-3.5" />
-                    <span>Не настроен</span>
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-zinc-600 dark:text-zinc-400">{ch.detail}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+        {channelsError && !channelsData && (
+          <p role="alert" className="text-xs text-rose-700 dark:text-rose-400">{channelsError}</p>
+        )}
 
-      {/* Instagram Direct (Umnico) Integration Card */}
-      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm shadow-sm dark:shadow-none space-y-6 transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-tr from-pink-500/20 via-rose-500/20 to-amber-500/20 text-pink-600 dark:text-pink-400">
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-              </svg>
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Instagram Direct (Umnico)</h3>
-                {currentMode === "auto" ? (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>⚡ Автопилот (Live)</span>
-                  </span>
-                ) : currentMode === "hitl" ? (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/30 flex items-center gap-1">
-                    <ShieldCheck className="h-3 w-3" />
-                    <span>🛡️ Пре-модерация (HITL)</span>
-                  </span>
-                ) : instagramStatus?.has_token ? (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/30 flex items-center gap-1">
-                    <span>🔴 Отключен</span>
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700">
-                    Ожидает токен
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                Автономные консультации, подбор обуви и сбор заявок в Instagram Direct
-              </p>
-            </div>
-          </div>
+        {channelsData && channelsData.channels.length === 0 && (
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">Каналы пока не настроены</p>
+        )}
 
-          {/* 3-Way Mode Segmented Control */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <div className="inline-flex p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 shadow-inner">
-              <button
-                type="button"
-                onClick={() => handleSelectMode("stop")}
-                disabled={togglingIg || !instagramStatus?.has_token}
-                className={`px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 ${
-                  currentMode === "stop"
-                    ? "bg-rose-600 text-white shadow-sm font-semibold"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium"
-                }`}
-                title="Отключить автоответы Веры. Диалоги ведет только оператор."
-              >
-                <span>🔴 Отключен</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSelectMode("hitl")}
-                disabled={togglingIg || !instagramStatus?.has_token}
-                className={`px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 ${
-                  currentMode === "hitl"
-                    ? "bg-blue-600 text-white shadow-sm font-semibold"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium"
-                }`}
-                title="Вера генерирует проект ответа и направляет супервизору в Telegram-бот перед отправкой."
-              >
-                <ShieldCheck className="h-3.5 w-3.5" />
-                <span>🛡️ Пре-модерация</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSelectMode("auto")}
-                disabled={togglingIg || !instagramStatus?.has_token}
-                className={`px-3 py-1.5 rounded-lg text-xs transition-all flex items-center gap-1.5 ${
-                  currentMode === "auto"
-                    ? "bg-emerald-600 text-white shadow-sm font-semibold"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium"
-                }`}
-                title="Полный автопилот: Вера отвечает клиентам напрямую без подтверждения."
-              >
-                <span>⚡ Автопилот</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Feedback message */}
-        {igMessage && (
-          <div
-            className={`p-3 rounded-xl text-xs border ${
-              igMessage.type === "success"
-                ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-500/30"
-                : "bg-rose-500/10 text-rose-800 dark:text-rose-300 border-rose-500/30"
-            }`}
-          >
-            {igMessage.text}
+        {channelsData && channelsData.channels.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {(() => {
+              const sorted = sortChannels(channelsData.channels);
+              const direct = sorted.find((c) => c.id === "instagram");
+              const comments = sorted.find((c) => c.id === "instagram_comment");
+              let igRendered = false;
+              return sorted.map((ch) => {
+                if (ch.id === "instagram" || ch.id === "instagram_comment") {
+                  if (igRendered) return null;
+                  igRendered = true;
+                  return (
+                    <InstagramCard
+                      key="instagram"
+                      direct={direct}
+                      comments={comments}
+                      autoAllowed={channelsData.auto_allowed}
+                      savingIds={savingIds}
+                      errors={modeErrors}
+                      onSelect={handleSelectMode}
+                    />
+                  );
+                }
+                return (
+                  <ChannelCard
+                    key={ch.id}
+                    channel={ch}
+                    autoAllowed={channelsData.auto_allowed}
+                    saving={Boolean(savingIds[ch.id])}
+                    error={modeErrors[ch.id]}
+                    onSelect={handleSelectMode}
+                  />
+                );
+              });
+            })()}
           </div>
         )}
 
-        {/* Settings Form */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <form onSubmit={handleSaveToken} className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 space-y-3.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-zinc-900 dark:text-white flex items-center gap-1.5">
-                <KeyRound className="h-3.5 w-3.5 text-zinc-500" />
-                <span>API-токен Umnico</span>
-              </span>
-              {instagramStatus?.masked_token && (
-                <span className="text-[11px] font-mono text-zinc-500">
-                  Сохранен: {instagramStatus.masked_token}
-                </span>
-              )}
-            </div>
-
-            <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-              Скопируйте постоянный API-токен в личном кабинете Umnico: <strong>Настройки → API</strong>
-            </p>
-
-            <div className="space-y-2">
-              <input
-                type="password"
-                value={tokenInput}
-                onChange={(e) => setTokenInput(e.target.value)}
-                placeholder={instagramStatus?.has_token ? "Введите новый токен для обновления..." : "Вставьте JWT-токен из Umnico..."}
-                className="w-full px-3 py-2 rounded-lg text-xs bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-pink-500/40"
-              />
-
-              <label className="flex items-center gap-2 cursor-pointer select-none text-[11px] text-zinc-600 dark:text-zinc-400 pt-1">
-                <input
-                  type="checkbox"
-                  checked={replyToComments}
-                  onChange={(e) => setReplyToComments(e.target.checked)}
-                  className="rounded border-zinc-300 dark:border-zinc-700 text-pink-600 focus:ring-pink-500"
-                />
-                <span>Отвечать только в Direct (комментарии к постам не обрабатывать)</span>
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              disabled={savingToken || !tokenInput.trim()}
-              className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-100 dark:text-zinc-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Check className={`h-3.5 w-3.5 ${savingToken ? "animate-spin" : ""}`} />
-              <span>{savingToken ? "Проверка в api.umnico.com..." : "Проверить и сохранить токен"}</span>
-            </button>
-          </form>
-
-          {/* Integration Status & Webhook Info */}
-          <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 space-y-3 flex flex-col justify-between">
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Instagram-аккаунт:</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">
-                  {instagramStatus?.instagram_login ? `@${instagramStatus.instagram_login}` : "Определяется автоматически"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Сотрудник Umnico:</span>
-                <span className="text-zinc-700 dark:text-zinc-300 font-medium">
-                  {instagramStatus?.user_name ? `${instagramStatus.user_name} (ID: ${instagramStatus.user_id})` : "Не привязан"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-500">Статус вебхука Umnico:</span>
-                <span className="text-emerald-700 dark:text-emerald-400 font-medium">
-                  {instagramStatus?.webhook_id ? `Зарегистрирован (ID: ${instagramStatus.webhook_id})` : "Будет создан при сохранении токена"}
-                </span>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-zinc-200/60 dark:border-zinc-800/60 space-y-1.5">
-              <span className="text-[11px] font-medium text-zinc-500">URL входящего вебхука:</span>
-              <div className="flex items-center gap-1.5">
-                <code className="flex-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-800 dark:text-zinc-200 font-mono truncate">
-                  {instagramStatus?.webhook_url || `https://api.optima.altaiweb.online/api/v1/webhook/umnico/${tenant?.id || "tallora"}`}
-                </code>
-                <button
-                  onClick={handleCopyWebhook}
-                  className="p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 transition-colors"
-                  title="Скопировать URL вебхука"
-                >
-                  {copiedWebhook ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Safety Note */}
-        <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-300 flex items-start gap-2.5">
-          <ShieldCheck className="h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
-          <div className="space-y-0.5 leading-relaxed text-[11px]">
-            <p className="font-semibold text-amber-950 dark:text-amber-200">
-              Гарантия безопасности Ritz-Carlton & Operator Takeover
-            </p>
-            <p>
-              Пока тумблер выключен, сообщения в боевой Instagram ни при каких обстоятельствах не отправляются. 
-              Когда автоответы включены, любое ручное сообщение оператора из amoCRM или Instagram мгновенно ставит ИИ на паузу в этом диалоге.
-            </p>
-          </div>
-        </div>
+        <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+          Любое ручное сообщение оператора ставит Веру на паузу в этом диалоге.
+        </p>
       </div>
 
       {/* Colleague Vera Internal Team Bot Section */}
@@ -812,77 +541,84 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* CRM Integration Card (Moved to bottom) */}
-      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm shadow-sm dark:shadow-none transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
-              <Building2 className="h-4 w-4" />
+      {/* Integrations */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Интеграции</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+          <UmnicoCard status={umnicoStatus} loading={loading} isSuperadmin={isSuperadmin} onChanged={loadStatus} />
+        {/* CRM Integration Card */}
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm shadow-sm dark:shadow-none transition-colors">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
+                <Building2 className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Синхронизация с CRM</h3>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  Автоматическое сохранение заявок и передача BANT-квалификации
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Синхронизация с CRM</h3>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                Автоматическое сохранение заявок и передача BANT-квалификации
-              </p>
+
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${crmBadgeStyle}`}>
+                {crmBadgeText}
+              </span>
+
+              {crmUrl && (
+                <a
+                  href={crmUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-sm shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  title="Открыть CRM в новой вкладке"
+                >
+                  <span>Открыть CRM</span>
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${crmBadgeStyle}`}>
-              {crmBadgeText}
-            </span>
-
-            {crmUrl && (
-              <a
-                href={crmUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-sm shadow-amber-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                title="Открыть CRM в новой вкладке"
-              >
-                <span>Открыть CRM</span>
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
+          <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-700 dark:text-zinc-300 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-zinc-500">Тип CRM:</span>
+              <span className="font-semibold uppercase text-zinc-900 dark:text-white">
+                {crmType === "excel" ? "Excel (файл на Яндекс Диске)" : crmType.toUpperCase()}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-zinc-500">Режим создания лида:</span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+                {crmType === "excel"
+                  ? "Автоматическая запись строк в онлайн-таблицу .xlsx"
+                  : "Complex Lead с передачей контакта и суммы"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-zinc-500">Передача истории переписки:</span>
+              <span className="text-zinc-700 dark:text-zinc-300">
+                {crmType === "excel"
+                  ? "Фиксация колонок: BANT-потребность, телефон, бюджет, резюме диалога"
+                  : "Автоматически в примечание сделки"}
+              </span>
+            </div>
+            {crmType === "excel" && (
+              <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60 dark:border-zinc-800/60">
+                <span className="text-zinc-500">Хранилище таблицы:</span>
+                <span className="text-zinc-700 dark:text-zinc-300">
+                  Яндекс Диск (папка /CRM/leads.xlsx)
+                </span>
+              </div>
             )}
           </div>
         </div>
-
-        <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-700 dark:text-zinc-300 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-zinc-500">Тип CRM:</span>
-            <span className="font-semibold uppercase text-zinc-900 dark:text-white">
-              {crmType === "excel" ? "Excel (файл на Яндекс Диске)" : crmType.toUpperCase()}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-zinc-500">Режим создания лида:</span>
-            <span className="text-emerald-700 dark:text-emerald-400 font-medium">
-              {crmType === "excel"
-                ? "Автоматическая запись строк в онлайн-таблицу .xlsx"
-                : "Complex Lead с передачей контакта и суммы"}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-zinc-500">Передача истории переписки:</span>
-            <span className="text-zinc-700 dark:text-zinc-300">
-              {crmType === "excel"
-                ? "Фиксация колонок: BANT-потребность, телефон, бюджет, резюме диалога"
-                : "Автоматически в примечание сделки"}
-            </span>
-          </div>
-          {crmType === "excel" && (
-            <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60 dark:border-zinc-800/60">
-              <span className="text-zinc-500">Хранилище таблицы:</span>
-              <span className="text-zinc-700 dark:text-zinc-300">
-                Яндекс Диск (папка /CRM/leads.xlsx)
-              </span>
-            </div>
-          )}
         </div>
       </div>
 
       {/* Modal Confirmation for Full Autopilot */}
-      {showAutoConfirmModal && (
+      {pendingAutoId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="w-full max-w-md rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4">
             <div className="flex items-center gap-3 text-amber-600 dark:text-amber-400">
@@ -890,37 +626,44 @@ export default function SettingsPage() {
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                  Включение полного автопилота
-                </h3>
-                <p className="text-xs text-zinc-500">Instagram Direct (Live)</p>
+                <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Включение автопилота</h3>
+                <p className="text-xs text-zinc-500">{channelLabel(pendingAutoId)}</p>
               </div>
             </div>
 
             <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-300 space-y-2">
               <p>
-                <strong>Внимание:</strong> В режиме автопилота Вера будет отправлять все сгенерированные ответы клиентам в Direct <strong>напрямую без предварительного согласования</strong> в Telegram-боте.
+                <strong>Внимание:</strong> в канале «{channelLabel(pendingAutoId)}» Вера будет отправлять ответы клиентам{" "}
+                <strong>без предварительного согласования</strong>.
               </p>
+              {pendingAutoId === "instagram_comment" && (
+                <p>Ответы на комментарии публикуются публично: их увидят все, кто смотрит публикацию.</p>
+              )}
               <p className="text-[11px] text-zinc-500">
-                Используйте этот режим, только если база знаний и каталог обуви полностью проверены и откалиброваны в симуляторе.
+                Включайте этот режим, только если база знаний проверена и ответы Веры откалиброваны в симуляторе.
               </p>
             </div>
+
+            {modeErrors[pendingAutoId] && (
+              <p role="alert" className="text-[11px] text-rose-700 dark:text-rose-400">{modeErrors[pendingAutoId]}</p>
+            )}
 
             <div className="flex items-center justify-end gap-2.5 pt-2">
               <button
                 type="button"
-                onClick={() => setShowAutoConfirmModal(false)}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                onClick={() => setPendingAutoId(null)}
+                disabled={Boolean(savingIds[pendingAutoId])}
+                className="px-4 py-2 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
               >
                 Отмена
               </button>
               <button
                 type="button"
-                onClick={() => applyMode("auto")}
-                disabled={togglingIg}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-600/20 transition-all flex items-center gap-1.5"
+                onClick={() => applyMode(pendingAutoId, "auto")}
+                disabled={Boolean(savingIds[pendingAutoId])}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-600/20 transition-all flex items-center gap-1.5 disabled:opacity-50"
               >
-                <span>Да, включить автопилот</span>
+                <span>{savingIds[pendingAutoId] ? "Сохранение..." : "Да, включить автопилот"}</span>
               </button>
             </div>
           </div>

@@ -34,6 +34,7 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     llm_provider: "openrouter",
     llm_model: "deepseek/deepseek-chat",
     kind: "live",
+    ready_for_auto: false,
     source_tenant_id: null,
     demo_config: {},
   },
@@ -210,6 +211,26 @@ export default function SuperadminConsolePage() {
     setEditingId(row[pk]);
     setJsonEditorText(JSON.stringify(row, null, 2));
     setModalOpen(true);
+  };
+
+  // Tenant form: "ready_for_auto" checkbox kept in sync with the JSON editor text.
+  const readyForAutoValue = (() => {
+    if (selectedResource !== "tenants") return null;
+    try {
+      return Boolean(JSON.parse(jsonEditorText)?.ready_for_auto);
+    } catch {
+      return null;
+    }
+  })();
+
+  const setReadyForAuto = (checked: boolean) => {
+    try {
+      const parsed = JSON.parse(jsonEditorText);
+      parsed.ready_for_auto = checked;
+      setJsonEditorText(JSON.stringify(parsed, null, 2));
+    } catch {
+      showToast("error", "Сначала исправьте синтаксис JSON");
+    }
   };
 
   const handleSaveModal = async () => {
@@ -651,7 +672,23 @@ export default function SuperadminConsolePage() {
               </button>
             </div>
 
-            <div className="p-6 flex-1 overflow-y-auto">
+            <div className="p-6 flex-1 overflow-y-auto space-y-4">
+              {selectedResource === "tenants" && readyForAutoValue !== null && (
+                <label className="flex items-start gap-2.5 cursor-pointer select-none text-xs text-zinc-700 dark:text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={readyForAutoValue}
+                    onChange={(e) => setReadyForAuto(e.target.checked)}
+                    className="mt-0.5 rounded border-zinc-300 dark:border-zinc-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>
+                    <span className="font-semibold">Готов к автопилоту (ready_for_auto)</span>
+                    <span className="block text-[11px] text-zinc-500">
+                      Пока флаг выключен, клиент не может включить режим «Автопилот» ни в одном канале.
+                    </span>
+                  </span>
+                </label>
+              )}
               <textarea
                 value={jsonEditorText}
                 onChange={(e) => setJsonEditorText(e.target.value)}

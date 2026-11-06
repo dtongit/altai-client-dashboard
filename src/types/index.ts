@@ -15,6 +15,8 @@ export interface Tenant {
   llm_model: string;
   /** "live" (default) or "demo" (read-only tools, managed with demo keys). */
   kind?: "live" | "demo";
+  /** Autopilot can be chosen only when true (set by the superadmin). */
+  ready_for_auto?: boolean;
 }
 
 /** Row of /admin/crud/api-keys (the hash is never returned). */
@@ -89,24 +91,48 @@ export interface TeamMembersResponse {
   members: TeamMember[];
 }
 
-export type ChannelWorkMode = "stop" | "hitl" | "auto";
+export type ChannelMode = "off" | "hitl" | "auto";
 
-export interface InstagramStatus {
+/** `active`, `blocked` or another Umnico status, `not_connected`, `unknown` (Umnico unreachable). */
+export type ChannelLineStatus = "active" | "not_connected" | "unknown" | (string & {});
+
+export interface ChannelItem {
+  id: string;
+  mode: ChannelMode;
+  wanted: boolean;
+  connected: boolean;
+  line_status: ChannelLineStatus;
+  identity?: string | null;
+  provider?: string | null;
+}
+
+export interface ChannelsResponse {
   ok: boolean;
-  tenant_id: string;
-  configured: boolean;
-  enabled: boolean;
-  mode?: ChannelWorkMode;
-  require_approval?: boolean;
-  supervisor_chat_id?: string;
-  has_token: boolean;
-  masked_token?: string;
-  user_id?: number;
-  user_name?: string;
-  instagram_login?: string;
-  reply_to_comments?: boolean;
-  webhook_url: string;
-  webhook_id?: number;
+  auto_allowed: boolean;
+  channels: ChannelItem[];
+}
+
+export interface SetChannelModeResponse {
+  ok: boolean;
+  id?: string;
+  mode: ChannelMode;
+  [key: string]: unknown;
+}
+
+export interface UmnicoLine {
+  type: string;
+  status: string;
+}
+
+export interface UmnicoStatus {
+  connected: boolean;
+  lines: UmnicoLine[];
+  // Superadmin only (is_admin):
+  masked_token?: string | null;
+  user_id?: number | null;
+  user_name?: string | null;
+  webhook_id?: number | null;
+  webhook_url?: string | null;
 }
 
 export interface TeamBotLogEvent {
