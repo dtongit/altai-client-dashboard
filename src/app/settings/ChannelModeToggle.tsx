@@ -33,7 +33,7 @@ export default function ChannelModeToggle({ mode, autoAllowed, connected, saving
         disabled={saving}
         aria-pressed={mode === "off"}
         className={`${BASE} flex-1 sm:flex-none ${mode === "off" ? "bg-rose-600 text-white shadow-sm font-semibold" : IDLE}`}
-        title="Вера не отвечает в этом канале. Диалоги ведёт только оператор."
+        title="Вера не отвечает в этом канале. Сообщения клиентов сохраняются в чатах, диалоги ведёт оператор."
       >
         <span>Выкл</span>
       </button>

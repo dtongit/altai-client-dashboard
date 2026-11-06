@@ -566,6 +566,13 @@ export default function ChatsPage() {
                             <span>Сообщение принято, автоответ ИИ остановлен ручной паузой</span>
                           </span>
                         </div>
+                      ) : turn.status === "channel_off" ? (
+                        <div className="flex items-center justify-center py-2">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 text-[11px] font-medium">
+                            <PauseCircle className="h-3 w-3" />
+                            <span>Сообщение сохранено, Вера в этом канале выключена</span>
+                          </span>
+                        </div>
                       ) : (turn.role === "operator" || turn.status === "operator_reply") ? (
                         <div className="flex items-start justify-end gap-3 max-w-xl ml-auto">
                           <div className="space-y-1 text-right">
