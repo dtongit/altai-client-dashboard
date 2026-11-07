@@ -33,6 +33,7 @@ export default function SettingsPage() {
   const [channelsData, setChannelsData] = useState<ChannelsResponse | null>(null);
   const [channelsError, setChannelsError] = useState<string | null>(null);
   const [umnicoStatus, setUmnicoStatus] = useState<UmnicoStatus | null>(null);
+  const [umnicoOpened, setUmnicoOpened] = useState(false);
   const [savingIds, setSavingIds] = useState<Record<string, boolean>>({});
   const [modeErrors, setModeErrors] = useState<Record<string, string | undefined>>({});
   const [pendingAutoId, setPendingAutoId] = useState<string | null>(null);
@@ -86,6 +87,12 @@ export default function SettingsPage() {
       setLoading(false);
     }
   };
+
+  // Umnico is shown only to tenants that use it (token saved or a channel served through it); staff can open it.
+  const showUmnico =
+    umnicoOpened ||
+    Boolean(umnicoStatus?.connected) ||
+    Boolean(channelsData?.channels.some((c) => c.provider === "umnico"));
 
   const handleGenerateInvite = async (role: "manager" | "senior" = inviteRole) => {
     setGeneratingInvite(true);
@@ -543,9 +550,22 @@ export default function SettingsPage() {
 
       {/* Integrations */}
       <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Интеграции</h3>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Интеграции</h3>
+          {!showUmnico && isSuperadmin && (
+            <button
+              type="button"
+              onClick={() => setUmnicoOpened(true)}
+              className="text-xs font-medium text-amber-700 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300"
+            >
+              Подключить Umnico
+            </button>
+          )}
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-          <UmnicoCard status={umnicoStatus} loading={loading} isSuperadmin={isSuperadmin} onChanged={loadStatus} />
+          {showUmnico && (
+            <UmnicoCard status={umnicoStatus} loading={loading} isSuperadmin={isSuperadmin} onChanged={loadStatus} />
+          )}
         {/* CRM Integration Card */}
         <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm shadow-sm dark:shadow-none transition-colors">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
