@@ -671,3 +671,17 @@ export interface PromptPreviewResponse {
 
 
 
+
+/** Карточка лида: что Vera узнала о клиенте в чате (#265). Админ-ресурс `lead-cards`, только чтение. */
+export interface LeadCard {
+  session_id: string;
+  tenant_id: string;
+  channel: string;
+  user_id: string;
+  /** Свободные факты о клиенте: имя, телефон, потребность и поля тенанта. */
+  fields: Record<string, unknown>;
+  qualified: boolean;
+  qualified_rule?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
