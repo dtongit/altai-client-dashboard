@@ -9,6 +9,7 @@ const CHANNEL_LABELS: Record<string, string> = {
   telegram_business: "Telegram Business",
   max: "MAX",
   avito: "Авито",
+  bitrix24_openline: "Битрикс24 · Открытая линия",
 };
 
 export function channelLabel(id: string): string {

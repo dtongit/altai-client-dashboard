@@ -1,5 +1,5 @@
 import React from "react";
-import { MessageSquare, Phone, Globe, Send } from "lucide-react";
+import { MessageSquare, Phone, Globe, Send, Headset } from "lucide-react";
 
 interface ChannelBadgeProps {
   channel: string;
@@ -8,6 +8,15 @@ interface ChannelBadgeProps {
 
 export function ChannelBadge({ channel, showIcon = true }: ChannelBadgeProps) {
   const norm = channel.toLowerCase();
+
+  if (norm === "bitrix24_openline") {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">
+        {showIcon && <Headset className="h-3 w-3" />}
+        <span>Битрикс24</span>
+      </span>
+    );
+  }
 
   if (norm.includes("telegram")) {
     return (

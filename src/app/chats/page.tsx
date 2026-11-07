@@ -307,6 +307,7 @@ export default function ChatsPage() {
                 <option value="whatsapp">WhatsApp</option>
                 <option value="instagram">Instagram Direct</option>
                 <option value="instagram_comment">Instagram · комментарии</option>
+                <option value="bitrix24_openline">Битрикс24</option>
                 <option value="avito">Avito</option>
                 <option value="max">MAX</option>
                 <option value="web">Сайт / Web</option>
