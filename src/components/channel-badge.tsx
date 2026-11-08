@@ -18,6 +18,15 @@ export function ChannelBadge({ channel, showIcon = true }: ChannelBadgeProps) {
     );
   }
 
+  if (norm === "telegram_business") {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20">
+        {showIcon && <Send className="h-3 w-3" />}
+        <span>Telegram (аккаунт)</span>
+      </span>
+    );
+  }
+
   if (norm.includes("telegram")) {
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20">

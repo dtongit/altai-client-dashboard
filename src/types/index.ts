@@ -672,6 +672,16 @@ export interface PromptPreviewResponse {
 
 
 
+/** Подключение Telegram Business к аккаунту клиента (#109). Админ-ресурс `tg-business-connections`, только чтение. */
+export interface TgBusinessConnection {
+  connection_id: string;
+  tenant_id: string;
+  owner_user_id: string;
+  can_reply: boolean;
+  is_enabled: boolean;
+  updated_at?: string | null;
+}
+
 /** Карточка лида: что Vera узнала о клиенте в чате (#265). Админ-ресурс `lead-cards`, только чтение. */
 export interface LeadCard {
   session_id: string;

@@ -304,6 +304,7 @@ export default function ChatsPage() {
               >
                 <option value="">Все каналы</option>
                 <option value="telegram">Telegram</option>
+                <option value="telegram_business">Telegram (аккаунт)</option>
                 <option value="whatsapp">WhatsApp</option>
                 <option value="instagram">Instagram Direct</option>
                 <option value="instagram_comment">Instagram · комментарии</option>
