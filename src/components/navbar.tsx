@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { api } from "@/lib/api";
+import { ROLE_LABELS, formatDateTime } from "@/lib/permissions";
 import {
   Power,
   LogOut,
@@ -12,11 +14,13 @@ import {
   HelpCircle,
   Database,
   ChevronDown,
+  UsersRound,
 } from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, tenant, availableTenants, switchTenant, toggleActive, logout } = useAuth();
+  const { user, tenant, availableTenants, switchTenant, toggleActive, logout, role, can, hasEmployee } = useAuth();
+  const [pausedBy, setPausedBy] = useState<string | null>(null);
   const [isToggling, setIsToggling] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -27,6 +31,30 @@ export function Navbar() {
     pathname !== "/login/" &&
     !pathname?.startsWith("/login") &&
     !pathname?.startsWith("/admin");
+
+  const showSwitch = isVeraSelected && can("master_switch") && hasEmployee("vera");
+  const canAudit = can("audit_log");
+
+  // Who stopped Vera last: latest `vera.paused` audit entry (only for users who may read the audit log).
+  useEffect(() => {
+    if (isActive || !canAudit || !tenant) {
+      setPausedBy(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .getAuditLog({ action: "vera.paused", limit: 1 })
+      .then((res) => {
+        const e = (res.entries || res.items || [])[0];
+        if (!cancelled) setPausedBy(e ? `${e.actor_name || "—"}, ${formatDateTime(e.created_at)}` : null);
+      })
+      .catch(() => {
+        if (!cancelled) setPausedBy(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isActive, canAudit, tenant?.id]);
 
   const handleToggle = async () => {
     setIsToggling(true);
@@ -111,7 +139,7 @@ export function Navbar() {
             )}
 
             {/* Global Master Pause/Resume Button - only when Vera is selected */}
-            {isVeraSelected && (
+            {showSwitch && (
               <button
                 onClick={() => setShowConfirm(true)}
                 disabled={isToggling}
@@ -143,6 +171,26 @@ export function Navbar() {
                 </span>
               </button>
             )}
+            {showSwitch && !isActive && pausedBy && (
+              <span className="hidden md:inline text-[11px] text-amber-700 dark:text-amber-400 max-w-[14rem] truncate" title={`Остановлена: ${pausedBy}`}>
+                Остановлена: {pausedBy}
+              </span>
+            )}
+
+            {can("manage_users") && (
+              <Link
+                href="/team"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                  pathname.startsWith("/team")
+                    ? "bg-amber-500 text-zinc-950 border-amber-500"
+                    : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-200 dark:border-zinc-800"
+                }`}
+                title="Команда и доступы"
+              >
+                <UsersRound className="h-3.5 w-3.5" />
+                <span className="hidden lg:inline">Команда и доступы</span>
+              </Link>
+            )}
 
             {/* Support Link */}
             <a
@@ -166,11 +214,7 @@ export function Navbar() {
                     {user.username}
                   </div>
                   <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                    {user.is_admin
-                      ? "Суперадмин"
-                      : user.role === "client_admin"
-                      ? "Администратор"
-                      : "Оператор"}
+                    {role ? ROLE_LABELS[role] : ""}
                   </div>
                 </div>
                 <button

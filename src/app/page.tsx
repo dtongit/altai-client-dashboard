@@ -10,7 +10,8 @@ import { AlertTriangle, Send } from "lucide-react";
 
 export default function AIStaffManagementPage() {
   const router = useRouter();
-  const { user, tenant, loading: authLoading } = useAuth();
+  const { user, tenant, loading: authLoading, hasEmployee } = useAuth();
+  const hasVera = hasEmployee("vera");
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [connectingTg, setConnectingTg] = useState(false);
@@ -18,7 +19,7 @@ export default function AIStaffManagementPage() {
   const handleConnectTelegram = async () => {
     setConnectingTg(true);
     try {
-      const invite = await api.createTeamInvite("senior");
+      const invite = await api.createTeamInvite();
       if (invite?.invite_url) {
         window.open(invite.invite_url, "_blank");
       }
@@ -47,10 +48,12 @@ export default function AIStaffManagementPage() {
       return;
     }
 
-    if (user) {
+    if (user && hasVera) {
       loadData();
+    } else if (user) {
+      setLoading(false);
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, hasVera]);
 
   if (authLoading || loading) {
     return (
@@ -71,7 +74,7 @@ export default function AIStaffManagementPage() {
   return (
     <div className="p-6 sm:p-10 space-y-8 max-w-5xl mx-auto">
       {/* Simplified Telegram Alert */}
-      {!isTgSubscribed && (
+      {hasVera && !isTgSubscribed && (
         <div className="rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/20 px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
           <div className="flex items-start sm:items-center gap-3 text-left">
             <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5 sm:mt-0" />
@@ -110,7 +113,19 @@ export default function AIStaffManagementPage() {
         </p>
       </div>
 
+      {!hasVera && (
+        <div className="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white/70 dark:bg-zinc-900/40 p-8 text-center space-y-2">
+          <p className="text-sm font-semibold text-zinc-900 dark:text-white">
+            Вам пока не открыт доступ ни к одному ИИ-сотруднику
+          </p>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">
+            Обратитесь к менеджеру вашей компании, чтобы он выдал доступ в разделе «Команда и доступы».
+          </p>
+        </div>
+      )}
+
       {/* Active Employee: Vera */}
+      {hasVera && (
       <Link
         href="/vera"
         className="floating-halo-card relative block rounded-3xl transition-transform duration-300 hover:-translate-y-1 group cursor-pointer"
@@ -133,8 +148,10 @@ export default function AIStaffManagementPage() {
           </div>
         </div>
       </Link>
+      )}
 
       {/* Inactive Employees Grid */}
+      {hasVera && (
       <div className="pt-3">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {/* Mark */}
@@ -183,6 +200,7 @@ export default function AIStaffManagementPage() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

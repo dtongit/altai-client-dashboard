@@ -3,13 +3,15 @@
 import React, { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/lib/toast-context";
 import { Navbar } from "@/components/navbar";
-import { Sidebar } from "@/components/sidebar";
+import { Sidebar, MobileNav } from "@/components/sidebar";
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const { user, loading, can, hasEmployee } = useAuth();
+  const { showToast } = useToast();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -28,6 +30,32 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     cleanPath === "/" || cleanPath === "" || cleanPath === "/index.html";
   const isAdminPage = cleanPath.startsWith("/admin");
   const showSidebar = !isLoginPage && !isStartPage && !isAdminPage;
+
+  // Page guards (roles epic #75): which capability / AI employee each section needs.
+  const needsVera = ["/vera", "/chats", "/simulator"].some(
+    (p) => cleanPath === p || cleanPath.startsWith(p + "/")
+  );
+  const needsCap = cleanPath.startsWith("/settings")
+    ? "settings"
+    : cleanPath.startsWith("/knowledge")
+    ? "instructions"
+    : cleanPath.startsWith("/team")
+    ? "manage_users"
+    : null;
+  const veraOk = hasEmployee("vera");
+  const denied = Boolean(user) && ((needsVera && !veraOk) || (needsCap !== null && !can(needsCap)));
+
+  useEffect(() => {
+    if (!loading && mounted && denied) {
+      showToast(
+        needsVera && !veraOk
+          ? "Доступ к Вере закрыт. Обратитесь к менеджеру вашей компании."
+          : "Недостаточно прав для этого раздела",
+        "error"
+      );
+      router.replace(veraOk ? "/vera" : "/");
+    }
+  }, [loading, mounted, denied, needsVera, veraOk, router, showToast]);
 
   useEffect(() => {
     if (!loading && mounted) {
@@ -79,10 +107,11 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
       <Navbar />
+      {showSidebar && <MobileNav />}
       <div className="flex-1 flex overflow-hidden">
         {showSidebar && <Sidebar />}
-        <main className="flex-1 overflow-y-auto bg-zinc-100/60 dark:bg-zinc-950/50">
-          {children}
+        <main className="flex-1 min-w-0 overflow-y-auto bg-zinc-100/60 dark:bg-zinc-950/50">
+          {denied ? null : children}
         </main>
       </div>
     </div>

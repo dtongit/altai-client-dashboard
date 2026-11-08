@@ -12,22 +12,64 @@ import {
   Bot,
   ArrowLeft,
   Sparkles,
+  UsersRound,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
-const navigation = [
-  { name: "Дашборд", href: "/vera", icon: BarChart3 },
-  { name: "Чаты", href: "/chats", icon: MessageSquare },
-  { name: "Пообщаться с Верой", href: "/simulator", icon: Bot },
-  { name: "Выключатели", href: "/settings", icon: Sliders },
-  { name: "Инструкции для Веры", href: "/knowledge", icon: BookOpen },
+const navigation: Array<{ name: string; href: string; icon: typeof BarChart3; vera?: boolean; cap?: string }> = [
+  { name: "Дашборд", href: "/vera", icon: BarChart3, vera: true },
+  { name: "Чаты", href: "/chats", icon: MessageSquare, vera: true },
+  { name: "Пообщаться с Верой", href: "/simulator", icon: Bot, vera: true },
+  { name: "Выключатели", href: "/settings", icon: Sliders, cap: "settings" },
+  { name: "Инструкции для Веры", href: "/knowledge", icon: BookOpen, cap: "instructions" },
+  { name: "Команда и доступы", href: "/team", icon: UsersRound, cap: "manage_users" },
 ];
+
+/** Horizontal section switcher for phones (the sidebar is hidden below md). */
+export function MobileNav() {
+  const pathname = usePathname();
+  const cleanPath = (pathname || "").replace(/\/+$/, "") || "/";
+  const { can, hasEmployee } = useAuth();
+  return (
+    <nav className="md:hidden flex gap-2 overflow-x-auto px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
+      <Link
+        href="/"
+        className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        <span>Все</span>
+      </Link>
+      {navigation
+        .filter((item) => (!item.vera || hasEmployee("vera")) && (!item.cap || can(item.cap)))
+        .map((item) => {
+          const active = cleanPath === item.href || cleanPath.startsWith(item.href + "/");
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap border ${
+                active
+                  ? "bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/30 font-semibold"
+                  : "text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800"
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              <span>{item.name}</span>
+            </Link>
+          );
+        })}
+    </nav>
+  );
+}
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { can, hasEmployee } = useAuth();
   const cleanPath = (pathname || "").replace(/\/+$/, "") || "/";
 
   return (
-    <aside className="w-64 flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col justify-between p-4 min-h-[calc(100vh-4rem)] transition-colors">
+    <aside className="hidden md:flex w-64 flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col justify-between p-4 min-h-[calc(100vh-4rem)] transition-colors">
       <div className="space-y-5">
         {/* Switcher back to All AI Staff */}
         <div>
@@ -74,7 +116,9 @@ export function Sidebar() {
             Разделы сотрудника
           </p>
           <nav className="space-y-1">
-            {navigation.map((item) => {
+            {navigation
+              .filter((item) => (!item.vera || hasEmployee("vera")) && (!item.cap || can(item.cap)))
+              .map((item) => {
               const isActive =
                 item.href === "/vera"
                   ? cleanPath === "/vera" || cleanPath.startsWith("/vera/")

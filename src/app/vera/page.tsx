@@ -41,7 +41,7 @@ export default function VeraOverviewPage() {
   const handleConnectTelegram = async () => {
     setConnectingTg(true);
     try {
-      const invite = await api.createTeamInvite("senior");
+      const invite = await api.createTeamInvite();
       if (invite?.invite_url) {
         window.open(invite.invite_url, "_blank");
       }

@@ -48,7 +48,9 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     password: "ChangeMe123!",
     is_active: true,
     is_admin: false,
-    role: "client_admin", // client_admin | client_operator | demo_manager (demo_manager: tenant_id = null)
+    role: "manager", // manager | employee | superadmin | demo_manager (demo_manager: tenant_id = null)
+    ai_employee_scope: "all", // all | selected (then rows in user-employee-access)
+    permissions: {}, // {"grant": [cap...], "revoke": [cap...]} on top of the role preset
     tenant_id: "your_tenant_id",
   },
   "openrouter-models": {

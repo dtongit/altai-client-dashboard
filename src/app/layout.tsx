@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { ToastProvider } from "@/lib/toast-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { LayoutShell } from "@/components/layout-shell";
 
@@ -75,7 +76,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans selection:bg-amber-500/30 selection:text-amber-700 dark:selection:text-amber-200 transition-colors">
         <ThemeProvider>
           <AuthProvider>
+            <ToastProvider>
             <LayoutShell>{children}</LayoutShell>
+          </ToastProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

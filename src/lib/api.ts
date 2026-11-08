@@ -20,6 +20,9 @@ import {
   AdminChatTraceResponse,
   TeamTraceResponse,
   TeamMember,
+  TeamUser,
+  AuditLogEntry,
+  UserPermissionOverrides,
   TeamInviteResponse,
   TeamMembersResponse,
   TeamBotConversation,
@@ -119,6 +122,9 @@ export const api = {
       token: string;
       user: User;
       tenant: Tenant;
+      permissions?: string[];
+      allowed_employees?: string[];
+      role?: string;
       available_tenants?: Array<{ id: string; business_name: string; is_active: boolean }>;
     }>("/auth/login", {
       method: "POST",
@@ -133,6 +139,9 @@ export const api = {
       ok: boolean;
       user: User;
       tenant: Tenant;
+      permissions?: string[];
+      allowed_employees?: string[];
+      role?: string;
       available_tenants?: Array<{ id: string; business_name: string; is_active: boolean }>;
     }>("/auth/me");
   },
@@ -287,11 +296,67 @@ export const api = {
     return request<TeamMembersResponse>("/team/members");
   },
 
-  async createTeamInvite(role: "senior" | "manager" = "manager"): Promise<TeamInviteResponse> {
+  /** The invite binds to the calling user; the backend ignores any role (roles epic #75). */
+  async createTeamInvite(): Promise<TeamInviteResponse> {
     return request<TeamInviteResponse>("/team/invite", {
       method: "POST",
-      body: JSON.stringify({ role }),
+      body: JSON.stringify({}),
     });
+  },
+
+  // Users, access and audit log (roles epic #75)
+  async getUsers(): Promise<{ ok: boolean; users: TeamUser[]; bot_username?: string }> {
+    return request("/users");
+  },
+
+  async createUser(data: {
+    username: string;
+    email?: string;
+    password: string;
+    role: "manager" | "employee";
+    ai_employee_scope: "all" | "selected";
+    employee_ids: string[];
+    permissions?: UserPermissionOverrides;
+  }): Promise<{ ok: boolean; user?: TeamUser }> {
+    return request("/users", { method: "POST", body: JSON.stringify(data) });
+  },
+
+  async updateUser(
+    userId: string,
+    data: {
+      role?: "manager" | "employee";
+      ai_employee_scope?: "all" | "selected";
+      employee_ids?: string[];
+      permissions?: UserPermissionOverrides;
+      is_active?: boolean;
+      password?: string;
+    }
+  ): Promise<{ ok: boolean; user?: TeamUser }> {
+    return request(`/users/${encodeURIComponent(userId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  async createUserTelegramInvite(userId: string): Promise<TeamInviteResponse> {
+    return request<TeamInviteResponse>(`/users/${encodeURIComponent(userId)}/telegram-invite`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+  },
+
+  async getAuditLog(params?: { limit?: number; offset?: number; action?: string }): Promise<{
+    ok: boolean;
+    entries?: AuditLogEntry[];
+    items?: AuditLogEntry[];
+    total?: number;
+  }> {
+    const q = new URLSearchParams();
+    if (params?.limit != null) q.set("limit", String(params.limit));
+    if (params?.offset) q.set("offset", String(params.offset));
+    if (params?.action) q.set("action", params.action);
+    const qs = q.toString();
+    return request(`/audit-log${qs ? `?${qs}` : ""}`);
   },
 
   async updateTeamMember(

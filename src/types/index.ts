@@ -3,8 +3,74 @@ export interface User {
   username: string;
   email: string;
   is_admin: boolean;
-  role: "superadmin" | "client_admin" | "client_operator" | "tester" | "demo_manager";
+  /** Normalized by the backend: superadmin | manager | employee | demo_manager. Old backends send client_admin etc. */
+  role: "superadmin" | "manager" | "employee" | "demo_manager" | "client_admin" | "client_operator" | "tester" | (string & {});
   tenant_id: string;
+  /** Columns added by roles epic #75 (/admin users rows). */
+  permissions?: UserPermissionOverrides | Record<string, never>;
+  ai_employee_scope?: "all" | "selected";
+  created_by?: string | null;
+  updated_at?: string | null;
+  is_active?: boolean;
+}
+
+/** Capability ids of the roles epic (#75). */
+export type Cap =
+  | "master_switch"
+  | "settings"
+  | "instructions"
+  | "manage_users"
+  | "audit_log"
+  | "alerts"
+  | "bot_changes";
+
+/** `users.permissions`: per-user overrides on top of the role preset. */
+export interface UserPermissionOverrides {
+  grant?: Cap[];
+  revoke?: Cap[];
+}
+
+/** Row of /admin/crud/user-employee-access. */
+export interface UserEmployeeAccess {
+  user_id: string;
+  tenant_id: string;
+  employee_id: string;
+  created_at: string;
+}
+
+/** Row of /admin/crud/audit-log (read-only) and item of GET /audit-log. */
+export interface AuditLogEntry {
+  id: string;
+  tenant_id: string;
+  actor_type: "user" | "system" | "bot" | (string & {});
+  actor_user_id: string | null;
+  actor_name: string | null;
+  action: string;
+  target: string | null;
+  details: Record<string, any> | null;
+  created_at: string;
+}
+
+/** Item of GET /users (Users and access page). */
+export interface TeamUser {
+  id: string;
+  username: string;
+  email: string | null;
+  role: string;
+  is_active: boolean;
+  ai_employee_scope: "all" | "selected";
+  employee_ids: string[];
+  permissions: UserPermissionOverrides;
+  effective_caps: Cap[];
+  /** Linked Telegram member, if any. Field names are read defensively (see normalizeTelegram). */
+  telegram?: {
+    member_id?: string;
+    id?: string;
+    username?: string | null;
+    telegram_username?: string | null;
+    display_name?: string | null;
+  } | null;
+  created_at?: string | null;
 }
 
 export interface Tenant {
@@ -72,6 +138,8 @@ export interface TeamMember {
   can_view_analytics: boolean;
   can_manage_team: boolean;
   is_active: boolean;
+  /** Linked dashboard user (roles epic #75); null/absent = legacy unlinked member. */
+  user_id?: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Tenant } from "@/types";
 import { api, getStoredAuth, setAuthToken, setSelectedTenant } from "@/lib/api";
+import { deriveCaps, normalizeRole, RoleId } from "@/lib/permissions";
 
 interface AvailableTenant {
   id: string;
@@ -21,6 +22,18 @@ interface AuthContextType {
   refreshTenant: () => Promise<void>;
   switchTenant: (tenantId: string) => Promise<void>;
   toggleActive: (isActive?: boolean) => Promise<boolean>;
+  /** Normalized role: superadmin | manager | employee | demo_manager. */
+  role: RoleId | null;
+  permissions: string[];
+  allowedEmployees: string[];
+  can: (cap: string) => boolean;
+  hasEmployee: (employeeId: string) => boolean;
+}
+
+interface AuthPayload {
+  user: User;
+  permissions?: string[];
+  allowed_employees?: string[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,6 +44,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [availableTenants, setAvailableTenants] = useState<AvailableTenant[]>([]);
   const [token, setTokenState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [allowedEmployees, setAllowedEmployees] = useState<string[]>([]);
+
+  // Old backends send neither field: derive from the role and open every AI employee.
+  const applyPayload = (res: AuthPayload) => {
+    setPermissions(Array.from(deriveCaps(res.user, res.permissions)));
+    setAllowedEmployees(
+      Array.isArray(res.allowed_employees) ? res.allowed_employees : ["*"]
+    );
+  };
+
+  const role: RoleId | null = user ? normalizeRole(user.role, user.is_admin) : null;
+  const can = (cap: string) => role === "superadmin" || permissions.includes(cap);
+  const hasEmployee = (employeeId: string) =>
+    role === "superadmin" || allowedEmployees.includes("*") || allowedEmployees.includes(employeeId);
 
   useEffect(() => {
     async function initAuth() {
@@ -42,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (res.ok && res.user && res.tenant) {
             setUser(res.user);
             setTenant(res.tenant);
+            applyPayload(res);
             if (res.available_tenants) {
               setAvailableTenants(res.available_tenants);
             }
@@ -69,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok && res.user && res.tenant) {
         setUser(res.user);
         setTenant(res.tenant);
+        applyPayload(res);
         setTokenState(res.token);
         if (res.available_tenants) {
           setAvailableTenants(res.available_tenants);
@@ -97,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await api.getMe();
       if (res.ok && res.tenant) {
         setTenant(res.tenant);
+        if (res.user) applyPayload(res);
         if (res.available_tenants) {
           setAvailableTenants(res.available_tenants);
         }
@@ -112,6 +143,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await api.getMe();
       if (res.ok && res.tenant) {
         setTenant(res.tenant);
+        if (res.user) applyPayload(res);
         if (res.available_tenants) {
           setAvailableTenants(res.available_tenants);
         }
@@ -148,6 +180,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshTenant,
         switchTenant,
         toggleActive,
+        role,
+        permissions,
+        allowedEmployees,
+        can,
+        hasEmployee,
       }}
     >
       {children}
