@@ -156,6 +156,21 @@ export interface TeamBotLogEvent {
   created_at: string;
 }
 
+/** Row of /admin/crud/team-bot-messages (#309): a team-bot message a member can reply to, read-only. */
+export interface TeamBotMessage {
+  id: string;
+  tenant_id: string;
+  telegram_user_id: string;
+  chat_id: string;
+  /** Telegram message id; null when not known (test mode, failed send). */
+  message_id: number | null;
+  kind: "alert" | "ask" | "ask_result" | "changeset_card" | "changeset_notice" | "reminder" | "undo_prompt" | "agent_reply" | string;
+  /** Chat session id (alert), ask id (ask) or changeset id (cards, reminders). */
+  ref_id: string | null;
+  text: string;
+  created_at: string;
+}
+
 /** Row of /admin/crud/team-trace-steps and a step in the team-bot trace (read-only debug trace of a turn). */
 export interface TeamTraceStep {
   id: string;
@@ -484,7 +499,7 @@ export interface AdminContextChangeset {
   requester_member_id: string;
   requester_tg_id: string;
   requester_name: string;
-  status: "draft" | "in_review" | "awaiting_confirm" | "applied" | "rejected" | "expired" | "rolled_back" | "failed";
+  status: "draft" | "in_review" | "awaiting_confirm" | "applied" | "rejected" | "expired" | "rolled_back" | "failed" | "superseded";
   summary: string;
   /** Typed edits with base_version and diff. */
   edits: Record<string, any>[];
