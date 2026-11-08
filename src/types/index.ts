@@ -582,6 +582,14 @@ export interface AdminChatTraceResponse {
 // DYNAMIC KNOWLEDGE BASE & CATALOG & MODULAR PROMPTS
 // ============================================================================
 
+/** Photo attached to a KB node (uploaded to storage or added by https link). */
+export interface KbMediaItem {
+  id?: string;
+  url: string;
+  caption?: string;
+  type?: string;
+}
+
 export interface KnowledgeNode {
   id: string;
   tenant_id: string;
@@ -592,7 +600,7 @@ export interface KnowledgeNode {
   tier: "L0" | "L1" | "L2" | string;
   summary: string;
   content: string;
-  media_attachments?: Array<{ type: string; url: string; caption?: string }>;
+  media_attachments?: KbMediaItem[];
   high_confidence_triggers?: string[];
   allowed_employees?: string[];
   allowed_roles?: string[];

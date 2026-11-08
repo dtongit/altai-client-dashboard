@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
+import KbMediaEditor from "@/components/knowledge/KbMediaEditor";
 import {
   EmployeeConfigResponse,
   CustomToolItem,
@@ -10,6 +11,7 @@ import {
   CustomToolVersionItem,
   PromptVersionItem,
   KnowledgeNode,
+  KbMediaItem,
   KnowledgeNodeVersion,
   DeletedKnowledgeNode,
   PromptModule,
@@ -275,7 +277,7 @@ export default function EmployeeStudioPage() {
     summary: "",
     content: "",
     triggers_csv: "",
-    media_csv: "",
+    media: [] as KbMediaItem[],
     change_description: "",
     // Kept from the loaded node and sent back on save so an edit does not reset them (#187).
     allowed_employees: undefined as string[] | undefined,
@@ -639,7 +641,9 @@ export default function EmployeeStudioPage() {
         summary: node.summary || "",
         content: node.content || "",
         triggers_csv: (node.high_confidence_triggers || []).join(", "),
-        media_csv: (node.media_attachments || []).map((m: any) => m.url || m).join(", "),
+        media: (node.media_attachments || []).map((m: any) =>
+          typeof m === "string" ? { url: m } : { ...m }
+        ) as KbMediaItem[],
         change_description: "",
         allowed_employees: node.allowed_employees,
         allowed_roles: node.allowed_roles,
@@ -657,7 +661,7 @@ export default function EmployeeStudioPage() {
         summary: "",
         content: "",
         triggers_csv: "",
-        media_csv: "",
+        media: [],
         change_description: "Создание нового узла",
         allowed_employees: undefined,
         allowed_roles: undefined,
@@ -680,11 +684,11 @@ export default function EmployeeStudioPage() {
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean);
-      const media = nodeForm.media_csv
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean)
-        .map((url) => ({ type: "image", url }));
+      const media = nodeForm.media.map((m) => ({
+        ...(m.id ? { id: m.id } : {}),
+        url: m.url,
+        ...(m.caption && m.caption.trim() ? { caption: m.caption.trim() } : {}),
+      }));
       await api.upsertKnowledgeNode({
         path: nodeForm.path.trim(),
         parent_path: nodeForm.parent_path.trim() || null,
@@ -1564,16 +1568,12 @@ export default function EmployeeStudioPage() {
 
                     <div>
                       <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
-                        Медиа-вложения (ссылки на фото через запятую)
+                        Фото
                       </label>
-                      <input
-                        type="text"
-                        value={nodeForm.media_csv}
-                        onChange={(e) =>
-                          setNodeForm({ ...nodeForm, media_csv: e.target.value })
-                        }
-                        placeholder="https://example.com/shoes-care.jpg, https://example.com/size-guide.png"
-                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
+                      <KbMediaEditor
+                        value={nodeForm.media}
+                        onChange={(media) => setNodeForm((f) => ({ ...f, media }))}
+                        showToast={showToast}
                       />
                     </div>
 
@@ -1765,8 +1765,8 @@ export default function EmployeeStudioPage() {
                                       (e.currentTarget as any).style.display = "none";
                                     }}
                                   />
-                                  <div className="p-1.5 text-[10px] text-zinc-500 truncate font-mono">
-                                    {url}
+                                  <div className="p-1.5 text-[10px] text-zinc-500 truncate">
+                                    {(typeof m === "object" && m.caption) || url}
                                   </div>
                                 </a>
                               );

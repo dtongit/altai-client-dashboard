@@ -25,6 +25,7 @@ import {
   TeamBotConversation,
   TeamBotLogEvent,
   KnowledgeNode,
+  KbMediaItem,
   KnowledgeNodeVersion,
   DeletedKnowledgeNode,
   PromptModule,
@@ -600,6 +601,27 @@ export const api = {
   }> {
     const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
     return request(`/knowledge/nodes/deleted${qs}`);
+  },
+
+  async uploadKnowledgeMedia(file: File, caption?: string): Promise<KbMediaItem> {
+    const { token, tenantId } = getStoredAuth();
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    if (tenantId) headers["X-Tenant-ID"] = tenantId;
+    const form = new FormData();
+    form.append("file", file);
+    if (caption) form.append("caption", caption);
+    const res = await fetch(`${API_BASE_URL}/knowledge/media`, {
+      method: "POST",
+      headers, // no Content-Type: the browser sets the multipart boundary
+      body: form,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || `Ошибка сервера (${res.status})`);
+    }
+    const data = await res.json();
+    return data.item as KbMediaItem;
   },
 
   async upsertKnowledgeNode(payload: {
