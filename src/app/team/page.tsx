@@ -209,7 +209,7 @@ export default function TeamPage() {
       await loadUsers();
       if (canAudit) void loadAudit(0, auditAction);
     } catch (e: any) {
-      // Includes the API's 403 text when the password of a person from another company can't be reset.
+      // Includes the API's 403 text (only an administrator resets another account's password).
       setFormError(e?.message || "Не удалось сохранить");
     } finally {
       setSaving(false);
@@ -254,7 +254,7 @@ export default function TeamPage() {
         await navigator.clipboard.writeText(res.invite_url);
         setCopiedId(u.id);
         setTimeout(() => setCopiedId((c) => (c === u.id ? null : c)), 2500);
-        showToast("Ссылка скопирована. Действует 24 часа, привязывает Telegram к этому пользователю.", "success");
+        showToast(`Ссылка скопирована${res.bot_username ? ` (бот @${res.bot_username})` : ""}. Действует 24 часа, привязывает Telegram к этому пользователю.`, "success");
       } catch {
         window.prompt("Скопируйте ссылку для Telegram", res.invite_url);
       }
@@ -606,6 +606,7 @@ export default function TeamPage() {
               </label>
             </div>
 
+            {(!form.id || myRole === "superadmin" || isSelf) && (
             <label className="block space-y-1 text-xs font-medium text-zinc-700 dark:text-zinc-300">
               {form.id ? "Новый пароль (оставьте пустым, чтобы не менять)" : "Пароль (только для нового аккаунта, не короче 8 символов)"}
               <input
@@ -616,6 +617,7 @@ export default function TeamPage() {
                 autoComplete="new-password"
               />
             </label>
+            )}
 
             {!form.id && (
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
