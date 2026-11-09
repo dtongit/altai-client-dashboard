@@ -87,7 +87,7 @@ export function Navbar() {
                 <span className="text-zinc-400 dark:text-zinc-600 font-light select-none text-base sm:text-lg">
                   +
                 </span>
-                {user?.is_admin && availableTenants.length > 1 ? (
+                {availableTenants.length > 1 ? (
                   <div className="relative flex items-center">
                     <select
                       value={tenant.id}
@@ -98,11 +98,11 @@ export function Navbar() {
                         }
                       }}
                       className="appearance-none pr-6 pl-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm font-bold text-zinc-900 dark:text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500"
-                      title="Переключить активного тенанта (Суперадмин)"
+                      title="Переключить компанию"
                     >
                       {availableTenants.map((t) => (
                         <option key={t.id} value={t.id}>
-                          {t.business_name} ({t.id})
+                          {user?.is_admin ? `${t.business_name} (${t.id})` : t.business_name}
                         </option>
                       ))}
                     </select>

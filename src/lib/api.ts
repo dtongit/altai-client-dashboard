@@ -20,9 +20,9 @@ import {
   AdminChatTraceResponse,
   TeamTraceResponse,
   TeamMember,
+  TeamBotAdminResponse,
   TeamUser,
   AuditLogEntry,
-  UserPermissionOverrides,
   TeamInviteResponse,
   TeamMembersResponse,
   TeamBotConversation,
@@ -125,7 +125,7 @@ export const api = {
       permissions?: string[];
       allowed_employees?: string[];
       role?: string;
-      available_tenants?: Array<{ id: string; business_name: string; is_active: boolean }>;
+      available_tenants?: Array<{ id: string; business_name: string; is_active?: boolean }>;
     }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ username_or_email, password, tenant_id }),
@@ -142,7 +142,7 @@ export const api = {
       permissions?: string[];
       allowed_employees?: string[];
       role?: string;
-      available_tenants?: Array<{ id: string; business_name: string; is_active: boolean }>;
+      available_tenants?: Array<{ id: string; business_name: string; is_active?: boolean }>;
     }>("/auth/me");
   },
 
@@ -312,22 +312,18 @@ export const api = {
   async createUser(data: {
     username: string;
     email?: string;
-    password: string;
-    role: "manager" | "employee";
-    ai_employee_scope: "all" | "selected";
-    employee_ids: string[];
-    permissions?: UserPermissionOverrides;
-  }): Promise<{ ok: boolean; user?: TeamUser }> {
+    password?: string;
+    permissions: string[];
+    employee_ids: "*" | string[];
+  }): Promise<{ ok: boolean; existing_account?: boolean; user?: TeamUser }> {
     return request("/users", { method: "POST", body: JSON.stringify(data) });
   },
 
   async updateUser(
     userId: string,
     data: {
-      role?: "manager" | "employee";
-      ai_employee_scope?: "all" | "selected";
-      employee_ids?: string[];
-      permissions?: UserPermissionOverrides;
+      permissions?: string[];
+      employee_ids?: "*" | string[];
       is_active?: boolean;
       password?: string;
     }
@@ -336,6 +332,31 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(data),
     });
+  },
+
+  /** Removes the membership; the account stays. */
+  async removeUser(userId: string): Promise<{ ok: boolean }> {
+    return request(`/users/${encodeURIComponent(userId)}`, { method: "DELETE" });
+  },
+
+  // Superadmin: a tenant's own team bot (spec M8). Same admin base as /crud.
+  async setTenantTeamBot(
+    tenantId: string,
+    data: { token: string; username: string }
+  ): Promise<TeamBotAdminResponse> {
+    return request(
+      `/tenants/${encodeURIComponent(tenantId)}/team-bot`,
+      { method: "POST", body: JSON.stringify(data) },
+      ADMIN_API_BASE_URL
+    );
+  },
+
+  async clearTenantTeamBot(tenantId: string): Promise<TeamBotAdminResponse> {
+    return request(
+      `/tenants/${encodeURIComponent(tenantId)}/team-bot`,
+      { method: "DELETE" },
+      ADMIN_API_BASE_URL
+    );
   },
 
   async createUserTelegramInvite(userId: string): Promise<TeamInviteResponse> {

@@ -3,12 +3,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Tenant } from "@/types";
 import { api, getStoredAuth, setAuthToken, setSelectedTenant } from "@/lib/api";
-import { deriveCaps, normalizeRole, RoleId } from "@/lib/permissions";
+import { deriveCaps, globalRole, RoleId } from "@/lib/permissions";
 
 interface AvailableTenant {
   id: string;
   business_name: string;
-  is_active: boolean;
+  is_active?: boolean;
 }
 
 interface AuthContextType {
@@ -22,7 +22,7 @@ interface AuthContextType {
   refreshTenant: () => Promise<void>;
   switchTenant: (tenantId: string) => Promise<void>;
   toggleActive: (isActive?: boolean) => Promise<boolean>;
-  /** Normalized role: superadmin | manager | employee | demo_manager. */
+  /** Global flag only: superadmin | demo_manager | null (access is per company, see `permissions`). */
   role: RoleId | null;
   permissions: string[];
   allowedEmployees: string[];
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const role: RoleId | null = user ? normalizeRole(user.role, user.is_admin) : null;
+  const role: RoleId | null = globalRole(user);
   const can = (cap: string) => role === "superadmin" || permissions.includes(cap);
   const hasEmployee = (employeeId: string) =>
     role === "superadmin" || allowedEmployees.includes("*") || allowedEmployees.includes(employeeId);

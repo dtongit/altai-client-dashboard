@@ -7,6 +7,7 @@ import { SystemStatusResponse, ChannelsResponse, ChannelMode, UmnicoStatus } fro
 import ChannelCard from "./ChannelCard";
 import InstagramCard from "./InstagramCard";
 import UmnicoCard from "./UmnicoCard";
+import TeamBotCard from "./TeamBotCard";
 import { channelLabel, sortChannels } from "./channel-meta";
 import {
   Building2,
@@ -226,6 +227,8 @@ export default function SettingsPage() {
       <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
         Сотрудники компании и их связь с Верой в Telegram теперь в разделе «Команда и доступы».
       </p>
+
+      {isSuperadmin && tenant && <TeamBotCard tenantId={tenant.id} />}
 
       {/* Integrations */}
       <div className="space-y-4">

@@ -4,13 +4,11 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { useToast } from "@/lib/toast-context";
-import { AuditLogEntry, Cap, TeamMember, TeamUser, UserPermissionOverrides } from "@/types";
+import { AuditLogEntry, Cap, TeamMember, TeamUser } from "@/types";
 import {
   AI_EMPLOYEES,
   ALL_CAPS,
   CAP_LABELS,
-  ROLE_LABELS,
-  ROLE_PRESETS,
   formatDateTime,
 } from "@/lib/permissions";
 import {
@@ -27,8 +25,9 @@ import {
 const AUDIT_PAGE = 20;
 
 const AUDIT_ACTIONS: Array<[string, string]> = [
-  ["user.created", "Создан пользователь"],
-  ["user.role_changed", "Изменена роль"],
+  ["user.created", "Создан аккаунт"],
+  ["user.added_to_tenant", "Добавлен в компанию"],
+  ["user.removed_from_tenant", "Убран из компании"],
   ["user.access_changed", "Изменён доступ к ИИ-сотрудникам"],
   ["user.permissions_changed", "Изменены права"],
   ["user.deactivated", "Пользователь отключён"],
@@ -55,11 +54,10 @@ function tgInfo(u: TeamUser) {
   const t = u.telegram;
   if (!t) return null;
   const username = t.username ?? t.telegram_username ?? null;
-  return { username, name: t.display_name || (username ? `@${username}` : "Telegram") };
-}
-
-function overrideCount(u: TeamUser) {
-  return (u.permissions?.grant?.length || 0) + (u.permissions?.revoke?.length || 0);
+  return {
+    name: t.display_name || (username ? `@${username}` : "Telegram"),
+    bot: t.bot_username || null,
+  };
 }
 
 interface FormState {
@@ -67,20 +65,18 @@ interface FormState {
   username: string;
   email: string;
   password: string;
-  role: "manager" | "employee";
-  scope: "all" | "selected";
+  caps: Cap[];
+  allEmployees: boolean;
   employeeIds: string[];
-  grant: Cap[];
-  revoke: Cap[];
 }
 
 export default function TeamPage() {
-  const { user: me, role: myRole, can, tenant } = useAuth();
+  const { user: me, role: myRole, can, hasEmployee, tenant } = useAuth();
   const { showToast } = useToast();
   const isSuper = myRole === "superadmin";
 
   const [users, setUsers] = useState<TeamUser[]>([]);
-  const [botUsername, setBotUsername] = useState("altai_optima_vera_bot");
+  const [botUsername, setBotUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
@@ -153,83 +149,55 @@ export default function TeamPage() {
       username: "",
       email: "",
       password: "",
-      role: "employee",
-      scope: "all",
+      caps: ["master_switch", "bot_changes"],
+      allEmployees: true,
       employeeIds: [],
-      grant: [],
-      revoke: [],
     });
   };
 
   const openEdit = (u: TeamUser) => {
     setFormError(null);
+    const ids = u.membership?.employee_ids;
     setForm({
       id: u.id,
       username: u.username,
       email: u.email || "",
       password: "",
-      role: u.role === "employee" ? "employee" : "manager",
-      scope: u.ai_employee_scope || "all",
-      employeeIds: u.employee_ids || [],
-      grant: (u.permissions?.grant || []) as Cap[],
-      revoke: (u.permissions?.revoke || []) as Cap[],
+      caps: [...(u.membership?.permissions || [])],
+      allEmployees: ids === "*",
+      employeeIds: Array.isArray(ids) ? ids : [],
     });
   };
 
   const editing = useMemo(() => users.find((u) => u.id === form?.id) || null, [users, form?.id]);
   const isSelf = Boolean(editing && me && editing.id === me.id);
-  const protectedRow = (u: TeamUser) => u.role === "superadmin" || u.role === "demo_manager";
 
-  const effectiveOn = (f: FormState, cap: Cap) => {
-    const preset = ROLE_PRESETS[f.role].includes(cap);
-    if (f.grant.includes(cap)) return true;
-    if (f.revoke.includes(cap)) return false;
-    return preset;
-  };
-
-  const toggleCap = (cap: Cap) => {
-    setForm((f) => {
-      if (!f) return f;
-      const next = !effectiveOn(f, cap);
-      const preset = ROLE_PRESETS[f.role].includes(cap);
-      const grant = f.grant.filter((c) => c !== cap);
-      const revoke = f.revoke.filter((c) => c !== cap);
-      if (next !== preset) (next ? grant : revoke).push(cap);
-      return { ...f, grant, revoke };
-    });
-  };
+  const toggleCap = (cap: Cap) =>
+    setForm((f) =>
+      f ? { ...f, caps: f.caps.includes(cap) ? f.caps.filter((c) => c !== cap) : [...f.caps, cap] } : f
+    );
 
   const save = async () => {
     if (!form) return;
     setFormError(null);
-    if (!form.id) {
-      if (!form.username.trim()) return setFormError("Укажите логин");
-      if (form.password.length < 8) return setFormError("Пароль — не короче 8 символов");
-    } else if (form.password && form.password.length < 8) {
-      return setFormError("Новый пароль — не короче 8 символов");
-    }
-    const permissions: UserPermissionOverrides = { grant: form.grant, revoke: form.revoke };
-    const employee_ids = form.role === "manager" || form.scope === "all" ? [] : form.employeeIds;
-    const ai_employee_scope = form.role === "manager" ? "all" : form.scope;
+    if (!form.id && !form.username.trim()) return setFormError("Укажите логин");
+    if (form.password && form.password.length < 8) return setFormError("Пароль — не короче 8 символов");
+    const employee_ids: "*" | string[] = form.allEmployees ? "*" : form.employeeIds;
     setSaving(true);
     try {
       if (!form.id) {
-        await api.createUser({
+        const res = await api.createUser({
           username: form.username.trim(),
           email: form.email.trim() || undefined,
-          password: form.password,
-          role: form.role,
-          ai_employee_scope,
+          password: form.password || undefined,
+          permissions: form.caps,
           employee_ids,
-          permissions,
         });
-        showToast("Пользователь создан", "success");
-      } else if (editing && !isSelf && !protectedRow(editing)) {
+        showToast(res.existing_account ? "Пользователь уже существует — добавлен в компанию" : "Пользователь создан", "success");
+      } else if (editing && !isSelf) {
         await api.updateUser(form.id, {
-          role: form.role,
-          ai_employee_scope,
+          permissions: form.caps,
           employee_ids,
-          permissions,
           ...(form.password ? { password: form.password } : {}),
         });
         showToast("Изменения сохранены", "success");
@@ -241,6 +209,7 @@ export default function TeamPage() {
       await loadUsers();
       if (canAudit) void loadAudit(0, auditAction);
     } catch (e: any) {
+      // Includes the API's 403 text when the password of a person from another company can't be reset.
       setFormError(e?.message || "Не удалось сохранить");
     } finally {
       setSaving(false);
@@ -248,7 +217,7 @@ export default function TeamPage() {
   };
 
   const setActive = async (u: TeamUser, next: boolean) => {
-    if (!next && !confirm(`Отключить пользователя «${u.username}»? Он потеряет доступ к кабинету и боту.`)) return;
+    if (!next && !confirm(`Отключить «${u.username}» в этой компании? Доступ к кабинету и боту пропадёт, аккаунт останется.`)) return;
     setBusyId(u.id);
     try {
       await api.updateUser(u.id, { is_active: next });
@@ -256,6 +225,22 @@ export default function TeamPage() {
       if (canAudit) void loadAudit(0, auditAction);
     } catch (e: any) {
       showToast(e?.message || "Не удалось изменить статус", "error");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const removeFromCompany = async (u: TeamUser) => {
+    if (!confirm(`Убрать «${u.username}» из компании? Аккаунт сохранится, но доступ к этой компании пропадёт.`)) return;
+    setBusyId(u.id);
+    try {
+      await api.removeUser(u.id);
+      showToast("Пользователь убран из компании", "success");
+      if (form?.id === u.id) setForm(null);
+      await loadUsers();
+      if (canAudit) void loadAudit(0, auditAction);
+    } catch (e: any) {
+      showToast(e?.message || "Не удалось убрать из компании", "error");
     } finally {
       setBusyId(null);
     }
@@ -290,21 +275,10 @@ export default function TeamPage() {
     }
   };
 
-  const roleBadge = (role: string) => (
-    <span
-      className={`text-[10px] font-medium px-2 py-0.5 rounded-full border whitespace-nowrap ${
-        role === "manager" || role === "superadmin"
-          ? "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
-          : "bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700"
-      }`}
-    >
-      {ROLE_LABELS[role] || role}
-    </span>
-  );
-
   const employeeCell = (u: TeamUser) => {
-    if (u.role === "manager" || u.role === "superadmin" || u.ai_employee_scope === "all") return "Все";
-    const names = (u.employee_ids || []).map((id) => AI_EMPLOYEES.find((e) => e.id === id)?.name || id);
+    const ids = u.membership?.employee_ids;
+    if (ids === "*") return "Все";
+    const names = (ids || []).map((id) => AI_EMPLOYEES.find((e) => e.id === id)?.name || id);
     return names.length ? names.join(", ") : "Нет доступа";
   };
 
@@ -320,16 +294,21 @@ export default function TeamPage() {
               Команда и доступы
             </h1>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-              Кто работает в кабинете и в Telegram-боте{" "}
-              <a
-                href={`https://t.me/${botUsername}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-400 hover:underline"
-              >
-                @{botUsername}
-                <ExternalLink className="h-2.5 w-2.5" />
-              </a>
+              Кто работает с компанией «{tenant?.business_name}» в кабинете и в Telegram-боте
+              {botUsername && (
+                <>
+                  {" "}
+                  <a
+                    href={`https://t.me/${botUsername}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-400 hover:underline"
+                  >
+                    @{botUsername}
+                    <ExternalLink className="h-2.5 w-2.5" />
+                  </a>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -351,7 +330,7 @@ export default function TeamPage() {
       {/* Users table */}
       <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-          <span>Пользователи ({users.length})</span>
+          <span>Люди компании ({users.length})</span>
           <button onClick={() => void loadUsers()} className="flex items-center gap-1 hover:text-zinc-900 dark:hover:text-white">
             <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
             <span>Обновить</span>
@@ -362,8 +341,7 @@ export default function TeamPage() {
             <thead>
               <tr className="text-left text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
                 <th className="px-4 py-2 font-semibold">Имя</th>
-                <th className="px-3 py-2 font-semibold">Роль</th>
-                <th className="px-3 py-2 font-semibold">ИИ-сотрудники</th>
+                                <th className="px-3 py-2 font-semibold">ИИ-сотрудники</th>
                 <th className="px-3 py-2 font-semibold">Права</th>
                 <th className="px-3 py-2 font-semibold">Telegram</th>
                 <th className="px-3 py-2 font-semibold">Статус</th>
@@ -373,12 +351,12 @@ export default function TeamPage() {
             <tbody>
               {users.map((u) => {
                 const tg = tgInfo(u);
-                const n = overrideCount(u);
-                const locked = protectedRow(u);
+                const active = u.membership?.is_active !== false && u.is_active;
+                const nCaps = u.membership?.permissions?.length || 0;
                 return (
                   <tr
                     key={u.id}
-                    className={`border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 ${u.is_active ? "" : "opacity-60"}`}
+                    className={`border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 ${active ? "" : "opacity-60"}`}
                   >
                     <td className="px-4 py-3">
                       <div className="font-semibold text-zinc-900 dark:text-white">{u.username}</div>
@@ -386,18 +364,18 @@ export default function TeamPage() {
                         <div className="text-[11px] text-zinc-500 dark:text-zinc-400">{u.email}</div>
                       )}
                     </td>
-                    <td className="px-3 py-3">{roleBadge(u.role)}</td>
                     <td className="px-3 py-3 text-zinc-700 dark:text-zinc-300">{employeeCell(u)}</td>
                     <td className="px-3 py-3 text-zinc-700 dark:text-zinc-300">
-                      {n > 0 ? (
-                        <span className="text-amber-700 dark:text-amber-400 font-medium">Свои ({n})</span>
-                      ) : (
-                        "По роли"
-                      )}
+                      <span title={(u.membership?.permissions || []).map((c) => CAP_LABELS[c]?.title || c).join(", ")}>
+                        {nCaps > 0 ? `${nCaps} из ${ALL_CAPS.length}` : "Нет прав"}
+                      </span>
                     </td>
                     <td className="px-3 py-3">
                       {tg ? (
-                        <span className="text-emerald-700 dark:text-emerald-400">{tg.name}</span>
+                        <div>
+                          <span className="text-emerald-700 dark:text-emerald-400">{tg.name}</span>
+                          {tg.bot && <div className="text-[11px] text-zinc-500 dark:text-zinc-400">@{tg.bot}</div>}
+                        </div>
                       ) : (
                         <span className="text-zinc-500 dark:text-zinc-400">Не привязан</span>
                       )}
@@ -405,26 +383,26 @@ export default function TeamPage() {
                     <td className="px-3 py-3">
                       <span
                         className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${
-                          u.is_active
+                          active
                             ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
                             : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200 dark:border-zinc-700"
                         }`}
                       >
-                        {u.is_active ? "Активен" : "Отключён"}
+                        {active ? "Активен" : "Отключён"}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
                         <button
                           onClick={() => copyInvite(u)}
-                          disabled={busyId === u.id || !u.is_active}
+                          disabled={busyId === u.id || !active}
                           className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 disabled:opacity-50"
                           title="Одноразовая ссылка: человек откроет её в Telegram и привяжется к этому пользователю"
                         >
                           {copiedId === u.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                           <span>{copiedId === u.id ? "Скопировано" : "Ссылка для Telegram"}</span>
                         </button>
-                        {!locked && (
+                        {true && (
                           <>
                             <button
                               onClick={() => openEdit(u)}
@@ -437,12 +415,21 @@ export default function TeamPage() {
                                 onClick={() => setActive(u, !u.is_active)}
                                 disabled={busyId === u.id}
                                 className={`px-2 py-1 rounded-lg text-[11px] font-medium ${
-                                  u.is_active
+                                  active
                                     ? "text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400"
                                     : "text-amber-700 dark:text-amber-400 font-semibold"
                                 }`}
                               >
-                                {u.is_active ? "Отключить" : "Включить"}
+                                {active ? "Отключить" : "Включить"}
+                              </button>
+                            )}
+                            {u.id !== me?.id && (
+                              <button
+                                onClick={() => removeFromCompany(u)}
+                                disabled={busyId === u.id}
+                                className="px-2 py-1 rounded-lg text-[11px] font-medium text-zinc-500 hover:text-rose-600 dark:hover:text-rose-400"
+                              >
+                                Убрать из компании
                               </button>
                             )}
                           </>
@@ -454,8 +441,8 @@ export default function TeamPage() {
               })}
               {!loading && users.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-zinc-500 dark:text-zinc-400">
-                    Пока нет пользователей
+                  <td colSpan={6} className="px-4 py-8 text-center text-zinc-500 dark:text-zinc-400">
+                    В компании пока никого нет
                   </td>
                 </tr>
               )}
@@ -469,7 +456,7 @@ export default function TeamPage() {
         <div className="rounded-2xl border border-amber-300/60 dark:border-amber-500/30 bg-amber-50/60 dark:bg-amber-950/20 p-4 space-y-3">
           <div>
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
-              Telegram без пользователя кабинета ({legacy.length})
+              Telegram без аккаунта кабинета ({legacy.length})
             </h3>
             <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5">
               Эти участники подключены к боту по старой схеме и не привязаны к пользователю. Бот им не отвечает. Удалите
@@ -576,7 +563,7 @@ export default function TeamPage() {
           <div className="w-full sm:max-w-lg max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 sm:p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
-                {form.id ? `Пользователь «${form.username}»` : "Новый пользователь"}
+                {form.id ? `Доступ: «${form.username}»` : "Добавить в компанию"}
               </h3>
               <button onClick={() => setForm(null)} className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200">
                 <X className="h-4 w-4" />
@@ -591,7 +578,7 @@ export default function TeamPage() {
 
             {isSelf && (
               <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Свою роль, доступы и права менять нельзя, только пароль.
+                Свои права и доступы менять нельзя, только пароль.
               </p>
             )}
 
@@ -620,7 +607,7 @@ export default function TeamPage() {
             </div>
 
             <label className="block space-y-1 text-xs font-medium text-zinc-700 dark:text-zinc-300">
-              {form.id ? "Новый пароль (оставьте пустым, чтобы не менять)" : "Пароль (не короче 8 символов)"}
+              {form.id ? "Новый пароль (оставьте пустым, чтобы не менять)" : "Пароль (только для нового аккаунта, не короче 8 символов)"}
               <input
                 className={inputCls}
                 type="password"
@@ -630,39 +617,43 @@ export default function TeamPage() {
               />
             </label>
 
-            {!(isSelf || (editing && protectedRow(editing))) && (
-              <>
-                <label className="block space-y-1 text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                  Роль
-                  <select
-                    className={inputCls}
-                    value={form.role}
-                    onChange={(e) => setForm({ ...form, role: e.target.value as "manager" | "employee" })}
-                  >
-                    <option value="employee">Сотрудник: общается с Верой и управляет диалогами</option>
-                    <option value="manager">Менеджер: ещё и настройки, команда, журнал</option>
-                  </select>
-                </label>
+            {!form.id && (
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                Если такой логин или email уже есть, человек просто получит доступ к этой компании, пароль не меняется.
+              </p>
+            )}
 
-                {form.role === "employee" ? (
-                  <div className="space-y-2">
-                    <div className="text-xs font-medium text-zinc-700 dark:text-zinc-300">Доступ к ИИ-сотрудникам</div>
-                    <label className="flex items-center gap-2 text-xs text-zinc-800 dark:text-zinc-200">
-                      <input
-                        type="checkbox"
-                        className="accent-amber-500"
-                        checked={form.scope === "all"}
-                        onChange={(e) => setForm({ ...form, scope: e.target.checked ? "all" : "selected" })}
-                      />
-                      Все ИИ-сотрудники
-                    </label>
-                    {form.scope === "selected" &&
-                      AI_EMPLOYEES.map((emp) => (
-                        <label key={emp.id} className="flex items-center gap-2 text-xs text-zinc-800 dark:text-zinc-200 pl-5">
+            {!isSelf && (
+              <>
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-zinc-700 dark:text-zinc-300">Доступ к ИИ-сотрудникам</div>
+                  <label
+                    className={`flex items-center gap-2 text-xs text-zinc-800 dark:text-zinc-200 ${
+                      !hasEmployee("*") && !isSuper ? "opacity-50" : ""
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="accent-amber-500"
+                      checked={form.allEmployees}
+                      disabled={!isSuper && !hasEmployee("*")}
+                      onChange={(e) => setForm({ ...form, allEmployees: e.target.checked })}
+                    />
+                    Все ИИ-сотрудники
+                  </label>
+                  {!form.allEmployees &&
+                    AI_EMPLOYEES.map((emp) => {
+                      const lacks = !isSuper && !hasEmployee(emp.id);
+                      return (
+                        <label
+                          key={emp.id}
+                          className={`flex items-center gap-2 text-xs text-zinc-800 dark:text-zinc-200 pl-5 ${lacks ? "opacity-50" : ""}`}
+                        >
                           <input
                             type="checkbox"
                             className="accent-amber-500"
                             checked={form.employeeIds.includes(emp.id)}
+                            disabled={lacks}
                             onChange={(e) =>
                               setForm({
                                 ...form,
@@ -674,26 +665,15 @@ export default function TeamPage() {
                           />
                           {emp.name}
                         </label>
-                      ))}
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    Менеджер всегда имеет доступ ко всем ИИ-сотрудникам.
-                  </p>
-                )}
+                      );
+                    })}
+                </div>
 
                 <div className="space-y-2">
-                  <div className="text-xs font-medium text-zinc-700 dark:text-zinc-300">Права</div>
+                  <div className="text-xs font-medium text-zinc-700 dark:text-zinc-300">Права в этой компании</div>
                   <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800/60">
                     {ALL_CAPS.map((cap) => {
-                      const on = effectiveOn(form, cap);
-                      const preset = ROLE_PRESETS[form.role].includes(cap);
                       const lacks = !isSuper && !can(cap);
-                      const tag = form.grant.includes(cap)
-                        ? "выдано"
-                        : form.revoke.includes(cap)
-                        ? "отозвано"
-                        : "по роли";
                       return (
                         <label
                           key={cap}
@@ -703,7 +683,7 @@ export default function TeamPage() {
                           <input
                             type="checkbox"
                             className="accent-amber-500 mt-0.5"
-                            checked={on}
+                            checked={form.caps.includes(cap)}
                             disabled={lacks}
                             onChange={() => toggleCap(cap)}
                           />
@@ -712,18 +692,6 @@ export default function TeamPage() {
                               {CAP_LABELS[cap].title}
                             </span>
                             <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">{CAP_LABELS[cap].hint}</span>
-                          </span>
-                          <span
-                            className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full border whitespace-nowrap ${
-                              tag === "по роли"
-                                ? "text-zinc-500 border-zinc-200 dark:border-zinc-700"
-                                : tag === "выдано"
-                                ? "text-emerald-700 dark:text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
-                                : "text-rose-700 dark:text-rose-400 border-rose-500/30 bg-rose-500/10"
-                            }`}
-                            title={preset ? "По роли право есть" : "По роли права нет"}
-                          >
-                            {tag}
                           </span>
                         </label>
                       );

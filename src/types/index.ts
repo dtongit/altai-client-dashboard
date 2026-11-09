@@ -3,9 +3,12 @@ export interface User {
   username: string;
   email: string;
   is_admin: boolean;
+  /** Global demo-manager flag (spec M4); absent on old backends, then `role === "demo_manager"`. */
+  is_demo_manager?: boolean;
   /** Normalized by the backend: superadmin | manager | employee | demo_manager. Old backends send client_admin etc. */
-  role: "superadmin" | "manager" | "employee" | "demo_manager" | "client_admin" | "client_operator" | "tester" | (string & {});
-  tenant_id: string;
+  role?: "demo_manager" | "superadmin" | "manager" | "employee" | "client_admin" | "client_operator" | "tester" | (string & {});
+  /** Default tenant after login only; access comes from memberships (tenant_memberships). */
+  tenant_id?: string;
   /** Columns added by roles epic #75 (/admin users rows). */
   permissions?: UserPermissionOverrides | Record<string, never>;
   ai_employee_scope?: "all" | "selected";
@@ -51,26 +54,42 @@ export interface AuditLogEntry {
   created_at: string;
 }
 
-/** Item of GET /users (Users and access page). */
+/** Row of /admin/crud/tenant-memberships (multi-tenant accounts, epic #324). */
+export interface TenantMembership {
+  user_id: string;
+  tenant_id: string;
+  /** JSON array of Cap ids. */
+  permissions: Cap[] | string;
+  /** JSON array of AI employee ids, or "*" for all. */
+  employee_ids: string[] | string;
+  is_active: boolean;
+  created_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** Item of GET /users: one membership of the current company. */
 export interface TeamUser {
   id: string;
   username: string;
   email: string | null;
-  role: string;
+  /** Account status (global). */
   is_active: boolean;
-  ai_employee_scope: "all" | "selected";
-  employee_ids: string[];
-  permissions: UserPermissionOverrides;
-  effective_caps: Cap[];
-  /** Linked Telegram member, if any. Field names are read defensively (see normalizeTelegram). */
+  is_admin?: false;
+  membership: {
+    permissions: Cap[];
+    /** "*" = all AI employees (including later ones). */
+    employee_ids: "*" | string[];
+    is_active: boolean;
+  };
+  /** Linked Telegram member, if any. Field names are read defensively. */
   telegram?: {
     member_id?: string;
-    id?: string;
     username?: string | null;
     telegram_username?: string | null;
     display_name?: string | null;
+    bot_username?: string | null;
   } | null;
-  created_at?: string | null;
 }
 
 export interface Tenant {
@@ -140,8 +159,19 @@ export interface TeamMember {
   is_active: boolean;
   /** Linked dashboard user (roles epic #75); null/absent = legacy unlinked member. */
   user_id?: string | null;
+  /** Team bot the member talks to: "default" or "tenant:{tenant_id}" (row of tenant_team_members, #324). */
+  bot_id?: string;
   created_at: string;
   updated_at: string;
+}
+
+/** Superadmin team-bot state of a tenant (POST/DELETE /api/v1/admin/tenants/{id}/team-bot). */
+export interface TeamBotAdminResponse {
+  ok: boolean;
+  bot_id?: string;
+  username?: string | null;
+  webhook_url?: string;
+  detail?: string;
 }
 
 export interface TeamInviteResponse {

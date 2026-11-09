@@ -48,10 +48,15 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     password: "ChangeMe123!",
     is_active: true,
     is_admin: false,
-    role: "manager", // manager | employee | superadmin | demo_manager (demo_manager: tenant_id = null)
-    ai_employee_scope: "all", // all | selected (then rows in user-employee-access)
-    permissions: {}, // {"grant": [cap...], "revoke": [cap...]} on top of the role preset
+    role: "", // "" or "demo_manager" (global flag); per-company access = rows of tenant-memberships
+    tenant_id: "your_tenant_id", // default tenant after login only
+  },
+  "tenant-memberships": {
+    user_id: "user_id",
     tenant_id: "your_tenant_id",
+    permissions: ["master_switch", "bot_changes"], // master_switch|settings|instructions|manage_users|audit_log|alerts|bot_changes
+    employee_ids: "*", // "*" = all AI employees, or ["vera"]
+    is_active: true,
   },
   "openrouter-models": {
     id: "openai/gpt-4o-mini",
