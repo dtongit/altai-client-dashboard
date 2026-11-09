@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Tenant } from "@/types";
-import { api, getStoredAuth, setAuthToken, setSelectedTenant } from "@/lib/api";
+import { api, clearSelectedTenant, getStoredAuth, setAuthToken, setSelectedTenant } from "@/lib/api";
 import { deriveCaps, globalRole, RoleId } from "@/lib/permissions";
 
 interface AvailableTenant {
@@ -66,7 +66,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (savedToken) {
         setTokenState(savedToken);
         try {
-          const res = await api.getMe();
+          let res;
+          try {
+            res = await api.getMe();
+          } catch (e) {
+            // The remembered company may no longer be open to this account (membership removed): forget it and
+            // let the backend pick the default company instead of logging the user out.
+            if (!getStoredAuth().tenantId) throw e;
+            clearSelectedTenant();
+            res = await api.getMe();
+          }
+          if (res.ok && res.tenant) setSelectedTenant(res.tenant.id);
           if (res.ok && res.user && res.tenant) {
             setUser(res.user);
             setTenant(res.tenant);

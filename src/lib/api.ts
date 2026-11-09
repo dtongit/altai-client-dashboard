@@ -72,6 +72,13 @@ export function setSelectedTenant(tenantId: string) {
   }
 }
 
+export function clearSelectedTenant() {
+  currentTenantId = null;
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("altai_tenant");
+  }
+}
+
 export function getStoredAuth() {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("altai_token");
