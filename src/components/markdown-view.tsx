@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { safeHttpUrl } from "@/lib/safe-url";
 
 interface MarkdownViewProps {
   content: string;
@@ -264,10 +265,15 @@ function renderInline(text: string): React.ReactNode {
     }
     const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
     if (linkMatch) {
+      const safeHref = safeHttpUrl(linkMatch[2]);
+      if (!safeHref) {
+        // javascript:, data:, vbscript:, relative etc. are shown as plain text, never as a link
+        return <span key={i}>{part}</span>;
+      }
       return (
         <a
           key={i}
-          href={linkMatch[2]}
+          href={safeHref}
           target="_blank"
           rel="noreferrer"
           className="text-amber-600 dark:text-amber-400 hover:underline font-medium"

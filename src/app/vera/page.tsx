@@ -1,5 +1,7 @@
 "use client";
 
+import { safeHttpUrl } from "@/lib/safe-url";
+
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -42,8 +44,9 @@ export default function VeraOverviewPage() {
     setConnectingTg(true);
     try {
       const invite = await api.createTeamInvite();
-      if (invite?.invite_url) {
-        window.open(invite.invite_url, "_blank");
+      const inviteUrl = safeHttpUrl(invite?.invite_url);
+      if (inviteUrl) {
+        window.open(inviteUrl, "_blank", "noopener,noreferrer");
       }
     } catch (e) {
       console.error("Failed to generate invite link:", e);

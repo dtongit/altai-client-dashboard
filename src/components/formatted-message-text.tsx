@@ -1,4 +1,5 @@
 import React from "react";
+import { safeHttpUrl } from "@/lib/safe-url";
 
 const LINK_REGEX =
   /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|((?:https?:\/\/|www\.)[^\s<]+[^<.,:;"')\]\s])/g;
@@ -22,7 +23,12 @@ function renderTextWithLinks(text: string, isAssistant: boolean): React.ReactNod
     const key = `link_${match.index}`;
     if (match[1] && match[2]) {
       const label = match[1];
-      const href = match[2];
+      const href = safeHttpUrl(match[2]);
+      if (!href) {
+        nodes.push(match[0]);
+        lastIndex = match.index + match[0].length;
+        continue;
+      }
       nodes.push(
         <a
           key={key}
@@ -41,7 +47,12 @@ function renderTextWithLinks(text: string, isAssistant: boolean): React.ReactNod
       );
     } else if (match[3]) {
       const url = match[3];
-      const href = url.startsWith("http") ? url : `https://${url}`;
+      const href = safeHttpUrl(url.startsWith("http") ? url : `https://${url}`);
+      if (!href) {
+        nodes.push(url);
+        lastIndex = match.index + match[0].length;
+        continue;
+      }
       nodes.push(
         <a
           key={key}

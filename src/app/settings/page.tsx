@@ -1,5 +1,7 @@
 "use client";
 
+import { safeHttpUrl } from "@/lib/safe-url";
+
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
@@ -139,7 +141,7 @@ export default function SettingsPage() {
     return "https://disk.yandex.ru/client/disk";
   };
 
-  const crmUrl = getCrmUrl();
+  const crmUrl = safeHttpUrl(getCrmUrl());
 
   return (
     <div className="p-6 sm:p-8 space-y-8 max-w-5xl mx-auto">

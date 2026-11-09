@@ -1,5 +1,7 @@
 "use client";
 
+import { safeHttpUrl } from "@/lib/safe-url";
+
 import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
@@ -1748,7 +1750,14 @@ export default function EmployeeStudioPage() {
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             {node.media_attachments.map((m: any, idx: number) => {
-                              const url = typeof m === "string" ? m : m.url;
+                              const url = safeHttpUrl(typeof m === "string" ? m : m?.url);
+                              if (!url) {
+                                return (
+                                  <div key={idx} className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-2 text-[10px] text-zinc-500 break-all">
+                                    {String(typeof m === "string" ? m : m?.url ?? "")}
+                                  </div>
+                                );
+                              }
                               return (
                                 <a
                                   key={idx}
