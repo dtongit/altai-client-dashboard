@@ -123,7 +123,7 @@ export interface OverviewKPIs {
   conversion_rate_pct: number;
   average_latency_ms: number;
   total_tokens: number;
-  estimated_cost_rub: number;
+  total_cost_usd: number;
   estimated_payroll_saved_rub: number;
 }
 
@@ -248,7 +248,7 @@ export interface TeamBotLogEvent {
   llm_model?: string | null;
   prompt_tokens?: number | null;
   completion_tokens?: number | null;
-  estimated_cost_rub?: number | null;
+  cost_usd?: number | null;
   total_latency_ms?: number | null;
   tools_executed?: string[] | any;
   created_at: string;
@@ -282,7 +282,7 @@ export interface TeamTraceStep {
   output: any;
   prompt_tokens: number;
   completion_tokens: number;
-  cost_rub: number;
+  cost_usd: number;
   latency_ms: number;
   error: string | null;
   changeset_id: string | null;
@@ -305,7 +305,7 @@ export interface TeamTraceModelTotals {
   calls: number;
   prompt_tokens: number;
   completion_tokens: number;
-  cost_rub: number;
+  cost_usd: number;
 }
 
 /** A turn of the trace: the `team_bot_logs` row plus its ordered steps. */
@@ -318,7 +318,7 @@ export interface TeamTraceTurn extends TeamBotLogEvent {
     llm_calls: number;
     prompt_tokens: number;
     completion_tokens: number;
-    cost_rub: number;
+    cost_usd: number;
     models: TeamTraceModelTotals[];
   };
   steps: TeamTraceStep[];
@@ -338,7 +338,7 @@ export interface TeamTraceResponse {
     llm_calls: number;
     prompt_tokens: number;
     completion_tokens: number;
-    cost_rub: number;
+    cost_usd: number;
     models: TeamTraceModelTotals[];
   };
   items: Array<TeamTraceTurn | TeamTraceEvent>;
@@ -653,7 +653,7 @@ export interface AdminInteractionLogTurn {
   ttft_ms: number | null;
   prompt_tokens: number;
   completion_tokens: number;
-  estimated_cost_rub: number;
+  cost_usd: number;
   tools_executed: AdminToolExecution[];
   llm_steps: AdminLLMStep[];
   error_type?: string | null;
@@ -672,7 +672,7 @@ export interface AdminChatTraceResponse {
   turn_count: number;
   total_prompt_tokens: number;
   total_completion_tokens: number;
-  total_cost_rub: number;
+  total_cost_usd: number;
   turns: AdminInteractionLogTurn[];
 }
 

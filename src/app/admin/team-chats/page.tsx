@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { TeamBotConversation, TeamBotLogEvent } from "@/types";
-import { formatDateTime, formatRelativeTime } from "@/lib/utils";
+import { formatDateTime, formatRelativeTime, fmtUsd } from "@/lib/utils";
 import TeamTraceView from "./trace-view";
 import {
   ArrowLeft,
@@ -622,10 +622,10 @@ export default function AdminTeamChatsPage() {
                           </span>
                         ) : null}
 
-                        {ev.estimated_cost_rub !== null && ev.estimated_cost_rub !== undefined && ev.estimated_cost_rub > 0 && (
+                        {ev.cost_usd !== null && ev.cost_usd !== undefined && ev.cost_usd > 0 && (
                           <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                             <Coins className="h-2.5 w-2.5" />
-                            <span>{ev.estimated_cost_rub.toFixed(3)} ₽</span>
+                            <span>{fmtUsd(ev.cost_usd)}</span>
                           </span>
                         )}
 

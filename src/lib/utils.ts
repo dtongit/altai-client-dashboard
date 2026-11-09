@@ -49,3 +49,11 @@ export function formatDateTime(dateString: string | null): string {
     return dateString;
   }
 }
+
+/** Format an LLM cost in USD: `$0.0123`; tiny non-zero values show `<$0.0001`. */
+export function fmtUsd(v: number | null | undefined, digits = 4): string {
+  const n = v || 0;
+  const min = Math.pow(10, -digits);
+  if (n > 0 && n < min) return `<$${min.toFixed(digits)}`;
+  return `$${n.toFixed(digits)}`;
+}

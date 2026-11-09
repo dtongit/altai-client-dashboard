@@ -9,7 +9,7 @@ import {
   TeamTraceStep,
   TeamTraceTurn,
 } from "@/types";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, fmtUsd } from "@/lib/utils";
 import {
   AlertTriangle,
   ChevronDown,
@@ -28,7 +28,6 @@ import {
 // Formatting helpers
 // ---------------------------------------------------------------------------
 
-const fmtRub = (v: number, digits = 4) => `${(v || 0).toFixed(digits)} ₽`;
 const fmtTok = (v: number) => (v || 0).toLocaleString("ru-RU");
 
 /** `~anthropic/claude-haiku-latest` -> `haiku`. The full id stays in the tooltip. */
@@ -127,8 +126,8 @@ function Usage({ s }: { s: TeamTraceStep }) {
           {fmtTok(s.prompt_tokens)} in / {fmtTok(s.completion_tokens)} out
         </span>
       )}
-      {s.cost_rub > 0 && (
-        <span className="text-emerald-600 dark:text-emerald-400 font-mono font-medium text-[11px]">{fmtRub(s.cost_rub)}</span>
+      {s.cost_usd > 0 && (
+        <span className="text-emerald-600 dark:text-emerald-400 font-mono font-medium text-[11px]">{fmtUsd(s.cost_usd)}</span>
       )}
       {s.latency_ms > 0 && (
         <span className="inline-flex items-center gap-1 text-zinc-500 font-mono text-[11px]">
@@ -365,7 +364,7 @@ function TurnCard({ turn }: { turn: TeamTraceTurn }) {
   const models = turn.has_trace ? t.models.map((m) => m.model) : turn.llm_model ? [turn.llm_model] : [];
   const tokensIn = turn.has_trace ? t.prompt_tokens : turn.prompt_tokens || 0;
   const tokensOut = turn.has_trace ? t.completion_tokens : turn.completion_tokens || 0;
-  const cost = turn.has_trace ? t.cost_rub : turn.estimated_cost_rub || 0;
+  const cost = turn.has_trace ? t.cost_usd : turn.cost_usd || 0;
   const csStatus = lastChangesetStatus(turn.steps);
   let llmNo = 0;
 
@@ -391,7 +390,7 @@ function TurnCard({ turn }: { turn: TeamTraceTurn }) {
                 {fmtTok(tokensIn)} / {fmtTok(tokensOut)}
               </span>
             )}
-            {cost > 0 && <span className="text-emerald-600 dark:text-emerald-400 font-mono font-medium text-[11px]">{fmtRub(cost)}</span>}
+            {cost > 0 && <span className="text-emerald-600 dark:text-emerald-400 font-mono font-medium text-[11px]">{fmtUsd(cost)}</span>}
             {(turn.total_latency_ms || 0) > 0 && (
               <span className="inline-flex items-center gap-1 text-zinc-500 font-mono text-[11px]">
                 <Clock className="h-3 w-3 text-amber-500" />
@@ -481,7 +480,7 @@ function ModelChip({ m }: { m: TeamTraceModelTotals }) {
       className={`${badgeBase} bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20`}
       title={`${m.model}: ${fmtTok(m.prompt_tokens)} in / ${fmtTok(m.completion_tokens)} out`}
     >
-      {shortModel(m.model)} · {callsRu(m.calls)} · {fmtRub(m.cost_rub, 2)}
+      {shortModel(m.model)} · {callsRu(m.calls)} · {fmtUsd(m.cost_usd, 4)}
     </span>
   );
 }
@@ -529,7 +528,7 @@ export default function TeamTraceView({ telegramUserId, tenantId }: { telegramUs
                 </span>
                 <span className="inline-flex items-center gap-1 font-mono font-semibold text-emerald-600 dark:text-emerald-400">
                   <Coins className="h-3.5 w-3.5" />
-                  {fmtRub(t.cost_rub, 2)}
+                  {fmtUsd(t.cost_usd, 4)}
                 </span>
               </div>
               {t.models.length > 0 && (

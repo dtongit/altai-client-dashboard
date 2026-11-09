@@ -12,7 +12,7 @@ import {
   AdminToolExecution,
 } from "@/types";
 import { ChannelBadge } from "@/components/channel-badge";
-import { formatDateTime, formatRelativeTime } from "@/lib/utils";
+import { formatDateTime, formatRelativeTime, fmtUsd } from "@/lib/utils";
 import {
   ArrowLeft,
   Copy,
@@ -551,7 +551,7 @@ function AdminChatsContent() {
                     <span>Стоимость LLM</span>
                   </div>
                   <div className="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                    {trace.total_cost_rub} ₽
+                    {fmtUsd(trace.total_cost_usd, 4)}
                   </div>
                 </div>
 
@@ -712,7 +712,7 @@ function AdminChatsContent() {
                               <span>{turn.prompt_tokens + turn.completion_tokens} tok</span>
                             </span>
                             <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-mono font-medium">
-                              <span>{turn.estimated_cost_rub.toFixed(4)} ₽</span>
+                              <span>{fmtUsd(turn.cost_usd, 4)}</span>
                             </span>
                             <span
                               className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
