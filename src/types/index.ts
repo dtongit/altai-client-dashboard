@@ -389,6 +389,27 @@ export interface ChatSessionItem {
     is_qualified?: boolean;
   } | null;
   crm_info?: string | null;
+  /** Vera escalated and nobody on our side has answered since (#166). */
+  needs_attention?: boolean;
+  escalated_at?: string | null;
+  escalation_reason?: string | null;
+}
+
+export interface ChatsCounts {
+  all: number;
+  attention: number;
+  paused: number;
+  by_channel: Record<string, number>;
+}
+
+export interface ChatsListResponse {
+  ok: boolean;
+  total: number;
+  offset?: number;
+  limit?: number;
+  has_more?: boolean;
+  chats: ChatSessionItem[];
+  counts?: ChatsCounts;
 }
 
 export interface ChatTurn {

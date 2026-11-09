@@ -1,6 +1,6 @@
 import {
   ChatDetail,
-  ChatSessionItem,
+  ChatsListResponse,
   KnowledgeResponse,
   OverviewData,
   SystemStatusResponse,
@@ -163,7 +163,7 @@ export const api = {
     search?: string;
     limit?: number;
     offset?: number;
-  } = {}): Promise<{ ok: boolean; total: number; chats: ChatSessionItem[] }> {
+  } = {}): Promise<ChatsListResponse> {
     const q = new URLSearchParams();
     if (params.channel) q.append("channel", params.channel);
     if (params.status) q.append("status", params.status);
@@ -172,7 +172,7 @@ export const api = {
     if (params.offset) q.append("offset", String(params.offset));
 
     const qs = q.toString() ? `?${q.toString()}` : "";
-    return request<{ ok: boolean; total: number; chats: ChatSessionItem[] }>(`/chats${qs}`);
+    return request<ChatsListResponse>(`/chats${qs}`);
   },
 
   async getChatDetail(sessionId: string): Promise<ChatDetail> {
