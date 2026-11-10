@@ -826,6 +826,26 @@ export interface TgBusinessConnection {
   updated_at?: string | null;
 }
 
+/** Сводка одного чата для списка чатов (#344). Админ-ресурс `chat-sessions`, только чтение; ядро пересчитывает её при каждой записи в interaction_logs. */
+export interface ChatSessionSummary {
+  session_id: string;
+  tenant_id: string;
+  channel: string;
+  user_id: string;
+  turns: number;
+  last_activity?: string | null;
+  last_message?: string | null;
+  last_response?: string | null;
+  last_status: string;
+  /** Последняя эскалация чата, если была. */
+  escalated_at?: string | null;
+  escalation_reason?: string | null;
+  /** Ответ человека или отправленный ответ Веры после эскалации. */
+  answered_at?: string | null;
+  needs_attention: boolean;
+  updated_at?: string | null;
+}
+
 /** Карточка лида: что Vera узнала о клиенте в чате (#265). Админ-ресурс `lead-cards`, только чтение. */
 export interface LeadCard {
   session_id: string;
