@@ -105,7 +105,7 @@ function buildTurnTimeline(
     items.push({
       id: `${turn.id}_llm_legacy`,
       type: "llm_step",
-      title: `Запрос и ответ LLM (${turn.llm_model})`,
+      title: `Трейс LLM удалён по сроку хранения или не записан (${turn.llm_model})`,
       badge: turn.llm_model,
     });
   }
@@ -716,7 +716,7 @@ function AdminChatsContent() {
                             </span>
                             <span
                               className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                turn.status === "success"
+                                turn.status === "success" || turn.status === "no_reply"
                                   ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
                                   : "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
                               }`}

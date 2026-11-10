@@ -205,6 +205,13 @@ function ChangesetDetail({ step }: { step: TeamTraceStep }) {
 }
 
 function StepView({ step, n, llmNo }: { step: TeamTraceStep; n: number; llmNo: number }) {
+  if (step.input?.trace_removed) {
+    return (
+      <StepFrame n={n} icon={<FileText className="h-3.5 w-3.5" />} title="Трейс удалён">
+        <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Подробности шага удалены по сроку хранения.</div>
+      </StepFrame>
+    );
+  }
   if (step.kind === "prompt") {
     const tools: string[] = step.input?.tools || [];
     return (

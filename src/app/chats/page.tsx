@@ -683,6 +683,13 @@ export default function ChatsPage() {
                             <span>Сообщение принято, Вера не отвечает: диалог у менеджера</span>
                           </span>
                         </div>
+                      ) : turn.status === "no_reply" ? (
+                        <div className="flex items-center justify-center py-2">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 text-[11px] font-medium">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            <span>Диалог завершён, Вера не ответила</span>
+                          </span>
+                        </div>
                       ) : turn.status === "channel_off" ? (
                         <div className="flex items-center justify-center py-2">
                           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 text-[11px] font-medium">
