@@ -13,6 +13,8 @@ export interface User {
   permissions?: UserPermissionOverrides | Record<string, never>;
   ai_employee_scope?: "all" | "selected";
   created_by?: string | null;
+  /** Bumped by the backend on password change and logout; older session tokens stop working (#160). Read-only. */
+  token_version?: number;
   updated_at?: string | null;
   is_active?: boolean;
 }

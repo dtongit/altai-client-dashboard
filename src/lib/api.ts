@@ -141,6 +141,15 @@ export const api = {
     return res;
   },
 
+  /** Revokes every session of the account on the server (#160); errors are ignored, the caller clears local state. */
+  async logout() {
+    try {
+      await request<{ ok: boolean }>("/auth/logout", { method: "POST" });
+    } catch {
+      /* already signed out or offline */
+    }
+  },
+
   async getMe() {
     return request<{
       ok: boolean;
@@ -334,11 +343,14 @@ export const api = {
       is_active?: boolean;
       password?: string;
     }
-  ): Promise<{ ok: boolean; user?: TeamUser }> {
-    return request(`/users/${encodeURIComponent(userId)}`, {
+  ): Promise<{ ok: boolean; user?: TeamUser; token?: string }> {
+    const res = await request<{ ok: boolean; user?: TeamUser; token?: string }>(`/users/${encodeURIComponent(userId)}`, {
       method: "PATCH",
       body: JSON.stringify(data),
     });
+    // Own password change revokes every session, this one too; the backend returns a fresh token (#160).
+    if (res.token) setAuthToken(res.token, currentTenantId);
+    return res;
   },
 
   /** Removes the membership; the account stays. */

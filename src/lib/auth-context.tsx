@@ -122,14 +122,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    setAuthToken(null, null);
-    setUser(null);
-    setTenant(null);
-    setAvailableTenants([]);
-    setTokenState(null);
-    if (typeof window !== "undefined") {
-      window.location.href = "/login";
-    }
+    // Revoke the session on the server first (it needs the token), then clear local state either way.
+    void api.logout().finally(() => {
+      setAuthToken(null, null);
+      setUser(null);
+      setTenant(null);
+      setAvailableTenants([]);
+      setTokenState(null);
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    });
   };
 
   const refreshTenant = async () => {
