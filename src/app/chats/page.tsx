@@ -335,7 +335,7 @@ export default function ChatsPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Поиск по сообщениям, имени, телефону..."
-              className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/80 pl-9 pr-4 py-2 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/40"
+              className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/80 pl-9 pr-4 py-2 text-base text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/40"
             />
           </form>
 
@@ -752,7 +752,7 @@ export default function ChatsPage() {
                     onChange={(e) => setOperatorInput(e.target.value)}
                     placeholder="Написать клиенту от имени менеджера (ставит ИИ на паузу)..."
                     disabled={sendingOperatorMsg}
-                    className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    className="flex-1 px-3.5 py-2 text-base rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
                   />
                   <button
                     type="submit"

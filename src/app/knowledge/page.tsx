@@ -937,7 +937,7 @@ export default function EmployeeStudioPage() {
               <select
                 value={moduleCategoryFilter}
                 onChange={(e) => setModuleCategoryFilter(e.target.value)}
-                className="text-xs rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-zinc-800 dark:text-zinc-200"
+                className="text-base rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-zinc-800 dark:text-zinc-200"
               >
                 <option value="all">Все категории</option>
                 <option value="personality">personality (Личность)</option>
@@ -1071,7 +1071,7 @@ export default function EmployeeStudioPage() {
                           }
                           placeholder="special_discounts"
                           disabled={!!selectedModuleSlug}
-                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 font-mono text-xs disabled:opacity-50"
+                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 font-mono text-base disabled:opacity-50"
                         />
                       </div>
                       <div>
@@ -1085,7 +1085,7 @@ export default function EmployeeStudioPage() {
                             setModuleForm({ ...moduleForm, name: e.target.value })
                           }
                           placeholder="Специальные скидки"
-                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
+                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-base"
                         />
                       </div>
                     </div>
@@ -1102,7 +1102,7 @@ export default function EmployeeStudioPage() {
                             setModuleForm({ ...moduleForm, category: e.target.value })
                           }
                           placeholder="custom"
-                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
+                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-base"
                         />
                       </div>
                       <div>
@@ -1114,7 +1114,7 @@ export default function EmployeeStudioPage() {
                           onChange={(e) =>
                             setModuleForm({ ...moduleForm, override_mode: e.target.value })
                           }
-                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
+                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-base"
                         >
                           <option value="replace">replace (Заменить)</option>
                           <option value="append">append (Добавить в конец)</option>
@@ -1135,7 +1135,7 @@ export default function EmployeeStudioPage() {
                               priority_order: parseInt(e.target.value) || 10,
                             })
                           }
-                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
+                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-base"
                         />
                       </div>
                     </div>
@@ -1151,7 +1151,7 @@ export default function EmployeeStudioPage() {
                           setModuleForm({ ...moduleForm, allowed_roles: e.target.value })
                         }
                         placeholder="client, boss, *"
-                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 font-mono text-xs"
+                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 font-mono text-base"
                       />
                     </div>
 
@@ -1166,7 +1166,7 @@ export default function EmployeeStudioPage() {
                         }
                         rows={10}
                         placeholder="Инструкции и правила для модели..."
-                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-3.5 font-mono text-xs leading-relaxed"
+                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-3.5 font-mono text-base leading-relaxed"
                       />
                     </div>
 
@@ -1184,7 +1184,7 @@ export default function EmployeeStudioPage() {
                           })
                         }
                         placeholder="Обновление условий доставки для Москвы"
-                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
+                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-base"
                       />
                     </div>
 
@@ -1346,7 +1346,7 @@ export default function EmployeeStudioPage() {
                 value={kbSearch}
                 onChange={(e) => setKbSearch(e.target.value)}
                 placeholder="Поиск по пути, заголовку или триггерам..."
-                className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs"
+                className="w-full pl-9 pr-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-base"
               />
             </div>
           </div>
@@ -1486,7 +1486,7 @@ export default function EmployeeStudioPage() {
                             setNodeForm({ ...nodeForm, path: e.target.value })
                           }
                           placeholder="catalog/footwear/care"
-                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 font-mono text-xs"
+                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 font-mono text-base"
                         />
                       </div>
                       <div>
@@ -1500,7 +1500,7 @@ export default function EmployeeStudioPage() {
                             setNodeForm({ ...nodeForm, parent_path: e.target.value })
                           }
                           placeholder="catalog/footwear"
-                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 font-mono text-xs"
+                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 font-mono text-base"
                         />
                       </div>
                     </div>
@@ -1517,7 +1517,7 @@ export default function EmployeeStudioPage() {
                             setNodeForm({ ...nodeForm, title: e.target.value })
                           }
                           placeholder="Уход за кожаной обувью"
-                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
+                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-base"
                         />
                       </div>
                       <div>
@@ -1529,7 +1529,7 @@ export default function EmployeeStudioPage() {
                           onChange={(e) =>
                             setNodeForm({ ...nodeForm, tier: e.target.value })
                           }
-                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
+                          className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-base"
                         >
                           <option value="L0">L0 — Ядро диалога (всегда в промпте)</option>
                           <option value="L1">L1 — Индекс тем (для оглавления)</option>
@@ -1549,7 +1549,7 @@ export default function EmployeeStudioPage() {
                         }
                         rows={2}
                         placeholder="Краткое описание темы в 1-2 предложения..."
-                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-3 text-xs"
+                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-3 text-base"
                       />
                     </div>
 
@@ -1564,7 +1564,7 @@ export default function EmployeeStudioPage() {
                           setNodeForm({ ...nodeForm, triggers_csv: e.target.value })
                         }
                         placeholder="уход за кожей, как чистить, обувной крем, водоотталкивающий спрей"
-                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
+                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-base"
                       />
                     </div>
 
@@ -1590,7 +1590,7 @@ export default function EmployeeStudioPage() {
                         }
                         rows={8}
                         placeholder="Подробный текст статьи, инструкции, регламенты..."
-                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-3.5 font-mono text-xs leading-relaxed"
+                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-3.5 font-mono text-base leading-relaxed"
                       />
                     </div>
 
@@ -1608,7 +1608,7 @@ export default function EmployeeStudioPage() {
                           })
                         }
                         placeholder="Добавлены рекомендации по зимней пропитке"
-                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-xs"
+                        className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-base"
                       />
                     </div>
 
@@ -1942,7 +1942,7 @@ export default function EmployeeStudioPage() {
                         onChange={(e) => setEditingCardRules(e.target.value)}
                         rows={8}
                         placeholder="### PROTOCOL FOR THIS INTEGRATION:\n1. When user asks about availability, call match_tallora_shoes...\n2. Never invent stock..."
-                        className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 font-mono text-xs leading-relaxed text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                        className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 font-mono text-base leading-relaxed text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                       />
                     </div>
 
@@ -2079,14 +2079,14 @@ export default function EmployeeStudioPage() {
                             value={cardSecretKey}
                             onChange={(e) => setCardSecretKey(e.target.value.toUpperCase())}
                             placeholder="API_KEY_NAME"
-                            className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 font-mono text-xs"
+                            className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 font-mono text-base"
                           />
                           <input
                             type="password"
                             value={cardSecretVal}
                             onChange={(e) => setCardSecretVal(e.target.value)}
                             placeholder="••••••••••••••••"
-                            className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 font-mono text-xs"
+                            className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 font-mono text-base"
                           />
                         </div>
                         <button

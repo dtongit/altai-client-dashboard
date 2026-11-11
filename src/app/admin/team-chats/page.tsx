@@ -335,7 +335,7 @@ export default function AdminTeamChatsPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Поиск по имени, ID, юзернейму..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="w-full pl-9 pr-3 py-2 text-base rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
               />
             </div>
             <button
@@ -684,7 +684,7 @@ export default function AdminTeamChatsPage() {
                       }
                     }}
                     placeholder={`Написать сообщение в Telegram от имени Веры (@${botUsername})...`}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none leading-relaxed"
+                    className="w-full px-3.5 py-2 text-base rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none leading-relaxed"
                   />
                   <div className="text-[10px] text-zinc-400 mt-1 flex items-center justify-between">
                     <span>
@@ -760,7 +760,7 @@ export default function AdminTeamChatsPage() {
                   placeholder="например: 734844482 или 1042686923"
                   value={newChatTgId}
                   onChange={(e) => setNewChatTgId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                  className="w-full px-3 py-2 text-base rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
                 />
               </div>
 
@@ -773,7 +773,7 @@ export default function AdminTeamChatsPage() {
                   placeholder="tallora"
                   value={newChatTenantId}
                   onChange={(e) => setNewChatTenantId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                  className="w-full px-3 py-2 text-base rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
                 />
               </div>
 
@@ -787,7 +787,7 @@ export default function AdminTeamChatsPage() {
                   placeholder="Здравствуйте! Пишу вам от имени служебного помощника Веры..."
                   value={newChatMessage}
                   onChange={(e) => setNewChatMessage(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none leading-relaxed"
+                  className="w-full px-3 py-2 text-base rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none leading-relaxed"
                 />
               </div>
 

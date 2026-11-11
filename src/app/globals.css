@@ -42,6 +42,13 @@ select:disabled {
   cursor: not-allowed;
 }
 
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+textarea,
+select,
+[contenteditable="true"] {
+  font-size: max(16px, 1em);
+}
+
 @keyframes float-shimmer {
   0% {
     transform: translateY(0);

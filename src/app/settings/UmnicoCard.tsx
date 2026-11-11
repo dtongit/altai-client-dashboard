@@ -119,7 +119,7 @@ export default function UmnicoCard({ status, loading, isSuperadmin, onChanged }:
               onChange={(e) => setTokenInput(e.target.value)}
               placeholder={status?.masked_token ? "Введите новый токен для обновления" : "Вставьте токен из Umnico"}
               autoComplete="off"
-              className="w-full px-3 py-2 rounded-lg text-xs bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+              className="w-full px-3 py-2 rounded-lg text-base bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
             />
             <button
               type="submit"

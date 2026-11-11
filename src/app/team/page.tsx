@@ -48,7 +48,7 @@ const AUDIT_ACTIONS: Array<[string, string]> = [
 const ACTION_LABELS = Object.fromEntries(AUDIT_ACTIONS);
 
 const inputCls =
-  "w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:opacity-60";
+  "w-full px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-base text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:opacity-60";
 
 function tgInfo(u: TeamUser) {
   const t = u.telegram;
@@ -500,7 +500,7 @@ export default function TeamPage() {
                   setAuditOffset(0);
                   setAuditAction(e.target.value);
                 }}
-                className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500 min-w-0 flex-1 sm:flex-none"
+                className="px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-base text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500 min-w-0 flex-1 sm:flex-none"
               >
                 <option value="">Все действия</option>
                 {AUDIT_ACTIONS.map(([id, label]) => (

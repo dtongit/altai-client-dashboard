@@ -632,7 +632,7 @@ function AdminChatsContent() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Поиск по диалогу, промптам, tools..."
-                      className="pl-8 pr-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-white focus:border-amber-500 focus:outline-none w-56 sm:w-64"
+                      className="pl-8 pr-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-base text-zinc-900 dark:text-white focus:border-amber-500 focus:outline-none w-56 sm:w-64"
                     />
                   </div>
 
@@ -1218,7 +1218,7 @@ function AdminChatsContent() {
                 value={listSearch}
                 onChange={(e) => setListSearch(e.target.value)}
                 placeholder="Поиск по ID сессии..."
-                className="pl-8 pr-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-white focus:border-amber-500 focus:outline-none w-56 sm:w-64"
+                className="pl-8 pr-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-base text-zinc-900 dark:text-white focus:border-amber-500 focus:outline-none w-56 sm:w-64"
               />
             </form>
             <button

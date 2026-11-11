@@ -521,7 +521,7 @@ export default function SuperadminConsolePage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Поиск по JSON / полям..."
-                className="pl-8 pr-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-zinc-900 dark:text-white focus:border-amber-500 focus:outline-none w-56"
+                className="pl-8 pr-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-base text-zinc-900 dark:text-white focus:border-amber-500 focus:outline-none w-56"
               />
             </form>
 
@@ -708,7 +708,7 @@ export default function SuperadminConsolePage() {
                 value={jsonEditorText}
                 onChange={(e) => setJsonEditorText(e.target.value)}
                 rows={18}
-                className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 p-4 font-mono text-xs text-emerald-300 leading-relaxed focus:border-amber-500 focus:outline-none"
+                className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 p-4 font-mono text-base text-emerald-300 leading-relaxed focus:border-amber-500 focus:outline-none"
               />
             </div>
 

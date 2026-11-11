@@ -97,7 +97,7 @@ export function Navbar() {
                           window.location.reload();
                         }
                       }}
-                      className="appearance-none pr-6 pl-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs sm:text-sm font-bold text-zinc-900 dark:text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      className="appearance-none pr-7 pl-2.5 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-base font-bold text-zinc-900 dark:text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500"
                       title="Переключить компанию"
                     >
                       {availableTenants.map((t) => (
