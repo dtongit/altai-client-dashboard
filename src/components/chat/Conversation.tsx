@@ -36,6 +36,38 @@ export function Conversation({
     fetchDetail();
   }, [fetchDetail]);
 
+  useEffect(() => {
+    if (source.markRead && typeof document !== "undefined" && document.visibilityState === "visible") {
+      source.markRead().catch(() => {});
+    }
+  }, [source, detail]);
+
+  useEffect(() => {
+    const handleVis = () => {
+      if (document.visibilityState === "visible") {
+        fetchDetail();
+        if (source.markRead) source.markRead().catch(() => {});
+      }
+    };
+    const handleChatUpdated = (e: Event) => {
+      fetchDetail();
+    };
+    document.addEventListener("visibilitychange", handleVis);
+    window.addEventListener("chat-updated", handleChatUpdated);
+
+    const timer = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        fetchDetail();
+      }
+    }, 10000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVis);
+      window.removeEventListener("chat-updated", handleChatUpdated);
+      clearInterval(timer);
+    };
+  }, [fetchDetail, source]);
+
   const handleTogglePause = async () => {
     if (!detail) return;
     setActionLoading(true);
