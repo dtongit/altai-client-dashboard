@@ -8,6 +8,7 @@ import { ConversationHeader } from "./ConversationHeader";
 import { MessageList } from "./MessageList";
 import { Composer } from "./Composer";
 import { ClientPanel } from "./ClientPanel";
+import { DraftBubble } from "./DraftBubble";
 
 export function Conversation({
   source,
@@ -23,6 +24,7 @@ export function Conversation({
   const { showToast } = useToast();
   const [detail, setDetail] = useState<ChatDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSendingDraft, setIsSendingDraft] = useState(false);
 
   const fetchDetail = useCallback(async () => {
     try {
@@ -113,6 +115,37 @@ export function Conversation({
     }
   };
 
+  const handleSendDraft = async (scope?: "all" | "comment_only") => {
+    if (!detail?.draft) return;
+    setIsSendingDraft(true);
+    try {
+      await source.sendDraft(detail.draft.approval_id, scope);
+      showToast("Черновик отправлен", "success");
+      await fetchDetail();
+    } catch (err: any) {
+      const detailMsg = err?.detail || err?.message || "Черновик уже обработан или устарел";
+      showToast(detailMsg, "error");
+      await fetchDetail();
+    } finally {
+      setIsSendingDraft(false);
+    }
+  };
+
+  const handleRegenerateDraft = async (note: string) => {
+    if (!detail?.draft) return;
+    try {
+      await source.regenerateDraft(detail.draft.approval_id, note);
+      showToast("Запрос на переделку отправлен Вере", "success");
+      setTimeout(fetchDetail, 2000);
+      setTimeout(fetchDetail, 5000);
+      setTimeout(fetchDetail, 10000);
+    } catch (err: any) {
+      const detailMsg = err?.detail || err?.message || "Ошибка обновления черновика";
+      showToast(detailMsg, "error");
+      await fetchDetail();
+    }
+  };
+
   const handleSendOperatorMessage = async (text: string, files: File[]) => {
     await source.send(text, files);
     await fetchDetail();
@@ -145,7 +178,21 @@ export function Conversation({
         onReset={source.reset ? handleResetChat : undefined}
       />
       <ClientPanel detail={detail} />
-      <MessageList messages={detail.messages} turns={detail.turns} isAdmin={isAdmin} />
+      <MessageList
+        messages={detail.messages}
+        turns={detail.turns}
+        isAdmin={isAdmin}
+        draftNode={
+          detail.draft ? (
+            <DraftBubble
+              draft={detail.draft}
+              onSend={handleSendDraft}
+              onRegenerate={handleRegenerateDraft}
+              isSending={isSendingDraft}
+            />
+          ) : null
+        }
+      />
       <Composer
         canSend={detail.can_send ?? true}
         replyWindowClosesAt={detail.reply_window_closes_at}
