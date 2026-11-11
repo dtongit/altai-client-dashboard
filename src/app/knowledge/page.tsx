@@ -42,6 +42,7 @@ import {
   Lock,
   Copy,
   Info,
+  ArrowLeft,
   ArrowRight,
   Sliders,
   CheckCircle,
@@ -296,7 +297,7 @@ export default function EmployeeStudioPage() {
 
   // Semantic Skill Cards & Integrations State
   const [skillCards, setSkillCards] = useState<SemanticSkillCard[]>([]);
-  const [selectedCardSlug, setSelectedCardSlug] = useState<string>("tilda_moysklad");
+  const [selectedCardSlug, setSelectedCardSlug] = useState<string | null>("tilda_moysklad");
   const [editingCardRules, setEditingCardRules] = useState<string>("");
   const [isSavingCardRules, setIsSavingCardRules] = useState(false);
   const [cardSecretKey, setCardSecretKey] = useState("");
@@ -783,7 +784,7 @@ export default function EmployeeStudioPage() {
     : config?.prompt?.raw_markdown || "";
 
   return (
-    <div className="p-6 sm:p-8 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
@@ -805,11 +806,11 @@ export default function EmployeeStudioPage() {
           </div>
         </div>
 
-        {/* Studio Navigation Tabs: Strictly 3 Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-zinc-200/70 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-300/60 dark:border-zinc-800">
+        {/* Studio Navigation Tabs: Strictly 3 Tabs (horizontal scroll on mobile) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full bg-zinc-200/70 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-300/60 dark:border-zinc-800 shrink-0">
           <button
             onClick={() => setActiveTab("prompts")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === "prompts"
                 ? "bg-amber-500 text-zinc-950 shadow-sm"
                 : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
@@ -824,7 +825,7 @@ export default function EmployeeStudioPage() {
 
           <button
             onClick={() => setActiveTab("kb")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === "kb"
                 ? "bg-amber-500 text-zinc-950 shadow-sm"
                 : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
@@ -839,7 +840,7 @@ export default function EmployeeStudioPage() {
 
           <button
             onClick={() => setActiveTab("skills")}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === "skills"
                 ? "bg-amber-500 text-zinc-950 shadow-sm"
                 : "text-zinc-700 dark:text-zinc-300 hover:bg-white/60 dark:hover:bg-zinc-800"
@@ -953,7 +954,7 @@ export default function EmployeeStudioPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left 5 cols: Modules List */}
-            <div className="lg:col-span-5 space-y-3">
+            <div className={`lg:col-span-5 space-y-3 ${selectedModuleSlug || isEditingModule ? "hidden md:block" : "block"}`}>
               {promptModules
                 .filter((m) => moduleFilter === "all" || m.scope === moduleFilter)
                 .filter(
@@ -1042,7 +1043,22 @@ export default function EmployeeStudioPage() {
             </div>
 
             {/* Right 7 cols: Detail or Editor */}
-            <div className="lg:col-span-7">
+            <div className={`lg:col-span-7 ${selectedModuleSlug || isEditingModule ? "block" : "hidden md:block"}`}>
+              {(selectedModuleSlug || isEditingModule) && (
+                <div className="md:hidden mb-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedModuleSlug(null);
+                      setIsEditingModule(false);
+                    }}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xs font-semibold text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span>Назад к списку слоев</span>
+                  </button>
+                </div>
+              )}
               {isEditingModule ? (
                 <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
                   <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
@@ -1353,7 +1369,7 @@ export default function EmployeeStudioPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left 5 cols: Nodes list */}
-            <div className="lg:col-span-5 space-y-3">
+            <div className={`lg:col-span-5 space-y-3 ${selectedNodeId || isEditingNode ? "hidden md:block" : "block"}`}>
               {knowledgeNodes
                 .filter((n) => kbTierFilter === "all" || n.tier === kbTierFilter)
                 .filter((n) => {
@@ -1458,7 +1474,22 @@ export default function EmployeeStudioPage() {
             </div>
 
             {/* Right 7 cols: Detail / Form */}
-            <div className="lg:col-span-7">
+            <div className={`lg:col-span-7 ${selectedNodeId || isEditingNode ? "block" : "hidden md:block"}`}>
+              {(selectedNodeId || isEditingNode) && (
+                <div className="md:hidden mb-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedNodeId(null);
+                      setIsEditingNode(false);
+                    }}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xs font-semibold text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span>Назад к списку узлов</span>
+                  </button>
+                </div>
+              )}
               {isEditingNode ? (
                 <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
                   <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
@@ -1821,7 +1852,7 @@ export default function EmployeeStudioPage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             {/* Left 4 cols: Cards Selector */}
-            <div className="lg:col-span-4 space-y-3">
+            <div className={`lg:col-span-4 space-y-3 ${selectedCardSlug ? "hidden md:block" : "block"}`}>
               <div className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider px-1">
                 Подключенные сервисы ({skillCards.length})
               </div>
@@ -1888,7 +1919,19 @@ export default function EmployeeStudioPage() {
             </div>
 
             {/* Right 8 cols: Selected Card Detailed Content */}
-            <div className="lg:col-span-8 space-y-6">
+            <div className={`lg:col-span-8 space-y-6 ${selectedCardSlug ? "block" : "hidden md:block"}`}>
+              {selectedCardSlug && (
+                <div className="md:hidden mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCardSlug(null)}
+                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-xs font-semibold text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span>Назад к списку сервисов</span>
+                  </button>
+                </div>
+              )}
               {(() => {
                 const currentCard = skillCards.find((c) => c.group_slug === selectedCardSlug);
                 if (!currentCard) {
