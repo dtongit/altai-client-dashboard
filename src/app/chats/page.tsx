@@ -190,6 +190,7 @@ export default function ChatsPage() {
             key={selectedSessionId}
             source={chatSource}
             onBack={() => { setSelectedSessionId(null); updateUrl(null, false); }}
+            isAdmin={Boolean(user?.is_admin)}
             onResetSuccess={() => {
               setChats((prev) => prev.filter((c) => c.session_id !== selectedSessionId));
               setSelectedSessionId(null);

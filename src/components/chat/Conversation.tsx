@@ -13,10 +13,12 @@ export function Conversation({
   source,
   onResetSuccess,
   onBack,
+  isAdmin = false,
 }: {
   source: ChatSource;
   onResetSuccess?: () => void;
   onBack?: () => void;
+  isAdmin?: boolean;
 }) {
   const { showToast } = useToast();
   const [detail, setDetail] = useState<ChatDetail | null>(null);
@@ -143,7 +145,7 @@ export function Conversation({
         onReset={source.reset ? handleResetChat : undefined}
       />
       <ClientPanel detail={detail} />
-      <MessageList turns={detail.turns || []} />
+      <MessageList messages={detail.messages} turns={detail.turns} isAdmin={isAdmin} />
       <Composer disabled={loading} onSend={handleSend} />
     </div>
   );
