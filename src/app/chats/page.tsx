@@ -32,7 +32,7 @@ export default function ChatsPage() {
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const st = p.get("status") as ChatStatusTab;
-    if (st && ["all", "attention", "paused"].includes(st)) setStatusFilter(st);
+    if (st && ["all", "attention", "paused", "mine"].includes(st)) setStatusFilter(st);
     setChannelFilter(p.get("channel") || "");
     setFiltersReady(true);
   }, []);
@@ -71,7 +71,12 @@ export default function ChatsPage() {
       loadedCount.current = mode === "more" ? loadedCount.current + incoming.length : incoming.length;
       setTotal(res.total ?? incoming.length);
       setHasMore(Boolean(res.has_more));
-      if (res.counts) setCounts(res.counts);
+      if (res.counts) {
+        setCounts(res.counts);
+        if (!new URLSearchParams(window.location.search).get("status") && res.counts.attention > 0 && statusFilter === "all") {
+          setStatusFilter("attention");
+        }
+      }
       if (!selectedRef.current && incoming.length > 0) {
         setSelectedSessionId(incoming[0].session_id);
       }
