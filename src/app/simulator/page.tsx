@@ -29,7 +29,7 @@ export default function SimulatorPage() {
   const [resetting, setResetting] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -38,6 +38,13 @@ export default function SimulatorPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, loading]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  }, [input]);
 
   // Load conversation history on mount
   useEffect(() => {
@@ -111,7 +118,7 @@ export default function SimulatorPage() {
       setMessages((prev) => [...prev, botMsg]);
     } finally {
       setLoading(false);
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => textareaRef.current?.focus(), 100);
     }
   };
 
@@ -145,7 +152,7 @@ export default function SimulatorPage() {
       : "altai_optima:web_simulator:client_sim_admin");
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto flex flex-col h-[calc(100dvh-var(--app-top))]">
+    <div className="p-3 sm:p-6 lg:p-8 space-y-3 sm:space-y-6 max-w-7xl mx-auto flex flex-col h-[calc(100dvh-var(--app-top))]">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0">
         <div>
@@ -339,22 +346,30 @@ export default function SimulatorPage() {
             e.preventDefault();
             handleSend();
           }}
-          className="p-3 sm:p-4 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center gap-3 transition-colors"
+          className="p-3 sm:p-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-end gap-2.5 transition-colors"
         >
-          <input
-            ref={inputRef}
-            type="text"
+          <textarea
+            ref={textareaRef}
+            rows={1}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Напишите сообщение Вере..."
+            onKeyDown={(e) => {
+              const hasFinePointer = typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches;
+              if (hasFinePointer && e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="Напишите сообщение Вере…"
             disabled={loading}
-            className="flex-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/90 px-4 py-2 text-base text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/40 transition-colors disabled:opacity-50"
+            className="flex-1 max-h-32 resize-none rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/90 px-3.5 py-2 text-base text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/40 transition-colors disabled:opacity-50 leading-relaxed"
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="flex items-center justify-center h-10 w-10 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-zinc-950 font-semibold shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-yellow-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+            className="flex items-center justify-center h-10 w-10 min-h-[40px] min-w-[40px] rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-zinc-950 font-semibold shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-yellow-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 cursor-pointer mb-0.5"
             title="Отправить сообщение"
+            aria-label="Отправить сообщение"
           >
             <Send className="h-4 w-4" />
           </button>
