@@ -9,6 +9,7 @@ import { MessageList } from "./MessageList";
 import { Composer } from "./Composer";
 import { ClientPanel } from "./ClientPanel";
 import { DraftBubble } from "./DraftBubble";
+import { Sheet } from "@/components/ui/Sheet";
 
 export function Conversation({
   source,
@@ -25,6 +26,8 @@ export function Conversation({
   const [detail, setDetail] = useState<ChatDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSendingDraft, setIsSendingDraft] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [desktopPanelVisible, setDesktopPanelVisible] = useState(true);
 
   const fetchDetail = useCallback(async () => {
     try {
@@ -168,39 +171,70 @@ export function Conversation({
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-zinc-100/40 dark:bg-zinc-900/30">
-      <ConversationHeader
-        detail={detail}
-        onBack={onBack}
-        onTake={handleTakeChat}
-        onResume={handleResumeChat}
-        onRelease={source.release ? handleReleaseChat : undefined}
-        onReset={source.reset ? handleResetChat : undefined}
-      />
-      <ClientPanel detail={detail} />
-      <MessageList
-        messages={detail.messages}
-        turns={detail.turns}
-        isAdmin={isAdmin}
-        draftNode={
-          detail.draft ? (
-            <DraftBubble
-              draft={detail.draft}
-              onSend={handleSendDraft}
-              onRegenerate={handleRegenerateDraft}
-              isSending={isSendingDraft}
-            />
-          ) : null
-        }
-      />
-      <Composer
-        canSend={detail.can_send ?? true}
-        replyWindowClosesAt={detail.reply_window_closes_at}
-        sendMedia={detail.capabilities?.send_media ?? false}
-        isPaused={detail.is_paused}
-        disabledReason={detail.disabled_reason}
-        onSend={handleSendOperatorMessage}
-      />
+    <div className="flex-1 flex overflow-hidden bg-zinc-100/40 dark:bg-zinc-900/30">
+      {/* Main Conversation Column */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white dark:bg-zinc-950">
+        <ConversationHeader
+          detail={detail}
+          onBack={onBack}
+          onTogglePanel={() => {
+            setPanelOpen((v) => !v);
+            setDesktopPanelVisible((v) => !v);
+          }}
+          isPanelOpen={panelOpen}
+          onTake={handleTakeChat}
+          onResume={handleResumeChat}
+          onRelease={source.release ? handleReleaseChat : undefined}
+          onReset={source.reset ? handleResetChat : undefined}
+        />
+
+        <MessageList
+          messages={detail.messages}
+          turns={detail.turns}
+          isAdmin={isAdmin}
+          draftNode={
+            detail.draft ? (
+              <DraftBubble
+                draft={detail.draft}
+                onSend={handleSendDraft}
+                onRegenerate={handleRegenerateDraft}
+                isSending={isSendingDraft}
+              />
+            ) : null
+          }
+        />
+
+        <Composer
+          canSend={detail.can_send ?? true}
+          replyWindowClosesAt={detail.reply_window_closes_at}
+          sendMedia={detail.capabilities?.send_media ?? false}
+          isPaused={detail.is_paused}
+          disabledReason={detail.disabled_reason}
+          onSend={handleSendOperatorMessage}
+        />
+      </div>
+
+      {/* Desktop Persistent Client Panel (visible at >= 1280px when not collapsed) */}
+      {desktopPanelVisible && (
+        <div className="hidden xl:block w-[340px] shrink-0 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5 overflow-y-auto">
+          <ClientPanel
+            detail={detail}
+            openChatHref={source.openChatHref}
+          />
+        </div>
+      )}
+
+      {/* Sheet Client Panel for < 1280px (bottom sheet on phones, right sheet on tablets/medium screens) */}
+      <Sheet
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        title="Информация о клиенте"
+      >
+        <ClientPanel
+          detail={detail}
+          openChatHref={source.openChatHref}
+        />
+      </Sheet>
     </div>
   );
 }
