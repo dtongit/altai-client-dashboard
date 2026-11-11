@@ -144,7 +144,7 @@ export default function SettingsPage() {
   const crmUrl = safeHttpUrl(getCrmUrl());
 
   return (
-    <div className="p-6 sm:p-8 space-y-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 max-w-5xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2.5">
           <Sliders className="h-6 w-6 text-amber-500" />
@@ -156,7 +156,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Connected Channels Grid */}
-      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm space-y-6 shadow-sm dark:shadow-none transition-colors">
+      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-4 sm:p-6 backdrop-blur-sm space-y-6 shadow-sm dark:shadow-none transition-colors">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
@@ -251,7 +251,7 @@ export default function SettingsPage() {
             <UmnicoCard status={umnicoStatus} loading={loading} isSuperadmin={isSuperadmin} onChanged={loadStatus} />
           )}
         {/* CRM Integration Card */}
-        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm shadow-sm dark:shadow-none transition-colors">
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-4 sm:p-6 backdrop-blur-sm shadow-sm dark:shadow-none transition-colors">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-2.5">
               <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">

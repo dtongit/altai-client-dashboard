@@ -14,7 +14,7 @@ interface Props {
   onSelect: (mode: ChannelMode) => void;
 }
 
-const BASE = "px-3 py-1.5 rounded-lg text-xs transition-all flex items-center justify-center gap-1.5 disabled:cursor-not-allowed";
+const BASE = "px-1.5 sm:px-3 py-1.5 rounded-lg text-xs transition-all flex items-center justify-center gap-1 sm:gap-1.5 text-center leading-tight disabled:cursor-not-allowed";
 const IDLE =
   "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white font-medium disabled:opacity-40 disabled:hover:text-zinc-600 dark:disabled:hover:text-zinc-400";
 
@@ -50,8 +50,8 @@ export default function ChannelModeToggle({ mode, autoAllowed, connected, saving
             : "Канал не подключён"
         }
       >
-        <ShieldCheck className="h-3.5 w-3.5" />
-        <span>Пре-модерация</span>
+        <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+        <span className="leading-tight text-center">Пре-модерация</span>
       </button>
 
       <button
