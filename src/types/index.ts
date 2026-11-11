@@ -524,6 +524,7 @@ export interface ChatDetail {
   permissions?: { can_reset?: boolean };
   draft?: ChatDraft | null;
   can_send?: boolean;
+  disabled_reason?: string | null;
   reply_window_closes_at?: string | null;
   capabilities?: { send_media?: boolean };
   messages?: ChatMessage[];

@@ -113,8 +113,8 @@ export function Conversation({
     }
   };
 
-  const handleSend = async (text: string) => {
-    await source.send(text, []);
+  const handleSendOperatorMessage = async (text: string, files: File[]) => {
+    await source.send(text, files);
     await fetchDetail();
   };
 
@@ -146,7 +146,14 @@ export function Conversation({
       />
       <ClientPanel detail={detail} />
       <MessageList messages={detail.messages} turns={detail.turns} isAdmin={isAdmin} />
-      <Composer disabled={loading} onSend={handleSend} />
+      <Composer
+        canSend={detail.can_send ?? true}
+        replyWindowClosesAt={detail.reply_window_closes_at}
+        sendMedia={detail.capabilities?.send_media ?? false}
+        isPaused={detail.is_paused}
+        disabledReason={detail.disabled_reason}
+        onSend={handleSendOperatorMessage}
+      />
     </div>
   );
 }
