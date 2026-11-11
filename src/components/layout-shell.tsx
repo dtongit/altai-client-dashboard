@@ -5,7 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/lib/toast-context";
 import { Navbar } from "@/components/navbar";
-import { Sidebar, MobileNav } from "@/components/sidebar";
+import { Sidebar } from "@/components/sidebar";
+import { BottomNav } from "@/components/bottom-nav";
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -104,16 +105,25 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  const isChats = cleanPath.startsWith("/chats");
+  const isSimulator = cleanPath.startsWith("/simulator");
+
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
       <Navbar />
-      {showSidebar && <MobileNav />}
       <div className="flex-1 flex overflow-hidden">
         {showSidebar && <Sidebar />}
-        <main className="flex-1 min-w-0 overflow-y-auto bg-zinc-100/60 dark:bg-zinc-950/50">
+        <main
+          className={`flex-1 min-w-0 bg-zinc-100/60 dark:bg-zinc-950/50 ${
+            isChats || isSimulator
+              ? "overflow-hidden"
+              : "overflow-y-auto pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0"
+          }`}
+        >
           {denied ? null : children}
         </main>
       </div>
+      {showSidebar && <BottomNav />}
     </div>
   );
 }

@@ -15,6 +15,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useAttentionCount } from "@/lib/use-attention-count";
 
 const navigation: Array<{ name: string; href: string; icon: typeof BarChart3; vera?: boolean; cap?: string }> = [
   { name: "Дашборд", href: "/vera", icon: BarChart3, vera: true },
@@ -25,47 +26,10 @@ const navigation: Array<{ name: string; href: string; icon: typeof BarChart3; ve
   { name: "Команда и доступы", href: "/team", icon: UsersRound, cap: "manage_users" },
 ];
 
-/** Horizontal section switcher for phones (the sidebar is hidden below md). */
-export function MobileNav() {
-  const pathname = usePathname();
-  const cleanPath = (pathname || "").replace(/\/+$/, "") || "/";
-  const { can, hasEmployee } = useAuth();
-  return (
-    <nav className="md:hidden flex gap-2 overflow-x-auto px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
-      <Link
-        href="/"
-        className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        <span>Все</span>
-      </Link>
-      {navigation
-        .filter((item) => (!item.vera || hasEmployee("vera")) && (!item.cap || can(item.cap)))
-        .map((item) => {
-          const active = cleanPath === item.href || cleanPath.startsWith(item.href + "/");
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap border ${
-                active
-                  ? "bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/30 font-semibold"
-                  : "text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              <span>{item.name}</span>
-            </Link>
-          );
-        })}
-    </nav>
-  );
-}
-
 export function Sidebar() {
   const pathname = usePathname();
   const { can, hasEmployee } = useAuth();
+  const attentionCount = useAttentionCount();
   const cleanPath = (pathname || "").replace(/\/+$/, "") || "/";
 
   return (
@@ -136,13 +100,18 @@ export function Sidebar() {
                   }`}
                 >
                   <Icon
-                    className={`h-4 w-4 ${
+                    className={`h-4 w-4 shrink-0 ${
                       isActive
                         ? "text-amber-700 dark:text-amber-400"
                         : "text-zinc-500 dark:text-zinc-400"
                     }`}
                   />
-                  <span>{item.name}</span>
+                  <span className="truncate">{item.name}</span>
+                  {item.href === "/chats" && attentionCount > 0 && (
+                    <span className="ml-auto flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white shadow-xs">
+                      {attentionCount > 99 ? "99+" : attentionCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}

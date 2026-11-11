@@ -66,10 +66,10 @@ export function Navbar() {
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md transition-colors">
-        <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex h-14 md:h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Left: Brand & Business Name Partnership */}
-          <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-            <Link href="/" className="flex items-center gap-2" title="Главная — Управление ИИ-штатом">
+          <div className="flex items-center gap-3 sm:gap-4 flex-wrap min-w-0">
+            <Link href="/" className="flex items-center gap-2 shrink-0" title="Главная — Управление ИИ-штатом">
               <img
                 src="/brand_logo.webp"
                 alt="ALTAI Optima"
@@ -83,12 +83,18 @@ export function Navbar() {
             </Link>
 
             {tenant && (
-              <div className="flex items-center gap-2.5">
-                <span className="text-zinc-400 dark:text-zinc-600 font-light select-none text-base sm:text-lg">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="text-zinc-400 dark:text-zinc-600 font-light select-none text-base sm:text-lg shrink-0">
                   +
                 </span>
+                {/* On mobile: truncated business name */}
+                <span className="md:hidden text-sm font-bold tracking-tight text-zinc-900 dark:text-white truncate max-w-[140px] sm:max-w-[200px]">
+                  {tenant.business_name}
+                </span>
+
+                {/* On desktop: company switcher if multiple, else business name */}
                 {availableTenants.length > 1 ? (
-                  <div className="relative flex items-center">
+                  <div className="relative hidden md:flex items-center">
                     <select
                       value={tenant.id}
                       onChange={async (e) => {
@@ -109,7 +115,7 @@ export function Navbar() {
                     <ChevronDown className="h-3.5 w-3.5 text-zinc-500 pointer-events-none absolute right-2" />
                   </div>
                 ) : (
-                  <span className="text-sm sm:text-base font-bold tracking-tight text-zinc-900 dark:text-white">
+                  <span className="hidden md:inline-block text-sm sm:text-base font-bold tracking-tight text-zinc-900 dark:text-white">
                     {tenant.business_name}
                   </span>
                 )}
@@ -121,12 +127,12 @@ export function Navbar() {
           </div>
 
           {/* Right: Superadmin Console, Master Kill Switch, Theme Toggle & User Menu */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Superadmin Console Button (Replaces SQLAdmin) */}
             {user?.is_admin && (
               <Link
                 href="/admin"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
                   pathname.startsWith("/admin")
                     ? "bg-amber-500 text-zinc-950 border-amber-500 shadow-md shadow-amber-500/20"
                     : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-200 dark:border-zinc-800"
@@ -143,7 +149,7 @@ export function Navbar() {
               <button
                 onClick={() => setShowConfirm(true)}
                 disabled={isToggling}
-                className={`flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all shadow-sm ${
+                className={`hidden md:flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all shadow-sm ${
                   isActive
                     ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300/80 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-600/40"
                     : "bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300/80 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 dark:text-amber-400 dark:border-amber-600/40"
@@ -180,7 +186,7 @@ export function Navbar() {
             {can("manage_users") && (
               <Link
                 href="/team"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
+                className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
                   pathname.startsWith("/team")
                     ? "bg-amber-500 text-zinc-950 border-amber-500"
                     : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-200 dark:border-zinc-800"
@@ -203,8 +209,10 @@ export function Navbar() {
               <span>Поддержка 24/7</span>
             </a>
 
-            {/* Theme Toggle Button */}
-            <ThemeToggle />
+            {/* Theme Toggle Button (hidden on phone, available in "Ещё") */}
+            <div className="hidden md:block">
+              <ThemeToggle />
+            </div>
 
             {/* User Profile & Logout */}
             {user && (
