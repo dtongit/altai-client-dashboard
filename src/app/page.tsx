@@ -75,7 +75,7 @@ export default function AIStaffManagementPage() {
   const isTgSubscribed = data?.telegram_bot?.has_subscribers ?? false;
 
   return (
-    <div className="p-6 sm:p-10 space-y-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-10 space-y-8 max-w-5xl mx-auto">
       {/* Simplified Telegram Alert */}
       {hasVera && !isTgSubscribed && (
         <div className="rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/20 px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
