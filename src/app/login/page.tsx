@@ -35,7 +35,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-950 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-zinc-50 dark:bg-zinc-950 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors">
       {/* Top right theme toggle */}
       <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />
@@ -60,7 +60,7 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/80 p-8 backdrop-blur-xl shadow-xl dark:shadow-2xl transition-colors">
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/80 p-4 sm:p-8 backdrop-blur-xl shadow-xl dark:shadow-2xl transition-colors">
           {error && (
             <div className="mb-6 flex items-center gap-2.5 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-600 dark:text-red-400">
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
