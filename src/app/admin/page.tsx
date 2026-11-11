@@ -381,7 +381,7 @@ export default function SuperadminConsolePage() {
           </Link>
         </div>
 
-        <nav className="space-y-1">
+        <nav className="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-1.5 lg:gap-0 lg:space-y-1 pb-2 lg:pb-0 no-scrollbar">
           {schemas.map((res) => {
             const isSelected = res.resource === selectedResource;
             return (
@@ -391,7 +391,7 @@ export default function SuperadminConsolePage() {
                   setSelectedResource(res.resource);
                   setSearch("");
                 }}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all text-left ${
+                className={`w-auto lg:w-full shrink-0 lg:shrink flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all text-left whitespace-nowrap ${
                   isSelected
                     ? "bg-amber-500 text-zinc-950 font-bold shadow-sm"
                     : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-900"
@@ -400,7 +400,7 @@ export default function SuperadminConsolePage() {
                 <span className="truncate">{res.label}</span>
                 {res.read_only && (
                   <span
-                    className={`text-[9px] uppercase px-1.5 py-0.2 rounded ${
+                    className={`text-[9px] uppercase px-1.5 py-0.2 rounded shrink-0 ${
                       isSelected
                         ? "bg-black/15 text-zinc-950"
                         : "bg-zinc-200 dark:bg-zinc-800 text-zinc-500"
@@ -416,7 +416,7 @@ export default function SuperadminConsolePage() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 min-w-0 p-6 sm:p-8 space-y-6 overflow-x-hidden">
+      <div className="flex-1 min-w-0 p-4 sm:p-8 space-y-6 overflow-x-hidden">
         {/* Top System Telemetry Bar */}
         {stats && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -547,16 +547,16 @@ export default function SuperadminConsolePage() {
 
         {/* Data Table */}
         <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
-          <div className="w-full">
-            <table className="w-full table-fixed text-left border-collapse">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[640px]">
               <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/60 text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+                <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/60 text-[11px] font-bold uppercase tracking-wider text-zinc-500 whitespace-nowrap">
                   {visibleColumns.map((col) => (
-                    <th key={col} className="py-3.5 px-3 truncate" title={col}>
+                    <th key={col} className="py-3.5 px-3 whitespace-nowrap" title={col}>
                       {col}
                     </th>
                   ))}
-                  <th className="py-3.5 px-3 text-right w-44">Действия</th>
+                  <th className="py-3.5 px-3 text-right w-44 whitespace-nowrap">Действия</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200/70 dark:divide-zinc-800/70 text-xs">
@@ -588,11 +588,11 @@ export default function SuperadminConsolePage() {
                         className="hover:bg-zinc-50/90 dark:hover:bg-zinc-800/40 transition-colors"
                       >
                         {visibleColumns.map((col) => (
-                          <td key={col} className="py-3 px-3 align-middle overflow-hidden">
+                          <td key={col} className="py-3 px-3 align-middle max-w-[200px] truncate">
                             {formatCellValue(row[col])}
                           </td>
                         ))}
-                        <td className="py-3 px-3 text-right">
+                        <td className="py-3 px-3 text-right whitespace-nowrap">
                           <div className="inline-flex flex-wrap justify-end items-center gap-1.5">
                             {selectedResource === "interaction-logs" && row.session_id && (
                               <Link

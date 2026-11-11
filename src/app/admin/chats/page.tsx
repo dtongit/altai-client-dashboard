@@ -363,7 +363,7 @@ function AdminChatsContent() {
   // =========================================================================
   if (selectedSessionId) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors p-4 sm:p-6 lg:p-8">
+      <div className="min-h-[calc(100dvh-var(--app-top))] bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors p-4 sm:p-6 lg:p-8">
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Header & Navigation */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">
@@ -1172,7 +1172,7 @@ function AdminChatsContent() {
   // VIEW 2: All Chat Sessions Browser (when no specific session selected)
   // =========================================================================
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors p-4 sm:p-6 lg:p-8">
+    <div className="min-h-[calc(100dvh-var(--app-top))] bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors p-4 sm:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-200 dark:border-zinc-800">

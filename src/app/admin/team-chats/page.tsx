@@ -263,7 +263,7 @@ export default function AdminTeamChatsPage() {
   return (
     <div className="min-h-[calc(100dvh-var(--app-top))] flex flex-col lg:flex-row bg-zinc-50 dark:bg-zinc-950">
       {/* Left Column: Conversations List */}
-      <aside className="w-full lg:w-96 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col">
+      <aside className="w-full lg:w-96 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col max-h-[45dvh] lg:max-h-none">
         {/* Header */}
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 space-y-3">
           <div className="flex items-center justify-between">
@@ -422,7 +422,7 @@ export default function AdminTeamChatsPage() {
       </aside>
 
       {/* Right Column: Latest-on-Top Event Stream & Interactive Chat Input */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden min-h-[55dvh] lg:min-h-0">
         {selectedConv ? (
           <>
             {/* Top Toolbar */}
