@@ -145,7 +145,7 @@ export default function VeraOverviewPage() {
   const axisColor = resolvedTheme === "dark" ? "#71717a" : "#a1a1aa";
 
   return (
-    <div className="p-6 sm:p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
       {/* Simplified Telegram Alert */}
       {!isTgSubscribed && (
         <div className="rounded-2xl border border-amber-300 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/20 px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
@@ -187,7 +187,7 @@ export default function VeraOverviewPage() {
       </div>
 
       {/* Primary KPI Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         <MetricCard
           title="Входящие диалоги"
           value={formatNumber(kpis.total_conversations)}
@@ -224,7 +224,7 @@ export default function VeraOverviewPage() {
       {/* Analytics Charts & Channel Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Timeline Chart - True Dialogues only */}
-        <div className="lg:col-span-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm shadow-sm dark:shadow-none transition-colors">
+        <div className="lg:col-span-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-4 sm:p-6 backdrop-blur-sm shadow-sm dark:shadow-none transition-colors">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
@@ -292,7 +292,7 @@ export default function VeraOverviewPage() {
         </div>
 
         {/* Channels Breakdown */}
-        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-6 backdrop-blur-sm shadow-sm dark:shadow-none flex flex-col justify-between transition-colors">
+        <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-4 sm:p-6 backdrop-blur-sm shadow-sm dark:shadow-none flex flex-col justify-between transition-colors">
           <div>
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
               Распределение по каналам
