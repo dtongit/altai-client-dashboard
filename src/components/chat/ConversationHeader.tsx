@@ -8,7 +8,7 @@ import { IconButton } from "@/components/ui/IconButton";
 import { Menu, MenuItem } from "@/components/ui/Menu";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ChannelBadge } from "@/components/channel-badge";
-import { ArrowLeft, Info, MoreVertical, RotateCcw, AlertCircle, Wrench, UserRound } from "lucide-react";
+import { ArrowLeft, Info, MoreVertical, RotateCcw, AlertCircle, Wrench, UserRound, ExternalLink, X } from "lucide-react";
 import { formatClientTitle } from "./ChatListItem";
 import { useAuth } from "@/lib/auth-context";
 
@@ -17,10 +17,20 @@ export interface ConversationHeaderProps {
   onBack?: () => void;
   onTogglePanel?: () => void;
   isPanelOpen?: boolean;
-  onTake: () => Promise<void>;
+  onTake?: () => Promise<void>;
   onResume: (triggerReply: boolean) => Promise<void>;
   onRelease?: () => Promise<void>;
   onReset?: () => Promise<void>;
+  isLinkPage?: boolean;
+}
+
+function formatExpiresAt(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const datePart = d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+  const timePart = d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  return `${datePart}, ${timePart}`;
 }
 
 export function ConversationHeader({
@@ -32,10 +42,12 @@ export function ConversationHeader({
   onResume,
   onRelease,
   onReset,
+  isLinkPage = false,
 }: ConversationHeaderProps) {
   const { user } = useAuth();
   const { confirm, ConfirmDialog } = useConfirm();
   const [loadingAction, setLoadingAction] = useState(false);
+  const [dismissExpires, setDismissExpires] = useState(false);
 
   const displayName =
     detail.display_name ||
@@ -47,6 +59,7 @@ export function ConversationHeader({
   const canReset = detail.permissions?.can_reset ?? user?.is_admin ?? false;
 
   const handleTake = async () => {
+    if (!onTake) return;
     setLoadingAction(true);
     try {
       await onTake();
@@ -93,47 +106,66 @@ export function ConversationHeader({
     }
   };
 
-  const menuItems: MenuItem[] = [
-    ...(isPaused
-      ? [
-          {
-            label: "Вернуть и ответить сразу",
-            icon: <RotateCcw className="h-4 w-4" />,
-            onClick: () => handleResume(true),
+  const menuItems: MenuItem[] = isLinkPage
+    ? [
+        ...(isPaused
+          ? [
+              {
+                label: "Вернуть и ответить сразу",
+                icon: <RotateCcw className="h-4 w-4" />,
+                onClick: () => handleResume(true),
+              },
+            ]
+          : []),
+        {
+          label: "Открыть в кабинете",
+          icon: <ExternalLink className="h-4 w-4" />,
+          onClick: () => {
+            window.location.href = `/chats/?session=${encodeURIComponent(detail.session_id)}`;
           },
-        ]
-      : []),
-    ...(isMeOwner && onRelease
-      ? [
-          {
-            label: "Отпустить чат",
-            icon: <UserRound className="h-4 w-4" />,
-            onClick: handleRelease,
-          },
-        ]
-      : []),
-    ...(user?.is_admin
-      ? [
-          {
-            label: "Технические детали",
-            icon: <Wrench className="h-4 w-4" />,
-            onClick: () => {
-              window.open(`/admin/chats/?session_id=${encodeURIComponent(detail.session_id)}`, "_blank");
-            },
-          },
-        ]
-      : []),
-    ...(canReset && onReset
-      ? [
-          {
-            label: "Сбросить историю",
-            icon: <RotateCcw className="h-4 w-4" />,
-            onClick: handleReset,
-            danger: true,
-          },
-        ]
-      : []),
-  ];
+        },
+      ]
+    : [
+        ...(isPaused
+          ? [
+              {
+                label: "Вернуть и ответить сразу",
+                icon: <RotateCcw className="h-4 w-4" />,
+                onClick: () => handleResume(true),
+              },
+            ]
+          : []),
+        ...(isMeOwner && onRelease
+          ? [
+              {
+                label: "Отпустить чат",
+                icon: <UserRound className="h-4 w-4" />,
+                onClick: handleRelease,
+              },
+            ]
+          : []),
+        ...(user?.is_admin
+          ? [
+              {
+                label: "Технические детали",
+                icon: <Wrench className="h-4 w-4" />,
+                onClick: () => {
+                  window.open(`/admin/chats/?session_id=${encodeURIComponent(detail.session_id)}`, "_blank");
+                },
+              },
+            ]
+          : []),
+        ...(canReset && onReset
+          ? [
+              {
+                label: "Сбросить историю",
+                icon: <RotateCcw className="h-4 w-4" />,
+                onClick: handleReset,
+                danger: true,
+              },
+            ]
+          : []),
+      ];
 
   return (
     <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md shrink-0">
@@ -157,6 +189,11 @@ export function ConversationHeader({
           <Avatar name={displayName} channel={detail.channel} size="md" />
 
           <div className="min-w-0">
+            {isLinkPage && (detail as any).business_name && (
+              <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 block truncate leading-tight mb-0.5">
+                {(detail as any).business_name}
+              </span>
+            )}
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-zinc-900 dark:text-white truncate">
                 {displayName}
@@ -188,45 +225,49 @@ export function ConversationHeader({
 
         {/* Right side actions */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Status pill (desktop) */}
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300">
-            <span
-              className={`h-2 w-2 rounded-full ${
-                isPaused
-                  ? "bg-amber-500"
-                  : "bg-emerald-500 animate-pulse"
-              }`}
-            />
-            <span>
-              {detail.owner
-                ? `Ведёт: ${detail.owner.name}`
-                : isPaused
-                ? "Вера на паузе"
-                : "Вера отвечает"}
-            </span>
-          </div>
+          {!isLinkPage && (
+            <>
+              {/* Status pill (desktop) */}
+              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    isPaused
+                      ? "bg-amber-500"
+                      : "bg-emerald-500 animate-pulse"
+                  }`}
+                />
+                <span>
+                  {detail.owner
+                    ? `Ведёт: ${detail.owner.name}`
+                    : isPaused
+                    ? "Вера на паузе"
+                    : "Вера отвечает"}
+                </span>
+              </div>
 
-          {/* Primary Take / Return action button */}
-          {!isPaused ? (
-            <Button
-              variant="primary"
-              size="sm"
-              loading={loadingAction}
-              onClick={handleTake}
-              className="text-xs font-semibold"
-            >
-              Взять себе
-            </Button>
-          ) : (
-            <Button
-              variant="secondary"
-              size="sm"
-              loading={loadingAction}
-              onClick={() => handleResume(false)}
-              className="text-xs font-semibold"
-            >
-              Вернуть Вере
-            </Button>
+              {/* Primary Take / Return action button */}
+              {!isPaused ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  loading={loadingAction}
+                  onClick={handleTake}
+                  className="text-xs font-semibold"
+                >
+                  Взять себе
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={loadingAction}
+                  onClick={() => handleResume(false)}
+                  className="text-xs font-semibold"
+                >
+                  Вернуть Вере
+                </Button>
+              )}
+            </>
           )}
 
           {/* Toggle Client Panel Button (ⓘ) */}
@@ -249,6 +290,21 @@ export function ConversationHeader({
           )}
         </div>
       </div>
+
+      {/* Dismissible Link Expiration Banner */}
+      {isLinkPage && (detail as any).expires_at && !dismissExpires && (
+        <div className="px-4 py-1.5 bg-zinc-100 dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+          <span>Ссылка действует до {formatExpiresAt((detail as any).expires_at)}</span>
+          <button
+            type="button"
+            onClick={() => setDismissExpires(true)}
+            className="p-0.5 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+            aria-label="Закрыть уведомление"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Slim Rose Alert Bar if attention is escalated */}
       {detail.attention === "escalated" && (

@@ -16,11 +16,17 @@ export function Conversation({
   onResetSuccess,
   onBack,
   isAdmin = false,
+  isLinkPage = false,
+  className = "",
+  onAuthError,
 }: {
   source: ChatSource;
   onResetSuccess?: () => void;
   onBack?: () => void;
   isAdmin?: boolean;
+  isLinkPage?: boolean;
+  className?: string;
+  onAuthError?: () => void;
 }) {
   const { showToast } = useToast();
   const [detail, setDetail] = useState<ChatDetail | null>(null);
@@ -56,10 +62,14 @@ export function Conversation({
     try {
       const res = await source.getDetail();
       setDetail(res);
+    } catch (err: any) {
+      if (err?.status === 401) {
+        onAuthError?.();
+      }
     } finally {
       setLoading(false);
     }
-  }, [source]);
+  }, [source, onAuthError]);
 
   useEffect(() => {
     setLoading(true);
@@ -196,7 +206,7 @@ export function Conversation({
   }
 
   return (
-    <div className="flex-1 flex overflow-hidden bg-zinc-100/40 dark:bg-zinc-900/30">
+    <div className={`flex-1 flex overflow-hidden bg-zinc-100/40 dark:bg-zinc-900/30 ${className}`}>
       {/* Main Conversation Column */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-white dark:bg-zinc-950">
         <ConversationHeader
@@ -207,10 +217,11 @@ export function Conversation({
             setDesktopPanelVisible((v) => !v);
           }}
           isPanelOpen={panelOpen}
-          onTake={handleTakeChat}
+          onTake={isLinkPage ? undefined : handleTakeChat}
           onResume={handleResumeChat}
           onRelease={source.release ? handleReleaseChat : undefined}
           onReset={source.reset ? handleResetChat : undefined}
+          isLinkPage={isLinkPage}
         />
 
         <MessageList
