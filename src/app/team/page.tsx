@@ -15,12 +15,17 @@ import {
   Check,
   Copy,
   ExternalLink,
+  Pencil,
   Plus,
   RefreshCw,
   Trash2,
   UsersRound,
   X,
 } from "lucide-react";
+import { Sheet } from "@/components/ui/Sheet";
+import { Menu, MenuItem } from "@/components/ui/Menu";
+import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const AUDIT_PAGE = 20;
 
@@ -73,6 +78,7 @@ interface FormState {
 export default function TeamPage() {
   const { user: me, role: myRole, can, hasEmployee, tenant } = useAuth();
   const { showToast } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const isSuper = myRole === "superadmin";
 
   const [users, setUsers] = useState<TeamUser[]>([]);
@@ -217,7 +223,15 @@ export default function TeamPage() {
   };
 
   const setActive = async (u: TeamUser, next: boolean) => {
-    if (!next && !confirm(`Отключить «${u.username}» в этой компании? Доступ к кабинету и боту пропадёт, аккаунт останется.`)) return;
+    if (!next) {
+      const ok = await confirm({
+        title: "Отключить пользователя?",
+        text: `Отключить «${u.username}» в этой компании? Доступ к кабинету и боту пропадёт, аккаунт останется.`,
+        confirmLabel: "Отключить",
+        danger: true,
+      });
+      if (!ok) return;
+    }
     setBusyId(u.id);
     try {
       await api.updateUser(u.id, { is_active: next });
@@ -231,7 +245,13 @@ export default function TeamPage() {
   };
 
   const removeFromCompany = async (u: TeamUser) => {
-    if (!confirm(`Убрать «${u.username}» из компании? Аккаунт сохранится, но доступ к этой компании пропадёт.`)) return;
+    const ok = await confirm({
+      title: "Убрать из компании?",
+      text: `Убрать «${u.username}» из компании? Аккаунт сохранится, но доступ к этой компании пропадёт.`,
+      confirmLabel: "Убрать",
+      danger: true,
+    });
+    if (!ok) return;
     setBusyId(u.id);
     try {
       await api.removeUser(u.id);
@@ -266,7 +286,13 @@ export default function TeamPage() {
   };
 
   const removeLegacy = async (m: TeamMember) => {
-    if (!confirm(`Удалить «${m.display_name}» из команды бота?`)) return;
+    const ok = await confirm({
+      title: "Удалить из команды бота?",
+      text: `Удалить «${m.display_name}» из команды бота?`,
+      confirmLabel: "Удалить",
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await api.deleteTeamMember(m.id);
       await loadUsers();
@@ -327,7 +353,7 @@ export default function TeamPage() {
         </div>
       )}
 
-      {/* Users table */}
+      {/* Users table (desktop) & cards (mobile) */}
       <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-500 dark:text-zinc-400">
           <span>Люди компании ({users.length})</span>
@@ -336,12 +362,125 @@ export default function TeamPage() {
             <span>Обновить</span>
           </button>
         </div>
-        <div className="overflow-x-auto">
+
+        {/* Mobile cards (< md) */}
+        <div className="md:hidden divide-y divide-zinc-100 dark:divide-zinc-800/60">
+          {users.map((u) => {
+            const tg = tgInfo(u);
+            const active = u.membership?.is_active !== false && u.is_active;
+            const caps = u.membership?.permissions || [];
+            const menuItems: MenuItem[] = [
+              {
+                label: copiedId === u.id ? "Скопировано!" : "Ссылка для Telegram",
+                icon: copiedId === u.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />,
+                onClick: () => copyInvite(u),
+                hidden: !active,
+              },
+              {
+                label: "Изменить",
+                icon: <Pencil className="h-4 w-4" />,
+                onClick: () => openEdit(u),
+              },
+              ...(u.id !== me?.id
+                ? [
+                    {
+                      label: active ? "Отключить" : "Включить",
+                      onClick: () => setActive(u, !u.is_active),
+                      danger: active,
+                    },
+                    {
+                      label: "Убрать из компании",
+                      icon: <Trash2 className="h-4 w-4" />,
+                      onClick: () => removeFromCompany(u),
+                      danger: true,
+                    },
+                  ]
+                : []),
+            ];
+
+            return (
+              <div key={u.id} className={`p-4 space-y-3 ${active ? "" : "opacity-60"}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-sm text-zinc-900 dark:text-white truncate">
+                        {u.username}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-medium border shrink-0 ${
+                          active
+                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
+                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200 dark:border-zinc-700"
+                        }`}
+                      >
+                        {active ? "Активен" : "Отключён"}
+                      </span>
+                    </div>
+                    {u.email && !u.email.endsWith("@users.altai.local") && (
+                      <div className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                        {u.email}
+                      </div>
+                    )}
+                  </div>
+                  <div className="shrink-0 flex items-center">
+                    <Menu items={menuItems} />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-zinc-500 dark:text-zinc-400 shrink-0">Telegram:</span>
+                  {tg ? (
+                    <span className="text-emerald-700 dark:text-emerald-400 font-medium truncate">
+                      {tg.name} {tg.bot && <span className="text-zinc-400">(@{tg.bot})</span>}
+                    </span>
+                  ) : (
+                    <span className="text-zinc-400 dark:text-zinc-500">Не привязан</span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-zinc-500 dark:text-zinc-400 shrink-0">ИИ-сотрудники:</span>
+                  <span className="text-zinc-700 dark:text-zinc-300 font-medium truncate">
+                    {employeeCell(u)}
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  <div className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    Права ({caps.length})
+                  </div>
+                  {caps.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {caps.map((c) => (
+                        <span
+                          key={c}
+                          className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60"
+                        >
+                          {CAP_LABELS[c]?.title || c}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-zinc-400 italic">Нет прав</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {!loading && users.length === 0 && (
+            <div className="px-4 py-8 text-center text-xs text-zinc-500 dark:text-zinc-400">
+              В компании пока никого нет
+            </div>
+          )}
+        </div>
+
+        {/* Desktop table (>= md) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-xs min-w-[720px]">
             <thead>
               <tr className="text-left text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
                 <th className="px-4 py-2 font-semibold">Имя</th>
-                                <th className="px-3 py-2 font-semibold">ИИ-сотрудники</th>
+                <th className="px-3 py-2 font-semibold">ИИ-сотрудники</th>
                 <th className="px-3 py-2 font-semibold">Права</th>
                 <th className="px-3 py-2 font-semibold">Telegram</th>
                 <th className="px-3 py-2 font-semibold">Статус</th>
@@ -557,19 +696,15 @@ export default function TeamPage() {
         </div>
       )}
 
-      {/* Create / edit modal */}
-      {form && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-0 sm:p-4">
-          <div className="w-full sm:max-w-lg max-h-[92dvh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 sm:p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
-                {form.id ? `Доступ: «${form.username}»` : "Добавить в компанию"}
-              </h3>
-              <button onClick={() => setForm(null)} className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
+      {/* Create / edit sheet */}
+      <Sheet
+        open={Boolean(form)}
+        onClose={() => setForm(null)}
+        title={form?.id ? `Доступ: «${form.username}»` : "Добавить в компанию"}
+        className="md:!w-[520px]"
+      >
+        {form && (
+          <div className="space-y-4">
             {formError && (
               <div className="p-2.5 rounded-xl text-xs bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                 {formError}
@@ -607,16 +742,16 @@ export default function TeamPage() {
             </div>
 
             {(!form.id || myRole === "superadmin" || isSelf) && (
-            <label className="block space-y-1 text-xs font-medium text-zinc-700 dark:text-zinc-300">
-              {form.id ? "Новый пароль (оставьте пустым, чтобы не менять)" : "Пароль (только для нового аккаунта, не короче 8 символов)"}
-              <input
-                className={inputCls}
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                autoComplete="new-password"
-              />
-            </label>
+              <label className="block space-y-1 text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                {form.id ? "Новый пароль (оставьте пустым, чтобы не менять)" : "Пароль (только для нового аккаунта, не короче 8 символов)"}
+                <input
+                  className={inputCls}
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  autoComplete="new-password"
+                />
+              </label>
             )}
 
             {!form.id && (
@@ -703,24 +838,28 @@ export default function TeamPage() {
               </>
             )}
 
-            <div className="flex justify-end gap-3 pt-1">
-              <button
+            <div className="flex justify-end gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setForm(null)}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
               >
                 Отмена
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={save}
                 disabled={saving}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-amber-500 hover:bg-amber-400 disabled:opacity-60 text-zinc-950 shadow-md shadow-amber-500/20"
               >
                 {saving ? "Сохранение..." : form.id ? "Сохранить" : "Создать"}
-              </button>
+              </Button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Sheet>
+
+      <ConfirmDialog />
     </div>
   );
 }
