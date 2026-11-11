@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import type { ChatDetail } from "@/types";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import type { ChatDetail, ChatCrm } from "@/types";
 import type { ChatSource } from "@/lib/chat-source";
 import { useToast } from "@/lib/toast-context";
 import { ConversationHeader } from "./ConversationHeader";
@@ -28,6 +28,29 @@ export function Conversation({
   const [isSendingDraft, setIsSendingDraft] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
   const [desktopPanelVisible, setDesktopPanelVisible] = useState(true);
+  const [crm, setCrm] = useState<ChatCrm | null>(null);
+  const [loadingCrm, setLoadingCrm] = useState(false);
+  const lastCrmFetchRef = useRef<number>(0);
+
+  const fetchCrm = useCallback(
+    async (force = false) => {
+      if (!source.getCrm) return;
+      if (!force && lastCrmFetchRef.current && Date.now() - lastCrmFetchRef.current < 5 * 60 * 1000) {
+        return;
+      }
+      setLoadingCrm(true);
+      try {
+        const res = await source.getCrm(force);
+        setCrm(res);
+        lastCrmFetchRef.current = Date.now();
+      } catch {
+        setCrm(null);
+      } finally {
+        setLoadingCrm(false);
+      }
+    },
+    [source]
+  );
 
   const fetchDetail = useCallback(async () => {
     try {
@@ -41,7 +64,8 @@ export function Conversation({
   useEffect(() => {
     setLoading(true);
     fetchDetail();
-  }, [fetchDetail]);
+    fetchCrm(false);
+  }, [fetchDetail, fetchCrm]);
 
   useEffect(() => {
     if (source.markRead && typeof document !== "undefined" && document.visibilityState === "visible") {
@@ -58,6 +82,7 @@ export function Conversation({
     };
     const handleChatUpdated = () => {
       fetchDetail();
+      fetchCrm(false);
     };
     document.addEventListener("visibilitychange", handleVis);
     window.addEventListener("chat-updated", handleChatUpdated);
@@ -219,6 +244,9 @@ export function Conversation({
         <div className="hidden xl:block w-[340px] shrink-0 border-l border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5 overflow-y-auto">
           <ClientPanel
             detail={detail}
+            crm={crm}
+            loadingCrm={loadingCrm}
+            onRefreshCrm={() => fetchCrm(true)}
             openChatHref={source.openChatHref}
           />
         </div>
@@ -232,6 +260,9 @@ export function Conversation({
       >
         <ClientPanel
           detail={detail}
+          crm={crm}
+          loadingCrm={loadingCrm}
+          onRefreshCrm={() => fetchCrm(true)}
           openChatHref={source.openChatHref}
         />
       </Sheet>

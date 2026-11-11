@@ -4,20 +4,25 @@ import React, { useState } from "react";
 import type { ChatDetail, ChatCrm } from "@/types";
 import { ChannelBadge } from "@/components/channel-badge";
 import { BANTCard } from "@/components/bant-card";
-import { Copy, Check } from "lucide-react";
-import { formatClientTitle } from "./ChatListItem";
+import { CrmBlock } from "./CrmBlock";
+import { Copy, Check, MessageSquare } from "lucide-react";
+import { formatClientTitle, formatActivityTime } from "./ChatListItem";
 import { useToast } from "@/lib/toast-context";
 
 export interface ClientPanelProps {
   detail: ChatDetail;
-  crm?: ChatCrm | null;
-  loadingCrm?: boolean;
-  onRefreshCrm?: () => Promise<void>;
+  crm: ChatCrm | null;
+  loadingCrm: boolean;
+  onRefreshCrm: () => Promise<void>;
   openChatHref?: (sessionId: string) => string;
 }
 
 export function ClientPanel({
   detail,
+  crm,
+  loadingCrm,
+  onRefreshCrm,
+  openChatHref,
 }: ClientPanelProps) {
   const { showToast } = useToast();
   const [copiedPhone, setCopiedPhone] = useState(false);
@@ -37,6 +42,8 @@ export function ClientPanel({
     showToast("Номер телефона скопирован", "success");
     setTimeout(() => setCopiedPhone(false), 2000);
   };
+
+  const otherChats = crm?.other_chats || [];
 
   return (
     <div className="space-y-6 pb-6">
@@ -67,7 +74,7 @@ export function ClientPanel({
                 <button
                   type="button"
                   onClick={handleCopyPhone}
-                  className="p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                  className="p-1 rounded text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
                   aria-label="Скопировать телефон"
                 >
                   {copiedPhone ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
@@ -99,6 +106,39 @@ export function ClientPanel({
           />
         </div>
       </div>
+
+      {/* 3. amoCRM */}
+      <CrmBlock crm={crm} loading={loadingCrm} onRefresh={onRefreshCrm} />
+
+      {/* 4. Другие чаты клиента */}
+      {otherChats.length > 0 && openChatHref && (
+        <div className="space-y-3">
+          <div className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+            Другие чаты клиента
+          </div>
+          <div className="space-y-1.5">
+            {otherChats.map((oc) => (
+              <a
+                key={oc.session_id}
+                href={openChatHref(oc.session_id)}
+                className="flex items-center justify-between gap-2 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/60 hover:border-amber-500/50 transition-colors"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <ChannelBadge channel={oc.channel} showIcon={false} />
+                  <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate">
+                    {oc.display_name || oc.channel}
+                  </span>
+                </div>
+                {oc.last_activity && (
+                  <span className="text-[11px] text-zinc-400 shrink-0">
+                    {formatActivityTime(oc.last_activity)}
+                  </span>
+                )}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
