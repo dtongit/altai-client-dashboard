@@ -264,10 +264,14 @@ export interface TeamBotMessage {
   chat_id: string;
   /** Telegram message id; null when not known (test mode, failed send). */
   message_id: number | null;
-  kind: "alert" | "ask" | "ask_result" | "changeset_card" | "changeset_notice" | "reminder" | "undo_prompt" | "agent_reply" | string;
-  /** Chat session id (alert), ask id (ask) or changeset id (cards, reminders). */
+  kind: "alert" | "ask" | "ask_result" | "changeset_card" | "changeset_notice" | "reminder" | "undo_prompt" | "agent_reply" | "member_photo" | string;
+  /** Chat session id (alert), ask id (ask), changeset id (cards, reminders) or saved photo id (member_photo). */
   ref_id: string | null;
   text: string;
+  /** Telegram file_id of a photo the member sent the bot (member_photo rows, #355); null otherwise. */
+  file_id: string | null;
+  /** Public URL of the saved copy of that photo (member_photo rows, #355); null when it was not saved. */
+  photo_url: string | null;
   created_at: string;
 }
 
