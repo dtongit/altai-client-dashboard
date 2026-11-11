@@ -337,7 +337,7 @@ function AdminChatsContent() {
   // If not admin, restrict view
   if (user && !user.is_admin) {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-[80dvh] flex flex-col items-center justify-center p-6 text-center">
         <div className="h-14 w-14 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center mb-4">
           <AlertTriangle className="h-7 w-7" />
         </div>

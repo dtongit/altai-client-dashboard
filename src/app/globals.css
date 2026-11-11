@@ -6,6 +6,13 @@
 :root {
   --background: #fafafa;
   --foreground: #09090b;
+  --app-top: 4rem;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --app-top: 3.5rem;
+  }
 }
 
 .dark {

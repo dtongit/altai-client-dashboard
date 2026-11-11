@@ -338,7 +338,7 @@ export default function SuperadminConsolePage() {
     (items.length > 0 ? Object.keys(items[0]).slice(0, 7) : ["id"]);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row">
+    <div className="min-h-[calc(100dvh-var(--app-top))] flex flex-col lg:flex-row">
       {/* Left Sidebar: 12 Database Resources */}
       <aside className="w-full lg:w-72 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 space-y-5">
         <div className="flex items-center justify-between">
@@ -667,7 +667,7 @@ export default function SuperadminConsolePage() {
       {/* Create / Edit JSON Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-3xl rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="w-full max-w-3xl rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[90dvh]">
             <div className="px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between bg-zinc-50 dark:bg-zinc-950">
               <div>
                 <h3 className="text-sm font-bold text-zinc-900 dark:text-white">

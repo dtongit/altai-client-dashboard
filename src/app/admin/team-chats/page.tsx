@@ -261,7 +261,7 @@ export default function AdminTeamChatsPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col lg:flex-row bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-[calc(100dvh-var(--app-top))] flex flex-col lg:flex-row bg-zinc-50 dark:bg-zinc-950">
       {/* Left Column: Conversations List */}
       <aside className="w-full lg:w-96 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col">
         {/* Header */}

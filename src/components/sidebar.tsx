@@ -69,7 +69,7 @@ export function Sidebar() {
   const cleanPath = (pathname || "").replace(/\/+$/, "") || "/";
 
   return (
-    <aside className="hidden md:flex w-64 flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col justify-between p-4 min-h-[calc(100vh-4rem)] transition-colors">
+    <aside className="hidden md:flex w-64 flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col justify-between p-4 min-h-[calc(100dvh-var(--app-top))] transition-colors">
       <div className="space-y-5">
         {/* Switcher back to All AI Staff */}
         <div>

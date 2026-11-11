@@ -60,7 +60,7 @@ export default function AIStaffManagementPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex-1 min-h-[calc(100vh-4rem)] flex items-center justify-center p-12">
+      <div className="flex-1 min-h-[calc(100dvh-var(--app-top))] flex items-center justify-center p-12">
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
           <span className="text-xs text-zinc-600 dark:text-zinc-400">
