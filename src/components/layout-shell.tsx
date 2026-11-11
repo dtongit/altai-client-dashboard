@@ -27,10 +27,11 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   const cleanPath = rawPath.replace(/\/+$/, "") || "/";
 
   const isLoginPage = cleanPath === "/login" || cleanPath.startsWith("/login");
+  const isChatLink = cleanPath === "/c" || cleanPath.startsWith("/c/");
   const isStartPage =
     cleanPath === "/" || cleanPath === "" || cleanPath === "/index.html";
   const isAdminPage = cleanPath.startsWith("/admin");
-  const showSidebar = !isLoginPage && !isStartPage && !isAdminPage;
+  const showSidebar = !isLoginPage && !isStartPage && !isAdminPage && !isChatLink;
 
   // Page guards (roles epic #75): which capability / AI employee each section needs.
   const needsVera = ["/vera", "/chats", "/simulator"].some(
@@ -60,16 +61,16 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && mounted) {
-      if (!user && !isLoginPage) {
+      if (!user && !isLoginPage && !isChatLink) {
         router.replace("/login");
       } else if (user && isLoginPage) {
         router.replace("/");
       }
     }
-  }, [loading, mounted, user, isLoginPage, router]);
+  }, [loading, mounted, user, isLoginPage, isChatLink, router]);
 
-  // If on the login page, render directly without blocking auth
-  if (isLoginPage) {
+  // If on the login page or chat link page, render directly without blocking auth
+  if (isLoginPage || isChatLink) {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
         {children}

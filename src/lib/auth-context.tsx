@@ -62,6 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function initAuth() {
+      if (typeof window !== "undefined") {
+        const p = (window.location.pathname || "").replace(/\/+$/, "") || "/";
+        if (p === "/c" || p.startsWith("/c/")) {
+          setLoading(false);
+          return;
+        }
+      }
+
       const { token: savedToken } = getStoredAuth();
       if (savedToken) {
         setTokenState(savedToken);
