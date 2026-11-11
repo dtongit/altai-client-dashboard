@@ -1,90 +1,267 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import type { ChatDetail } from "@/types";
+import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
+import { Menu, MenuItem } from "@/components/ui/Menu";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ChannelBadge } from "@/components/channel-badge";
+import { ArrowLeft, Info, MoreVertical, RotateCcw, AlertCircle, Wrench, UserRound } from "lucide-react";
 import { formatClientTitle } from "./ChatListItem";
-import { ArrowLeft, PauseCircle, PlayCircle, RotateCcw } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+
+export interface ConversationHeaderProps {
+  detail: ChatDetail;
+  onBack?: () => void;
+  onTogglePanel?: () => void;
+  isPanelOpen?: boolean;
+  onTake: () => Promise<void>;
+  onResume: (triggerReply: boolean) => Promise<void>;
+  onRelease?: () => Promise<void>;
+  onReset?: () => Promise<void>;
+}
 
 export function ConversationHeader({
   detail,
-  onTogglePause,
-  onReset,
-  actionLoading,
-  resetting,
   onBack,
-}: {
-  detail: ChatDetail;
-  onTogglePause: () => void;
-  onReset: () => void;
-  actionLoading: boolean;
-  resetting: boolean;
-  onBack?: () => void;
-}) {
-  const clientTitle = formatClientTitle(detail.channel, detail.user_id, detail.qualification?.client_name);
+  onTogglePanel,
+  isPanelOpen = false,
+  onTake,
+  onResume,
+  onRelease,
+  onReset,
+}: ConversationHeaderProps) {
+  const { user } = useAuth();
+  const { confirm, ConfirmDialog } = useConfirm();
+  const [loadingAction, setLoadingAction] = useState(false);
+
+  const displayName =
+    detail.display_name ||
+    formatClientTitle(detail.channel, detail.user_id, detail.client?.name || detail.qualification?.client_name);
+
+  const phone = detail.client?.phone || detail.qualification?.client_phone;
+  const isPaused = detail.is_paused;
+  const isMeOwner = Boolean(user && detail.owner?.user_id && detail.owner.user_id === user.id);
+  const canReset = detail.permissions?.can_reset ?? user?.is_admin ?? false;
+
+  const handleTake = async () => {
+    setLoadingAction(true);
+    try {
+      await onTake();
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
+  const handleResume = async (triggerReply: boolean) => {
+    setLoadingAction(true);
+    try {
+      await onResume(triggerReply);
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
+  const handleRelease = async () => {
+    if (!onRelease) return;
+    setLoadingAction(true);
+    try {
+      await onRelease();
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
+  const handleReset = async () => {
+    if (!onReset) return;
+    const ok = await confirm({
+      title: "Сбросить историю диалога?",
+      text: "Вера забудет этот диалог, пауза будет снята. Сообщения в канале у клиента останутся.",
+      confirmLabel: "Сбросить",
+      cancelLabel: "Отмена",
+      danger: true,
+    });
+    if (!ok) return;
+
+    setLoadingAction(true);
+    try {
+      await onReset();
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
+  const menuItems: MenuItem[] = [
+    ...(isPaused
+      ? [
+          {
+            label: "Вернуть и ответить сразу",
+            icon: <RotateCcw className="h-4 w-4" />,
+            onClick: () => handleResume(true),
+          },
+        ]
+      : []),
+    ...(isMeOwner && onRelease
+      ? [
+          {
+            label: "Отпустить чат",
+            icon: <UserRound className="h-4 w-4" />,
+            onClick: handleRelease,
+          },
+        ]
+      : []),
+    ...(user?.is_admin
+      ? [
+          {
+            label: "Технические детали",
+            icon: <Wrench className="h-4 w-4" />,
+            onClick: () => {
+              window.open(`/admin/chats/?session_id=${encodeURIComponent(detail.session_id)}`, "_blank");
+            },
+          },
+        ]
+      : []),
+    ...(canReset && onReset
+      ? [
+          {
+            label: "Сбросить историю",
+            icon: <RotateCcw className="h-4 w-4" />,
+            onClick: handleReset,
+            danger: true,
+          },
+        ]
+      : []),
+  ];
 
   return (
-    <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            aria-label="Назад к списку чатов"
-            className="md:hidden p-1.5 -ml-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded-lg"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-        )}
-        <ChannelBadge channel={detail.channel} />
-        <div>
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
-            <span>{clientTitle}</span>
-            <span className="text-xs font-normal text-zinc-400 font-mono">
-              ({detail.session_id})
-            </span>
-          </h3>
-          <div className="flex items-center gap-2 text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-            <span>Канал: {detail.channel}</span>
-            <span>•</span>
-            <span className="flex items-center gap-1">
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  detail.is_paused ? "bg-amber-500" : "bg-emerald-500 animate-pulse"
-                }`}
-              />
-              {detail.is_paused ? "ИИ на паузе" : "ИИ активен"}
+    <div className="border-b border-zinc-200 dark:border-zinc-800 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md shrink-0">
+      <div className="px-4 py-3 flex items-center justify-between gap-3">
+        {/* Left side */}
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Back button (phone only) */}
+          {onBack && (
+            <IconButton
+              type="button"
+              aria-label="Назад к списку чатов"
+              variant="ghost"
+              size="sm"
+              onClick={onBack}
+              className="md:hidden text-zinc-600 dark:text-zinc-400 -ml-1"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </IconButton>
+          )}
+
+          <Avatar name={displayName} channel={detail.channel} size="md" />
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-zinc-900 dark:text-white truncate">
+                {displayName}
+              </h2>
+              {/* Phone link on desktop */}
+              {phone && (
+                <a
+                  href={`tel:${phone}`}
+                  className="hidden md:inline-block text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 font-normal"
+                >
+                  {phone}
+                </a>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 mt-0.5">
+              <ChannelBadge channel={detail.channel} />
+
+              {/* Owner chip if present */}
+              {detail.owner && (
+                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <UserRound className="h-3 w-3" />
+                  <span>Ведёт: {detail.owner.name}</span>
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right side actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Status pill (desktop) */}
+          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                isPaused
+                  ? "bg-amber-500"
+                  : "bg-emerald-500 animate-pulse"
+              }`}
+            />
+            <span>
+              {detail.owner
+                ? `Ведёт: ${detail.owner.name}`
+                : isPaused
+                ? "Вера на паузе"
+                : "Вера отвечает"}
             </span>
           </div>
+
+          {/* Primary Take / Return action button */}
+          {!isPaused ? (
+            <Button
+              variant="primary"
+              size="sm"
+              loading={loadingAction}
+              onClick={handleTake}
+              className="text-xs font-semibold"
+            >
+              Взять себе
+            </Button>
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={loadingAction}
+              onClick={() => handleResume(false)}
+              className="text-xs font-semibold"
+            >
+              Вернуть Вере
+            </Button>
+          )}
+
+          {/* Toggle Client Panel Button (ⓘ) */}
+          {onTogglePanel && (
+            <IconButton
+              type="button"
+              aria-label="Информация о клиенте"
+              variant={isPanelOpen ? "primary" : "ghost"}
+              size="sm"
+              onClick={onTogglePanel}
+              className={isPanelOpen ? "" : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"}
+            >
+              <Info className="h-5 w-5" />
+            </IconButton>
+          )}
+
+          {/* ⋯ Menu */}
+          {menuItems.length > 0 && (
+            <Menu items={menuItems} align="right" />
+          )}
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onTogglePause}
-          disabled={actionLoading}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer ${
-            detail.is_paused
-              ? "bg-emerald-500 hover:bg-emerald-600 text-zinc-950"
-              : "bg-amber-500 hover:bg-amber-600 text-zinc-950"
-          } disabled:opacity-50`}
-        >
-          {detail.is_paused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
-          <span>{detail.is_paused ? "Возобновить ИИ" : "Перехватить (пауза)"}</span>
-        </button>
+      {/* Slim Rose Alert Bar if attention is escalated */}
+      {detail.attention === "escalated" && (
+        <div className="px-4 py-2 bg-rose-50 dark:bg-rose-950/40 border-t border-rose-200 dark:border-rose-900/60 flex items-center gap-2 text-xs text-rose-800 dark:text-rose-300 font-medium">
+          <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
+          <span className="truncate">
+            Вера передала диалог{detail.escalation_reason ? `: ${detail.escalation_reason}` : ""}
+          </span>
+        </div>
+      )}
 
-        <button
-          type="button"
-          onClick={onReset}
-          disabled={resetting}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer disabled:opacity-50"
-          title="Сбросить историю сообщений"
-        >
-          <RotateCcw className={`h-3.5 w-3.5 ${resetting ? "animate-spin" : ""}`} />
-          <span>Сбросить</span>
-        </button>
-      </div>
+      {/* Confirm Dialog Instance */}
+      <ConfirmDialog />
     </div>
   );
 }
