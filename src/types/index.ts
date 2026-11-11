@@ -399,6 +399,14 @@ export interface ChatSessionItem {
   needs_attention?: boolean;
   escalated_at?: string | null;
   escalation_reason?: string | null;
+  // New redesign fields (all optional)
+  attention?: "escalated" | "waiting" | "draft" | null;
+  waiting_since?: string | null;
+  unread?: boolean;
+  owner?: { user_id?: string | null; name: string } | null;
+  display_name?: string | null;
+  last_message_role?: "customer" | "vera" | "manager" | null;
+  has_crm_contact?: boolean;
 }
 
 export interface ChatsCounts {
@@ -406,6 +414,11 @@ export interface ChatsCounts {
   attention: number;
   paused: number;
   by_channel: Record<string, number>;
+  mine?: number;
+  escalated?: number;
+  waiting?: number;
+  drafts?: number;
+  unread?: number;
 }
 
 export interface ChatsListResponse {
@@ -416,6 +429,56 @@ export interface ChatsListResponse {
   has_more?: boolean;
   chats: ChatSessionItem[];
   counts?: ChatsCounts;
+}
+
+export interface ChatMessage {
+  id: string; // "{log}_u" | "{log}_a"
+  role: "user" | "assistant" | "operator";
+  text: string | null;
+  status?: string;
+  created_at: string | null;
+  latency_ms?: number | null;
+  author?: string | null;
+  media?: { url: string; kind?: "image" | "file" }[];
+}
+
+export interface ChatDraft {
+  approval_id: string;
+  log_id: string;
+  text: string;
+  media?: { url: string }[];
+  warning?: string | null;
+  iteration?: number;
+  created_at: string;
+  private_message?: string | null;
+}
+
+export interface ChatCrmDeal {
+  id: string;
+  name: string;
+  pipeline?: string | null;
+  status: string;
+  status_color?: string | null;
+  price?: number | null;
+  closed?: boolean;
+  url: string;
+  updated_at?: string | null;
+}
+
+export interface ChatCrmOtherChat {
+  session_id: string;
+  channel: string;
+  display_name?: string | null;
+  last_activity?: string | null;
+}
+
+export interface ChatCrm {
+  ok: boolean;
+  crm_type: "amocrm" | string;
+  contact: { id: string; name: string; phone?: string | null; url: string } | null;
+  deals: ChatCrmDeal[];
+  other_chats: ChatCrmOtherChat[];
+  refreshed_at?: string | null;
 }
 
 export interface ChatTurn {
@@ -452,6 +515,23 @@ export interface ChatDetail {
     lead_id?: string | number | null;
   } | null;
   turns: ChatTurn[];
+  // New redesign fields (all optional)
+  display_name?: string | null;
+  client?: { name?: string | null; phone?: string | null; login?: string | null } | null;
+  owner?: { user_id?: string | null; name: string } | null;
+  attention?: "escalated" | "waiting" | "draft" | null;
+  escalation_reason?: string | null;
+  permissions?: { can_reset?: boolean };
+  draft?: ChatDraft | null;
+  can_send?: boolean;
+  reply_window_closes_at?: string | null;
+  capabilities?: { send_media?: boolean };
+  messages?: ChatMessage[];
+}
+
+export interface ChatLinkDetail extends ChatDetail {
+  business_name?: string | null;
+  expires_at?: string | null;
 }
 
 export interface ChannelStatus {

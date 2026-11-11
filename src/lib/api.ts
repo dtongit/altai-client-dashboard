@@ -34,6 +34,8 @@ import {
   PromptModule,
   SemanticSkillCard,
   PromptPreviewResponse,
+  ChatCrm,
+  ChatDraft,
 } from "@/types";
 
 const rawApiUrl =
@@ -90,6 +92,8 @@ export function getStoredAuth() {
   return { token: authToken, tenantId: currentTenantId };
 }
 
+export { API_BASE_URL, ADMIN_API_BASE_URL };
+
 async function request<T>(
   endpoint: string,
   options: RequestInit = {},
@@ -98,9 +102,12 @@ async function request<T>(
   const { token, tenantId } = getStoredAuth();
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
+
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = headers["Content-Type"] || "application/json";
+  }
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
@@ -116,7 +123,11 @@ async function request<T>(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail || `Ошибка сервера (${res.status})`);
+    const error: any = new Error(err.detail || `Ошибка сервера (${res.status})`);
+    error.detail = err.detail || error.message;
+    error.reason = err.reason;
+    error.status = res.status;
+    throw error;
   }
 
   return await res.json();
@@ -222,6 +233,81 @@ export const api = {
         body: JSON.stringify({ text }),
       }
     );
+  },
+
+  async markChatRead(sessionId: string) {
+    return request<{ ok: boolean }>(
+      `/chats/${encodeURIComponent(sessionId)}/read`,
+      { method: "POST" }
+    ).catch(() => ({ ok: false }));
+  },
+
+  async takeChat(sessionId: string) {
+    return request<{
+      ok: boolean;
+      owner?: { user_id?: string | null; name: string } | null;
+      is_paused: boolean;
+    }>(`/chats/${encodeURIComponent(sessionId)}/take`, {
+      method: "POST",
+    });
+  },
+
+  async releaseChat(sessionId: string) {
+    return request<{ ok: boolean; owner: null }>(
+      `/chats/${encodeURIComponent(sessionId)}/release`,
+      { method: "POST" }
+    );
+  },
+
+  async sendOperatorMessage(sessionId: string, text?: string, files?: File[]) {
+    if (files && files.length > 0) {
+      const fd = new FormData();
+      if (text) fd.append("text", text);
+      files.forEach((f) => fd.append("files", f));
+      return request<{ ok: boolean; log_id?: string; sent?: boolean }>(
+        `/chats/${encodeURIComponent(sessionId)}/message`,
+        {
+          method: "POST",
+          body: fd,
+        }
+      );
+    }
+    return request<{ ok: boolean; log_id?: string; sent?: boolean }>(
+      `/chats/${encodeURIComponent(sessionId)}/message`,
+      {
+        method: "POST",
+        body: JSON.stringify({ text: text || "" }),
+      }
+    );
+  },
+
+  async sendDraft(sessionId: string, approvalId: string, scope?: "all" | "comment_only") {
+    return request<{ ok: boolean; sent: boolean }>(
+      `/chats/${encodeURIComponent(sessionId)}/draft/send`,
+      {
+        method: "POST",
+        body: JSON.stringify({ approval_id: approvalId, scope }),
+      }
+    );
+  },
+
+  async regenerateDraft(sessionId: string, approvalId: string, note: string) {
+    return request<{ ok: boolean }>(
+      `/chats/${encodeURIComponent(sessionId)}/draft/regenerate`,
+      {
+        method: "POST",
+        body: JSON.stringify({ approval_id: approvalId, note }),
+      }
+    );
+  },
+
+  async getChatCrm(sessionId: string, refresh?: boolean): Promise<ChatCrm | null> {
+    try {
+      const q = refresh ? "?refresh=1" : "";
+      return await request<ChatCrm>(`/chats/${encodeURIComponent(sessionId)}/crm${q}`);
+    } catch {
+      return null;
+    }
   },
 
   async resetChat(sessionId: string) {
