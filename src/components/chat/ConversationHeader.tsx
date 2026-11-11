@@ -4,7 +4,7 @@ import React from "react";
 import type { ChatDetail } from "@/types";
 import { ChannelBadge } from "@/components/channel-badge";
 import { formatClientTitle } from "./ChatListItem";
-import { PauseCircle, PlayCircle, RotateCcw } from "lucide-react";
+import { ArrowLeft, PauseCircle, PlayCircle, RotateCcw } from "lucide-react";
 
 export function ConversationHeader({
   detail,
@@ -12,18 +12,30 @@ export function ConversationHeader({
   onReset,
   actionLoading,
   resetting,
+  onBack,
 }: {
   detail: ChatDetail;
   onTogglePause: () => void;
   onReset: () => void;
   actionLoading: boolean;
   resetting: boolean;
+  onBack?: () => void;
 }) {
   const clientTitle = formatClientTitle(detail.channel, detail.user_id, detail.qualification?.client_name);
 
   return (
     <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-3">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Назад к списку чатов"
+            className="md:hidden p-1.5 -ml-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded-lg"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        )}
         <ChannelBadge channel={detail.channel} />
         <div>
           <h3 className="text-sm font-semibold text-zinc-900 dark:text-white flex items-center gap-2">

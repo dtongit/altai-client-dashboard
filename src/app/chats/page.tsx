@@ -23,6 +23,7 @@ export default function ChatsPage() {
   const [statusFilter, setStatusFilter] = useState<ChatStatusTab>("all");
   const [channelFilter, setChannelFilter] = useState("");
   const [filtersReady, setFiltersReady] = useState(false);
+  const [isPhone, setIsPhone] = useState(false);
 
   const requestSeq = useRef(0);
   const loadedCount = useRef(0);
@@ -30,21 +31,48 @@ export default function ChatsPage() {
   selectedRef.current = selectedSessionId;
 
   useEffect(() => {
+    const onResize = () => setIsPhone(window.innerWidth < 768);
+    onResize();
+    window.addEventListener("resize", onResize);
+
+    const onPopState = () => {
+      const p = new URLSearchParams(window.location.search);
+      setSelectedSessionId(p.get("session"));
+    };
+    window.addEventListener("popstate", onPopState);
+
     const p = new URLSearchParams(window.location.search);
+    const sid = p.get("session");
+    if (sid) setSelectedSessionId(sid);
     const st = p.get("status") as ChatStatusTab;
     if (st && ["all", "attention", "paused", "mine"].includes(st)) setStatusFilter(st);
     setChannelFilter(p.get("channel") || "");
     setFiltersReady(true);
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("popstate", onPopState);
+    };
   }, []);
 
-  useEffect(() => {
-    if (!filtersReady) return;
+  const updateUrl = useCallback((sid: string | null, push = false) => {
     const p = new URLSearchParams();
+    if (sid) p.set("session", sid);
     if (statusFilter !== "all") p.set("status", statusFilter);
     if (channelFilter) p.set("channel", channelFilter);
     const qs = p.toString();
-    window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
-  }, [filtersReady, statusFilter, channelFilter]);
+    const url = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
+    if (push) {
+      window.history.pushState(null, "", url);
+    } else {
+      window.history.replaceState(null, "", url);
+    }
+  }, [statusFilter, channelFilter]);
+
+  useEffect(() => {
+    if (!filtersReady) return;
+    updateUrl(selectedSessionId, false);
+  }, [filtersReady, statusFilter, channelFilter, updateUrl, selectedSessionId]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 350);
@@ -77,8 +105,9 @@ export default function ChatsPage() {
           setStatusFilter("attention");
         }
       }
-      if (!selectedRef.current && incoming.length > 0) {
+      if (!isPhone && !new URLSearchParams(window.location.search).get("session") && incoming.length > 0 && !selectedRef.current) {
         setSelectedSessionId(incoming[0].session_id);
+        updateUrl(incoming[0].session_id, false);
       }
     } finally {
       if (seq === requestSeq.current) {
@@ -86,7 +115,7 @@ export default function ChatsPage() {
         setLoadingMore(false);
       }
     }
-  }, [debouncedSearch, statusFilter, channelFilter]);
+  }, [debouncedSearch, statusFilter, channelFilter, isPhone, updateUrl]);
 
   useEffect(() => {
     if (!filtersReady) return;
@@ -105,13 +134,23 @@ export default function ChatsPage() {
     return selectedSessionId ? createDashboardChatSource(selectedSessionId) : null;
   }, [selectedSessionId]);
 
+  const handleSelectChat = (id: string) => {
+    setSelectedSessionId(id);
+    updateUrl(id, isPhone);
+  };
+
+  const handleBack = () => {
+    setSelectedSessionId(null);
+    updateUrl(null, false);
+  };
+
   return (
-    <div className="h-[calc(100dvh-var(--app-top))] flex flex-col md:flex-row overflow-hidden bg-zinc-50 dark:bg-zinc-950 transition-colors">
-      <div className="w-full md:w-96 lg:w-[420px] flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800 flex flex-col bg-white dark:bg-zinc-950/70">
+    <div className="h-[calc(100dvh-var(--app-top))] flex overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+      <div className={isPhone && selectedSessionId ? "hidden" : "w-full md:w-[340px] xl:w-[380px] shrink-0 h-full flex"}>
         <ChatList
           chats={chats}
           selectedSessionId={selectedSessionId}
-          onSelectChat={setSelectedSessionId}
+          onSelectChat={handleSelectChat}
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
           channelFilter={channelFilter}
@@ -128,19 +167,22 @@ export default function ChatsPage() {
         />
       </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden bg-zinc-100/40 dark:bg-zinc-900/30">
+      <div className={`flex-1 h-full min-w-0 ${isPhone && !selectedSessionId ? "hidden" : "flex flex-col overflow-hidden bg-zinc-100/40 dark:bg-zinc-900/30"}`}>
         {chatSource ? (
           <Conversation
             key={selectedSessionId}
             source={chatSource}
+            onBack={handleBack}
             onResetSuccess={() => {
               setChats((prev) => prev.filter((c) => c.session_id !== selectedSessionId));
+              setSelectedSessionId(null);
+              updateUrl(null, false);
               loadChats("silent");
             }}
           />
         ) : (
-          <div className="flex-1 flex items-center justify-center p-8 text-center text-xs text-zinc-500">
-            Выберите диалог из списка слева для просмотра деталей
+          <div className="flex-1 flex items-center justify-center p-8 text-center text-sm text-zinc-400">
+            Выберите диалог из списка для просмотра
           </div>
         )}
       </div>

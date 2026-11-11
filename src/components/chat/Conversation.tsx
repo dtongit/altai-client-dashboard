@@ -11,9 +11,11 @@ import { ClientPanel } from "./ClientPanel";
 export function Conversation({
   source,
   onResetSuccess,
+  onBack,
 }: {
   source: ChatSource;
   onResetSuccess?: () => void;
+  onBack?: () => void;
 }) {
   const [detail, setDetail] = useState<ChatDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,6 +93,7 @@ export function Conversation({
         onReset={handleReset}
         actionLoading={actionLoading}
         resetting={resetting}
+        onBack={onBack}
       />
       <ClientPanel detail={detail} />
       <MessageList turns={detail.turns || []} />
