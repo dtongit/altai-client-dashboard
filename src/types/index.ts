@@ -525,9 +525,21 @@ export interface ChatDetail {
   draft?: ChatDraft | null;
   can_send?: boolean;
   disabled_reason?: string | null;
+  cannot_send_reason?: "window_closed" | "channel_not_connected" | string | null;
+  needs_attention?: boolean;
+  waiting_since?: string | null;
   reply_window_closes_at?: string | null;
   capabilities?: { send_media?: boolean };
   messages?: ChatMessage[];
+}
+
+export interface SendMessageResult {
+  ok?: boolean;
+  log_id?: string;
+  sent?: boolean;
+  media_sent?: number;
+  media_failed?: number;
+  warning?: string | null;
 }
 
 export interface ChatLinkDetail extends ChatDetail {

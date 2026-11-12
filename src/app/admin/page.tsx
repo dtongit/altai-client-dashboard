@@ -22,6 +22,7 @@ import {
   Cpu,
   MessageSquare,
   Users,
+  Ban,
 } from "lucide-react";
 
 const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
@@ -35,12 +36,16 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     llm_model: "deepseek/deepseek-chat",
     kind: "live",
     ready_for_auto: false,
+    is_paying: false,
+    created_by_key_id: null,
+    created_by_user_id: null,
     source_tenant_id: null,
     demo_config: {},
   },
   "api-keys": {
     name: "Алина (демо-менеджер)",
     scope: "demo_manager",
+    demo_scope: null,
   },
   users: {
     username: "new_operator",
@@ -246,6 +251,25 @@ export default function SuperadminConsolePage() {
     }
   };
 
+  const isPayingValue = (() => {
+    if (selectedResource !== "tenants") return null;
+    try {
+      return Boolean(JSON.parse(jsonEditorText)?.is_paying);
+    } catch {
+      return null;
+    }
+  })();
+
+  const setIsPaying = (checked: boolean) => {
+    try {
+      const parsed = JSON.parse(jsonEditorText);
+      parsed.is_paying = checked;
+      setJsonEditorText(JSON.stringify(parsed, null, 2));
+    } catch {
+      showToast("error", "Сначала исправьте синтаксис JSON");
+    }
+  };
+
   const handleSaveModal = async () => {
     setSaving(true);
     try {
@@ -297,6 +321,22 @@ export default function SuperadminConsolePage() {
       await loadResourceItems(selectedResource, search);
     } catch (err: any) {
       showToast("error", err?.message || "Не удалось удалить запись");
+    }
+  };
+
+  const handleRevokeChatLink = async (linkId: string) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(`Отозвать ссылку на чат "${linkId}"?`)
+    ) {
+      return;
+    }
+    try {
+      await api.revokeAdminChatLink(linkId);
+      showToast("success", `Ссылка ${linkId} отозвана`);
+      await loadResourceItems(selectedResource, search);
+    } catch (err: any) {
+      showToast("error", err?.message || "Не удалось отозвать ссылку на чат");
     }
   };
 
@@ -604,6 +644,16 @@ export default function SuperadminConsolePage() {
                                 <span>Трейс диалога</span>
                               </Link>
                             )}
+                            {selectedResource === "chat-links" && !row.revoked_at && (
+                              <button
+                                onClick={() => handleRevokeChatLink(row.id)}
+                                className="px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500 hover:text-white text-rose-700 dark:text-rose-400 text-[11px] font-semibold transition-colors inline-flex items-center gap-1 border border-rose-500/30"
+                                title="Отозвать ссылку на чат"
+                              >
+                                <Ban className="h-3 w-3" />
+                                <span>Отозвать</span>
+                              </button>
+                            )}
                             <button
                               onClick={() => openEditModal(row)}
                               className="px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-amber-500 hover:text-zinc-950 dark:bg-zinc-800 dark:hover:bg-amber-500 dark:hover:text-zinc-950 text-[11px] font-semibold transition-colors inline-flex items-center gap-1"
@@ -613,7 +663,7 @@ export default function SuperadminConsolePage() {
                                 {currentSchema?.read_only || isGlobalModule(row) ? "JSON" : "Изменить"}
                               </span>
                             </button>
-                            {!isGlobalModule(row) && (
+                            {!isGlobalModule(row) && !currentSchema?.read_only && (
                               <button
                                 onClick={() => handleDeleteRow(row)}
                                 className="p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
@@ -700,6 +750,22 @@ export default function SuperadminConsolePage() {
                     <span className="font-semibold">Готов к автопилоту (ready_for_auto)</span>
                     <span className="block text-[11px] text-zinc-500">
                       Пока флаг выключен, клиент не может включить режим «Автопилот» ни в одном канале.
+                    </span>
+                  </span>
+                </label>
+              )}
+              {selectedResource === "tenants" && isPayingValue !== null && (
+                <label className="flex items-start gap-2.5 cursor-pointer select-none text-xs text-zinc-700 dark:text-zinc-300">
+                  <input
+                    type="checkbox"
+                    checked={isPayingValue}
+                    onChange={(e) => setIsPaying(e.target.checked)}
+                    className="mt-0.5 rounded border-zinc-300 dark:border-zinc-700 text-amber-500 focus:ring-amber-500"
+                  />
+                  <span>
+                    <span className="font-semibold">Платящий клиент (is_paying)</span>
+                    <span className="block text-[11px] text-zinc-500">
+                      Отметка об оплате подписки компании.
                     </span>
                   </span>
                 </label>

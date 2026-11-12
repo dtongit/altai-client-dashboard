@@ -198,7 +198,17 @@ export function MessageList({
                 </div>
               )}
 
-              {isSystemStatus ? (
+              {msg.role === "user" ? (
+                <>
+                  <MessageBubble
+                    message={msg}
+                    isFirstInGroup={isFirstInGroup}
+                    isLastInGroup={isLastInGroup}
+                    isAdmin={isAdmin}
+                  />
+                  {isSystemStatus && <SystemNote status={msg.status} />}
+                </>
+              ) : isSystemStatus ? (
                 <SystemNote status={msg.status} />
               ) : (
                 <MessageBubble

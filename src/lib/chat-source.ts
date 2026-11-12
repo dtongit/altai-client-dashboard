@@ -1,10 +1,10 @@
-import type { ChatDetail, ChatCrm } from "@/types";
+import type { ChatDetail, ChatCrm, SendMessageResult } from "@/types";
 import { api } from "./api";
 
 export interface ChatSource {
   getDetail(): Promise<ChatDetail>;
   getCrm(refresh?: boolean): Promise<ChatCrm | null>; // null on 404/error
-  send(text: string, files: File[]): Promise<void>;   // throws {detail, reason}
+  send(text: string, files: File[]): Promise<SendMessageResult | void>;   // throws {detail, reason}
   take(): Promise<void>;
   release?(): Promise<void>;                          // absent on the link page
   pause(): Promise<void>;
@@ -25,7 +25,7 @@ export function createDashboardChatSource(sessionId: string): ChatSource {
       return api.getChatCrm(sessionId, refresh);
     },
     async send(text: string, files: File[]) {
-      await api.sendOperatorMessage(sessionId, text, files);
+      return api.sendOperatorMessage(sessionId, text, files);
     },
     async take() {
       await api.takeChat(sessionId);

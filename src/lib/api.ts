@@ -36,6 +36,7 @@ import {
   PromptPreviewResponse,
   ChatCrm,
   ChatDraft,
+  SendMessageResult,
 } from "@/types";
 
 const rawApiUrl =
@@ -259,12 +260,12 @@ export const api = {
     );
   },
 
-  async sendOperatorMessage(sessionId: string, text?: string, files?: File[]) {
+  async sendOperatorMessage(sessionId: string, text?: string, files?: File[]): Promise<SendMessageResult> {
     if (files && files.length > 0) {
       const fd = new FormData();
       if (text) fd.append("text", text);
       files.forEach((f) => fd.append("files", f));
-      return request<{ ok: boolean; log_id?: string; sent?: boolean }>(
+      return request<SendMessageResult>(
         `/chats/${encodeURIComponent(sessionId)}/message`,
         {
           method: "POST",
@@ -272,7 +273,7 @@ export const api = {
         }
       );
     }
-    return request<{ ok: boolean; log_id?: string; sent?: boolean }>(
+    return request<SendMessageResult>(
       `/chats/${encodeURIComponent(sessionId)}/message`,
       {
         method: "POST",
@@ -689,6 +690,14 @@ export const api = {
     return request(
       `/crud/${encodeURIComponent(resource)}/${encodeURIComponent(String(id))}`,
       { method: "DELETE" },
+      ADMIN_API_BASE_URL
+    );
+  },
+
+  async revokeAdminChatLink(linkId: string): Promise<{ ok: boolean }> {
+    return request<{ ok: boolean }>(
+      `/chat-links/${encodeURIComponent(linkId)}/revoke`,
+      { method: "POST" },
       ADMIN_API_BASE_URL
     );
   },

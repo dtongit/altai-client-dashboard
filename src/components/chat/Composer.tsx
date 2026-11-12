@@ -12,6 +12,7 @@ export interface ComposerProps {
   isPaused: boolean;
   onSend: (text: string, files: File[]) => Promise<void>;
   disabledReason?: string | null;
+  cannotSendReason?: "window_closed" | "channel_not_connected" | string | null;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -45,6 +46,7 @@ export function Composer({
   isPaused,
   onSend,
   disabledReason,
+  cannotSendReason,
 }: ComposerProps) {
   const { showToast } = useToast();
   const [text, setText] = useState("");
@@ -66,7 +68,16 @@ export function Composer({
 
   const windowInfo = getWindowRemaining(replyWindowClosesAt);
   const isWindowClosed = windowInfo?.isClosed ?? false;
-  const isInputDisabled = !canSend || isWindowClosed;
+  const cannotSendLabel = (() => {
+    if (cannotSendReason === "window_closed" || isWindowClosed) {
+      return "Окно ответа закрыто: клиент писал больше 24 ч назад. Ответить можно, когда клиент напишет снова.";
+    }
+    if (cannotSendReason === "channel_not_connected") {
+      return "Канал не подключен. Отправка сообщений недоступна.";
+    }
+    return disabledReason || cannotSendReason || null;
+  })();
+  const isInputDisabled = !canSend || isWindowClosed || Boolean(cannotSendReason);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -151,13 +162,9 @@ export function Composer({
     <div className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-lg shrink-0">
       {/* Top hint or warning banner */}
       <div className="mb-2 min-h-[18px]">
-        {isWindowClosed ? (
+        {cannotSendLabel ? (
           <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
-            Окно ответа закрыто: клиент писал больше 24 ч назад. Ответить можно, когда клиент напишет снова.
-          </p>
-        ) : !canSend && disabledReason ? (
-          <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
-            {disabledReason}
+            {cannotSendLabel}
           </p>
         ) : windowInfo?.isClosingSoon ? (
           <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">

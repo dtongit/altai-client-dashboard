@@ -2,7 +2,7 @@
 
 import { API_BASE_URL } from "./api";
 import type { ChatSource } from "./chat-source";
-import type { ChatLinkDetail, ChatCrm } from "@/types";
+import type { ChatLinkDetail, ChatCrm, SendMessageResult } from "@/types";
 
 export const CHAT_LINK_STORAGE_KEY = "altai_chat_link";
 
@@ -109,12 +109,12 @@ export function createChatLinkSource(token: string): ChatSource {
         for (const f of files) {
           fd.append("files", f);
         }
-        await chatLinkRequest<{ ok: boolean; sent?: boolean }>(token, "/message", {
+        return chatLinkRequest<SendMessageResult>(token, "/message", {
           method: "POST",
           body: fd,
         });
       } else {
-        await chatLinkRequest<{ ok: boolean; sent?: boolean }>(token, "/message", {
+        return chatLinkRequest<SendMessageResult>(token, "/message", {
           method: "POST",
           body: JSON.stringify({ text }),
         });

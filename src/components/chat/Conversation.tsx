@@ -161,8 +161,14 @@ export function Conversation({
       showToast("Черновик отправлен", "success");
       await fetchDetail();
     } catch (err: any) {
-      const detailMsg = err?.detail || err?.message || "Черновик уже обработан или устарел";
-      showToast(detailMsg, "error");
+      if (err?.status === 404 || err?.status === 409) {
+        showToast("Черновик уже обработан или устарел", "error");
+      } else if (err?.reason === "provider_error") {
+        showToast(err?.detail || "Сообщение не доставлено провайдером", "error");
+      } else {
+        const detailMsg = err?.detail || err?.message || "Черновик уже обработан или устарел";
+        showToast(detailMsg, "error");
+      }
       await fetchDetail();
     } finally {
       setIsSendingDraft(false);
@@ -185,7 +191,10 @@ export function Conversation({
   };
 
   const handleSendOperatorMessage = async (text: string, files: File[]) => {
-    await source.send(text, files);
+    const res = await source.send(text, files);
+    if (res && res.warning) {
+      showToast(res.warning, "warning");
+    }
     await fetchDetail();
   };
 
@@ -246,6 +255,7 @@ export function Conversation({
           sendMedia={detail.capabilities?.send_media ?? false}
           isPaused={detail.is_paused}
           disabledReason={detail.disabled_reason}
+          cannotSendReason={detail.cannot_send_reason}
           onSend={handleSendOperatorMessage}
         />
       </div>

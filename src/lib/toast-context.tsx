@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useState } from "react";
 
-type ToastType = "info" | "success" | "error";
+type ToastType = "info" | "success" | "error" | "warning";
 interface ToastItem {
   id: number;
   type: ToastType;
