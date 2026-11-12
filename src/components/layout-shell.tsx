@@ -72,7 +72,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   // If on the login page or chat link page, render directly without blocking auth
   if (isLoginPage || isChatLink) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
+      <div className={`${isChatLink ? "" : "min-h-screen"} bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors`}>
         {children}
       </div>
     );

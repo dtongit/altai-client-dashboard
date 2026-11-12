@@ -2,6 +2,9 @@
 
 export type LiveStatus = "live" | "polling";
 
+const SLOW_RETRY_MS = 5 * 60 * 1000;
+const BACKOFF_MS = [1000, 2000, 5000, 10000, 30000];
+
 export function subscribeLiveEvents(opts: {
   url: string;
   headers: () => Record<string, string>;
@@ -10,25 +13,42 @@ export function subscribeLiveEvents(opts: {
 }): () => void {
   let isCancelled = false;
   let abortController: AbortController | null = null;
-  let retryTimeout: NodeJS.Timeout | null = null;
+  let retryTimeout: ReturnType<typeof setTimeout> | null = null;
   let consecutiveFailures = 0;
 
-  const BACKOFF_MS = [1000, 2000, 5000, 10000, 30000];
+  const schedule = (ms: number) => {
+    if (isCancelled) return;
+    retryTimeout = setTimeout(connect, ms);
+  };
 
-  const connect = async () => {
+  // A connection that ended (error or normal close) counts as a failed attempt unless it delivered data.
+  const handleDisconnect = (receivedData: boolean) => {
+    if (isCancelled) return;
+    if (receivedData) consecutiveFailures = 0;
+    consecutiveFailures++;
+    if (consecutiveFailures >= 3) {
+      opts.onStatus?.("polling");
+      schedule(SLOW_RETRY_MS);
+      return;
+    }
+    schedule(BACKOFF_MS[Math.min(consecutiveFailures - 1, BACKOFF_MS.length - 1)]);
+  };
+
+  async function connect() {
     if (isCancelled) return;
 
     abortController = new AbortController();
+    let receivedData = false;
     try {
       const response = await fetch(opts.url, {
         headers: opts.headers(),
         signal: abortController.signal,
       });
 
-      if (response.status === 404) {
-        // SSE not implemented yet by backend
+      // 404: stream not available; 401/403: no access (an expired link surfaces through the page's own requests)
+      if (response.status === 404 || response.status === 401 || response.status === 403) {
         opts.onStatus?.("polling");
-        retryTimeout = setTimeout(connect, 5 * 60 * 1000);
+        schedule(SLOW_RETRY_MS);
         return;
       }
 
@@ -36,8 +56,6 @@ export function subscribeLiveEvents(opts: {
         throw new Error(`SSE HTTP error ${response.status}`);
       }
 
-      // Successfully connected
-      consecutiveFailures = 0;
       opts.onStatus?.("live");
 
       const reader = response.body.getReader();
@@ -47,6 +65,9 @@ export function subscribeLiveEvents(opts: {
       while (!isCancelled) {
         const { value, done } = await reader.read();
         if (done) break;
+
+        // Any bytes (events or pings) prove the stream works
+        receivedData = true;
 
         buffer += decoder.decode(value, { stream: true });
         const blocks = buffer.split(/\r?\n\r?\n/);
@@ -78,20 +99,12 @@ export function subscribeLiveEvents(opts: {
           }
         }
       }
+      // Normal end of stream (server closed it): reconnect with backoff
+      handleDisconnect(receivedData);
     } catch {
-      if (isCancelled) return;
-
-      consecutiveFailures++;
-      if (consecutiveFailures >= 3) {
-        opts.onStatus?.("polling");
-        retryTimeout = setTimeout(connect, 5 * 60 * 1000);
-        return;
-      }
-
-      const backoff = BACKOFF_MS[Math.min(consecutiveFailures - 1, BACKOFF_MS.length - 1)];
-      retryTimeout = setTimeout(connect, backoff);
+      handleDisconnect(receivedData);
     }
-  };
+  }
 
   connect();
 

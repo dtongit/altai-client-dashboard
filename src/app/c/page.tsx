@@ -10,12 +10,13 @@ import {
   createChatLinkSource,
   CHAT_LINK_BASE_URL,
 } from "@/lib/chat-link-api";
-import { subscribeLiveEvents } from "@/lib/live-events";
+import { subscribeLiveEvents, type LiveStatus } from "@/lib/live-events";
 
 export default function ChatLinkPage() {
   const [token, setToken] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<LiveStatus>("live");
 
   useEffect(() => {
     const t = extractChatLinkToken();
@@ -36,6 +37,7 @@ export default function ChatLinkPage() {
       onChatUpdated: () => {
         window.dispatchEvent(new CustomEvent("chat-updated"));
       },
+      onStatus: setLiveStatus,
     });
     return () => unsub();
   }, [token]);
@@ -88,6 +90,7 @@ export default function ChatLinkPage() {
         source={chatSource}
         isLinkPage
         className="h-[100dvh]"
+        livePolling={liveStatus === "polling"}
         onAuthError={() => {
           clearStoredChatLinkToken();
           setIsExpired(true);

@@ -11,6 +11,8 @@ export interface MessageListProps {
   turns?: ChatTurn[];
   isAdmin?: boolean;
   draftNode?: React.ReactNode;
+  /** Changes when a new/other draft version appears (approval_id + iteration); drives scroll/pill. */
+  draftKey?: string;
 }
 
 function formatDateSeparator(iso?: string | null): string {
@@ -93,10 +95,12 @@ export function MessageList({
   turns,
   isAdmin = false,
   draftNode,
+  draftKey = "",
 }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollBottomPill, setShowScrollBottomPill] = useState(false);
   const isFirstRender = useRef(true);
+  const prevCountRef = useRef(0);
 
   // Derive resolved message items (either from messages or fallback from turns)
   const resolvedMessages = useMemo(() => {
@@ -104,15 +108,23 @@ export function MessageList({
     return turnsToMessages(turns);
   }, [messages, turns]);
 
+  const lastMessageId = resolvedMessages.length
+    ? resolvedMessages[resolvedMessages.length - 1].id
+    : "";
+
   // Handle scroll detection and auto-scrolling
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    if (isFirstRender.current) {
-      // Open at the bottom
+    const wasEmpty = prevCountRef.current === 0;
+    prevCountRef.current = resolvedMessages.length;
+
+    if (isFirstRender.current || (wasEmpty && resolvedMessages.length > 0)) {
+      // Open at the bottom (also when the list goes from empty to its first message)
       el.scrollTop = el.scrollHeight;
       isFirstRender.current = false;
+      setShowScrollBottomPill(false);
       return;
     }
 
@@ -123,7 +135,8 @@ export function MessageList({
     } else {
       setShowScrollBottomPill(true);
     }
-  }, [resolvedMessages.length, draftNode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedMessages.length, lastMessageId, draftKey]);
 
   const handleScroll = () => {
     const el = containerRef.current;

@@ -8,11 +8,12 @@ import { ChatList, ChatStatusTab } from "@/components/chat/ChatList";
 import { Conversation } from "@/components/chat/Conversation";
 import { createDashboardChatSource } from "@/lib/chat-source";
 import { subscribeLiveEvents, LiveStatus } from "@/lib/live-events";
+import { updateAttentionCount } from "@/lib/use-attention-count";
 
 const PAGE_SIZE = 50;
 
 export default function ChatsPage() {
-  const { user } = useAuth();
+  const { user, tenant } = useAuth();
   const [chats, setChats] = useState<ChatSessionItem[]>([]);
   const [counts, setCounts] = useState<ChatsCounts | null>(null);
   const [total, setTotal] = useState(0);
@@ -34,10 +35,19 @@ export default function ChatsPage() {
   const inFlight = useRef(false);
   const selectedRef = useRef<string | null>(null);
   selectedRef.current = selectedSessionId;
+  // Default «Внимание» tab is applied once, on the first list load, and only when the URL had no status
+  const urlHadStatusRef = useRef(false);
+  const defaultTabAppliedRef = useRef(false);
+  // True when the open chat was added to history with pushState (phone list -> chat)
+  const openedByPushRef = useRef(false);
+  const loadChatsRef = useRef<(mode?: "reset" | "more" | "silent") => Promise<void>>(async () => {});
 
   useEffect(() => {
     const onResize = () => setIsPhone(window.innerWidth < 768);
-    const onPop = () => setSelectedSessionId(new URLSearchParams(window.location.search).get("session"));
+    const onPop = () => {
+      openedByPushRef.current = false;
+      setSelectedSessionId(new URLSearchParams(window.location.search).get("session"));
+    };
     onResize();
     window.addEventListener("resize", onResize);
     window.addEventListener("popstate", onPop);
@@ -46,6 +56,7 @@ export default function ChatsPage() {
     const sid = p.get("session");
     if (sid) setSelectedSessionId(sid);
     const st = p.get("status") as ChatStatusTab;
+    urlHadStatusRef.current = Boolean(st);
     if (st && ["all", "attention", "paused", "mine"].includes(st)) setStatusFilter(st);
     setChannelFilter(p.get("channel") || "");
     setFiltersReady(true);
@@ -99,8 +110,12 @@ export default function ChatsPage() {
       setHasMore(Boolean(res.has_more));
       if (res.counts) {
         setCounts(res.counts);
-        if (!new URLSearchParams(window.location.search).get("status") && res.counts.attention > 0 && statusFilter === "all") {
-          setStatusFilter("attention");
+        if (typeof res.counts.attention === "number") updateAttentionCount(res.counts.attention);
+        if (!defaultTabAppliedRef.current) {
+          defaultTabAppliedRef.current = true;
+          if (!urlHadStatusRef.current && res.counts.attention > 0 && statusFilter === "all") {
+            setStatusFilter("attention");
+          }
         }
       }
       if (!isPhone && !new URLSearchParams(window.location.search).get("session") && incoming.length > 0 && !selectedRef.current) {
@@ -116,10 +131,14 @@ export default function ChatsPage() {
     }
   }, [debouncedSearch, statusFilter, channelFilter, isPhone, updateUrl]);
 
+  loadChatsRef.current = loadChats;
+
   useEffect(() => {
     if (filtersReady) loadChats("reset");
   }, [filtersReady, statusFilter, channelFilter, debouncedSearch, loadChats]);
 
+  // Subscribe once per tenant; latest loadChats / selected chat are read from refs
+  const tenantId = tenant?.id;
   useEffect(() => {
     if (!filtersReady) return;
     const unsub = subscribeLiveEvents({
@@ -129,25 +148,28 @@ export default function ChatsPage() {
         return { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(tenantId ? { "X-Tenant-ID": tenantId } : {}) };
       },
       onChatUpdated: (sid) => {
-        loadChats("silent");
-        if (sid === selectedSessionId) window.dispatchEvent(new CustomEvent("chat-updated", { detail: sid }));
+        loadChatsRef.current("silent");
+        if (sid === selectedRef.current) window.dispatchEvent(new CustomEvent("chat-updated", { detail: sid }));
       },
       onStatus: setLiveStatus,
     });
+    return () => unsub();
+  }, [filtersReady, tenantId]);
 
+  useEffect(() => {
+    if (!filtersReady) return;
     const interval = setInterval(() => {
-      if (document.visibilityState === "visible") loadChats("silent");
+      if (document.visibilityState === "visible") loadChatsRef.current("silent");
     }, liveStatus === "polling" ? 30000 : 60000);
 
-    const onVis = () => { if (document.visibilityState === "visible") loadChats("silent"); };
+    const onVis = () => { if (document.visibilityState === "visible") loadChatsRef.current("silent"); };
     document.addEventListener("visibilitychange", onVis);
 
     return () => {
-      unsub();
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [filtersReady, liveStatus, loadChats, selectedSessionId]);
+  }, [filtersReady, liveStatus]);
 
   const chatSource = useMemo(() => {
     return selectedSessionId ? createDashboardChatSource(selectedSessionId) : null;
@@ -157,10 +179,22 @@ export default function ChatsPage() {
     setSelectedSessionId(id);
     setChats((prev) => prev.map((c) => (c.session_id === id ? { ...c, unread: false } : c)));
     updateUrl(id, isPhone);
+    openedByPushRef.current = isPhone;
+  };
+
+  // Close the open chat. On phones, if it was opened with pushState, go back in history so Back needs one press.
+  const closeChat = () => {
+    if (isPhone && openedByPushRef.current) {
+      openedByPushRef.current = false;
+      window.history.back(); // the popstate handler shows the list
+      return;
+    }
+    setSelectedSessionId(null);
+    updateUrl(null, false);
   };
 
   return (
-    <div className="h-[calc(100dvh-var(--app-top))] flex overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+    <div className="h-[calc(100dvh-var(--app-top)-var(--app-bottom))] flex overflow-hidden bg-zinc-50 dark:bg-zinc-950">
       <div className={isPhone && selectedSessionId ? "hidden" : "w-full md:w-[340px] xl:w-[380px] shrink-0 h-full flex"}>
         <ChatList
           chats={chats}
@@ -189,12 +223,12 @@ export default function ChatsPage() {
           <Conversation
             key={selectedSessionId}
             source={chatSource}
-            onBack={() => { setSelectedSessionId(null); updateUrl(null, false); }}
+            onBack={closeChat}
+            livePolling={liveStatus === "polling"}
             isAdmin={Boolean(user?.is_admin)}
             onResetSuccess={() => {
               setChats((prev) => prev.filter((c) => c.session_id !== selectedSessionId));
-              setSelectedSessionId(null);
-              updateUrl(null, false);
+              closeChat();
               loadChats("silent");
             }}
           />

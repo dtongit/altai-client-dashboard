@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { AdminCrudResourceSchema } from "@/types";
 import {
   Database,
@@ -132,6 +133,7 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
 
 export default function SuperadminConsolePage() {
   const { user } = useAuth();
+  const { confirm: confirmDialog, ConfirmDialog } = useConfirm();
   const [schemas, setSchemas] = useState<AdminCrudResourceSchema[]>([]);
   const [selectedResource, setSelectedResource] = useState<string>("tenants");
   const [items, setItems] = useState<Record<string, any>[]>([]);
@@ -325,12 +327,14 @@ export default function SuperadminConsolePage() {
   };
 
   const handleRevokeChatLink = async (linkId: string) => {
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(`Отозвать ссылку на чат "${linkId}"?`)
-    ) {
-      return;
-    }
+    const ok = await confirmDialog({
+      title: "Отозвать ссылку?",
+      text: "Ссылка перестанет открывать чат. Действие нельзя отменить.",
+      confirmLabel: "Отозвать",
+      cancelLabel: "Отмена",
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await api.revokeAdminChatLink(linkId);
       showToast("success", `Ссылка ${linkId} отозвана`);
@@ -379,6 +383,7 @@ export default function SuperadminConsolePage() {
 
   return (
     <div className="min-h-[calc(100dvh-var(--app-top))] flex flex-col lg:flex-row">
+      <ConfirmDialog />
       {/* Left Sidebar: 12 Database Resources */}
       <aside className="w-full lg:w-72 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 space-y-5">
         <div className="flex items-center justify-between">

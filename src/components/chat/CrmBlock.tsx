@@ -31,10 +31,22 @@ function formatRefreshedTime(iso?: string | null): string {
   return `${Math.floor(min / 1440)} дн назад`;
 }
 
+// "#abc" -> "#aabbcc"; anything that is not a 3/6-digit hex is rejected (neutral pill)
+function normalizeHex(color?: string | null): string | null {
+  if (!color) return null;
+  let c = color.trim();
+  if (/^#[0-9a-fA-F]{3}$/.test(c)) {
+    c = `#${c[1]}${c[1]}${c[2]}${c[2]}${c[3]}${c[3]}`;
+  }
+  return /^#[0-9a-fA-F]{6}$/.test(c) ? c : null;
+}
+
 export function CrmBlock({ crm, loading, onRefresh }: CrmBlockProps) {
   const [refreshing, setRefreshing] = useState(false);
 
   if (loading) {
+    // Tenants without amoCRM never see a skeleton: only show it when a previous answer had a contact
+    if (!(crm && crm.crm_type === "amocrm" && crm.contact)) return null;
     return (
       <div className="space-y-2 py-2 animate-pulse">
         <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded-md w-1/3" />
@@ -131,13 +143,14 @@ export function CrmBlock({ crm, loading, onRefresh }: CrmBlockProps) {
                     <div className="flex items-center gap-2 mt-1">
                       {/* Colored Status Stage Pill */}
                       <span
-                        className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold truncate max-w-[140px]"
-                        style={{
-                          backgroundColor: deal.status_color
-                            ? `${deal.status_color}33` // 20% opacity hex
-                            : "rgba(161, 161, 170, 0.2)",
-                          color: deal.status_color || "currentColor",
-                        }}
+                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold truncate max-w-[140px] text-zinc-900 dark:text-zinc-100 ${
+                          normalizeHex(deal.status_color) ? "" : "bg-zinc-200 dark:bg-zinc-800"
+                        }`}
+                        style={
+                          normalizeHex(deal.status_color)
+                            ? { backgroundColor: `${normalizeHex(deal.status_color)}40` } // 25% alpha
+                            : undefined
+                        }
                       >
                         {deal.status}
                       </span>

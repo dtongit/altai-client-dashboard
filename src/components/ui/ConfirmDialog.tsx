@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "./Button";
+import { Portal } from "./Portal";
 
 export interface ConfirmOptions {
   title: string;
@@ -86,6 +87,7 @@ export function ConfirmDialogView({
   }, [onCancel]);
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
@@ -128,5 +130,6 @@ export function ConfirmDialogView({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

@@ -226,48 +226,48 @@ export function ConversationHeader({
         {/* Right side actions */}
         <div className="flex items-center gap-2 shrink-0">
           {!isLinkPage && (
-            <>
-              {/* Status pill (desktop) */}
-              <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300">
-                <span
-                  className={`h-2 w-2 rounded-full ${
-                    isPaused
-                      ? "bg-amber-500"
-                      : "bg-emerald-500 animate-pulse"
-                  }`}
-                />
-                <span>
-                  {detail.owner
-                    ? `Ведёт: ${detail.owner.name}`
-                    : isPaused
-                    ? "Вера на паузе"
-                    : "Вера отвечает"}
-                </span>
-              </div>
+            /* Status pill (desktop) */
+            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300">
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  isPaused
+                    ? "bg-amber-500"
+                    : "bg-emerald-500 animate-pulse"
+                }`}
+              />
+              <span>
+                {detail.owner
+                  ? `Ведёт: ${detail.owner.name}`
+                  : isPaused
+                  ? "Вера на паузе"
+                  : "Вера отвечает"}
+              </span>
+            </div>
+          )}
 
-              {/* Primary Take / Return action button */}
-              {!isPaused ? (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  loading={loadingAction}
-                  onClick={handleTake}
-                  className="text-xs font-semibold"
-                >
-                  Взять себе
-                </Button>
-              ) : (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  loading={loadingAction}
-                  onClick={() => handleResume(false)}
-                  className="text-xs font-semibold"
-                >
-                  Вернуть Вере
-                </Button>
-              )}
-            </>
+          {/* Primary Take / Return action button (also on the link page) */}
+          {!isPaused ? (
+            onTake && (
+              <Button
+                variant="primary"
+                size="sm"
+                loading={loadingAction}
+                onClick={handleTake}
+                className="text-xs font-semibold"
+              >
+                Взять себе
+              </Button>
+            )
+          ) : (
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={loadingAction}
+              onClick={() => handleResume(false)}
+              className="text-xs font-semibold"
+            >
+              Вернуть Вере
+            </Button>
           )}
 
           {/* Toggle Client Panel Button (ⓘ) */}

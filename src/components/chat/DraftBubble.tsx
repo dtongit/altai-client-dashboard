@@ -11,6 +11,8 @@ export interface DraftBubbleProps {
   onSend: (scope?: "all" | "comment_only") => Promise<void>;
   onRegenerate: (note: string) => Promise<void>;
   isSending?: boolean;
+  /** Vera is rewriting this draft: spinner shown, actions disabled until a new draft arrives. */
+  isRewriting?: boolean;
 }
 
 export function DraftBubble({
@@ -18,6 +20,7 @@ export function DraftBubble({
   onSend,
   onRegenerate,
   isSending = false,
+  isRewriting = false,
 }: DraftBubbleProps) {
   const [isExpandingNote, setIsExpandingNote] = useState(false);
   const [note, setNote] = useState("");
@@ -41,6 +44,7 @@ export function DraftBubble({
     }
   };
 
+  const busy = isSending || isRewriting;
   const hasPrivateMessage = Boolean(draft.private_message);
 
   return (
@@ -107,7 +111,7 @@ export function DraftBubble({
         )}
 
         {/* Regenerating Spinner Indicator */}
-        {isRegenerating && (
+        {(isRegenerating || isRewriting) && (
           <div className="flex items-center gap-2 text-xs font-medium text-amber-700 dark:text-amber-400 py-1">
             <Loader2 className="h-4 w-4 animate-spin shrink-0" />
             <span>Вера переписывает ответ…</span>
@@ -123,6 +127,7 @@ export function DraftBubble({
                   variant="primary"
                   size="sm"
                   loading={isSending}
+                  disabled={busy}
                   onClick={() => handleSendDraft("all")}
                 >
                   Отправить всё
@@ -131,6 +136,7 @@ export function DraftBubble({
                   variant="primary"
                   size="sm"
                   loading={isSending}
+                  disabled={busy}
                   onClick={() => handleSendDraft("comment_only")}
                 >
                   Только комментарий
@@ -141,6 +147,7 @@ export function DraftBubble({
                 variant="primary"
                 size="sm"
                 loading={isSending}
+                disabled={busy}
                 onClick={() => handleSendDraft()}
               >
                 Отправить
@@ -150,7 +157,7 @@ export function DraftBubble({
             <Button
               variant="secondary"
               size="sm"
-              disabled={isSending || isRegenerating}
+              disabled={busy || isRegenerating}
               onClick={() => setIsExpandingNote(true)}
             >
               Переделать

@@ -152,7 +152,7 @@ export default function SimulatorPage() {
       : "altai_optima:web_simulator:client_sim_admin");
 
   return (
-    <div className="p-3 sm:p-6 lg:p-8 space-y-3 sm:space-y-6 max-w-7xl mx-auto flex flex-col h-[calc(100dvh-var(--app-top))]">
+    <div className="p-3 sm:p-6 lg:p-8 space-y-3 sm:space-y-6 max-w-7xl mx-auto flex flex-col h-[calc(100dvh-var(--app-top)-var(--app-bottom))]">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0">
         <div>

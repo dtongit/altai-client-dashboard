@@ -7,11 +7,15 @@
   --background: #fafafa;
   --foreground: #09090b;
   --app-top: 4rem;
+  /* Height of the fixed bottom nav while it is shown (set by BottomNav); phones only. */
+  --app-bottom-nav: 0px;
+  --app-bottom: 0px;
 }
 
 @media (max-width: 767px) {
   :root {
     --app-top: 3.5rem;
+    --app-bottom: var(--app-bottom-nav);
   }
 }
 

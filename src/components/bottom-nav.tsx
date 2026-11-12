@@ -57,13 +57,26 @@ export function BottomNav() {
   }, [cleanPath]);
 
   // Hide on login, /c/, or when a conversation is open full screen on phone
-  if (
+  const navHidden =
     cleanPath === "/login" ||
     cleanPath.startsWith("/login/") ||
     cleanPath === "/c" ||
     cleanPath.startsWith("/c/") ||
-    hasChatOpenOnPhone
-  ) {
+    hasChatOpenOnPhone;
+
+  // Let full-height pages (/chats list, /simulator) subtract the nav height on phones
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty(
+      "--app-bottom-nav",
+      navHidden ? "0px" : "calc(56px + env(safe-area-inset-bottom))"
+    );
+    return () => {
+      root.style.setProperty("--app-bottom-nav", "0px");
+    };
+  }, [navHidden]);
+
+  if (navHidden) {
     return null;
   }
 

@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { IconButton } from "./IconButton";
+import { Portal } from "./Portal";
 
 export interface MenuItem {
   label: string;
@@ -22,6 +23,7 @@ export interface MenuProps {
 export function Menu({ items, trigger, align = "right", className = "" }: MenuProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   const visibleItems = items.filter((item) => !item.hidden);
 
@@ -35,7 +37,12 @@ export function Menu({ items, trigger, align = "right", className = "" }: MenuPr
     };
 
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const t = e.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(t) &&
+        !(sheetRef.current && sheetRef.current.contains(t))
+      ) {
         setOpen(false);
       }
     };
@@ -68,6 +75,8 @@ export function Menu({ items, trigger, align = "right", className = "" }: MenuPr
 
       {open && (
         <>
+          <Portal>
+          <div ref={sheetRef} className="md:hidden">
           {/* Mobile Action Sheet Backdrop */}
           <div
             className="md:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-xs animate-in fade-in"
@@ -108,6 +117,9 @@ export function Menu({ items, trigger, align = "right", className = "" }: MenuPr
               Отмена
             </button>
           </div>
+
+          </div>
+          </Portal>
 
           {/* Desktop Dropdown (md and up) */}
           <div

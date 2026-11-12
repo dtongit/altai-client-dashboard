@@ -19,6 +19,7 @@ export function Conversation({
   isLinkPage = false,
   className = "",
   onAuthError,
+  livePolling = true,
 }: {
   source: ChatSource;
   onResetSuccess?: () => void;
@@ -27,16 +28,43 @@ export function Conversation({
   isLinkPage?: boolean;
   className?: string;
   onAuthError?: () => void;
+  /** True when the live stream is down (or unknown): the open chat is then polled every 10 s. */
+  livePolling?: boolean;
 }) {
   const { showToast } = useToast();
   const [detail, setDetail] = useState<ChatDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSendingDraft, setIsSendingDraft] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [desktopPanelVisible, setDesktopPanelVisible] = useState(true);
+  const [isXl, setIsXl] = useState(false);
+  // Draft rewrite in progress (H4): the draft we asked Vera to redo
+  const [rewrite, setRewrite] = useState<{ approvalId: string; iteration: number } | null>(null);
+  const onAuthErrorRef = useRef(onAuthError);
+  onAuthErrorRef.current = onAuthError;
   const [crm, setCrm] = useState<ChatCrm | null>(null);
   const [loadingCrm, setLoadingCrm] = useState(false);
   const lastCrmFetchRef = useRef<number>(0);
+
+  // Any 401 on any link call means the link is gone: let the page show the expired screen.
+  const handleAuthFailure = useCallback((err: any): boolean => {
+    if (err?.status === 401) {
+      onAuthErrorRef.current?.();
+      return true;
+    }
+    return false;
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1280px)");
+    const apply = () => {
+      setIsXl(mq.matches);
+      if (mq.matches) setSheetOpen(false);
+    };
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   const fetchCrm = useCallback(
     async (force = false) => {
@@ -49,13 +77,13 @@ export function Conversation({
         const res = await source.getCrm(force);
         setCrm(res);
         lastCrmFetchRef.current = Date.now();
-      } catch {
-        setCrm(null);
+      } catch (err) {
+        if (!handleAuthFailure(err)) setCrm(null);
       } finally {
         setLoadingCrm(false);
       }
     },
-    [source]
+    [source, handleAuthFailure]
   );
 
   const fetchDetail = useCallback(async () => {
@@ -63,13 +91,11 @@ export function Conversation({
       const res = await source.getDetail();
       setDetail(res);
     } catch (err: any) {
-      if (err?.status === 401) {
-        onAuthError?.();
-      }
+      handleAuthFailure(err);
     } finally {
       setLoading(false);
     }
-  }, [source, onAuthError]);
+  }, [source, handleAuthFailure]);
 
   useEffect(() => {
     setLoading(true);
@@ -77,11 +103,17 @@ export function Conversation({
     fetchCrm(false);
   }, [fetchDetail, fetchCrm]);
 
+  // Mark read when the chat opens and when the last message changes (not on every refetch)
+  const lastMessageKey = detail?.messages?.length
+    ? `${detail.messages.length}:${detail.messages[detail.messages.length - 1].id}`
+    : `t${detail?.turns?.length ?? 0}`;
+  const hasDetail = Boolean(detail);
   useEffect(() => {
+    if (!hasDetail) return;
     if (source.markRead && typeof document !== "undefined" && document.visibilityState === "visible") {
       source.markRead().catch(() => {});
     }
-  }, [source, detail]);
+  }, [source, hasDetail, lastMessageKey]);
 
   useEffect(() => {
     const handleVis = () => {
@@ -97,24 +129,51 @@ export function Conversation({
     document.addEventListener("visibilitychange", handleVis);
     window.addEventListener("chat-updated", handleChatUpdated);
 
-    const timer = setInterval(() => {
-      if (typeof document !== "undefined" && document.visibilityState === "visible") {
-        fetchDetail();
-      }
-    }, 10000);
+    // Brief 6.5: poll the open chat only while the live stream is down
+    const timer = livePolling
+      ? setInterval(() => {
+          if (document.visibilityState === "visible") fetchDetail();
+        }, 10000)
+      : null;
 
     return () => {
       document.removeEventListener("visibilitychange", handleVis);
       window.removeEventListener("chat-updated", handleChatUpdated);
-      clearInterval(timer);
+      if (timer) clearInterval(timer);
     };
-  }, [fetchDetail, source]);
+  }, [fetchDetail, source, fetchCrm, livePolling]);
+
+  // H4: leave the "Vera is rewriting" state once a newer draft (or none) arrives
+  useEffect(() => {
+    if (!rewrite || !detail) return;
+    const d = detail.draft;
+    if (!d || d.approval_id !== rewrite.approvalId || (d.iteration ?? 0) > rewrite.iteration) {
+      setRewrite(null);
+    }
+  }, [rewrite, detail]);
+
+  // Light poll while waiting + 60 s time-out; timers die with the chat (component is keyed by chat)
+  useEffect(() => {
+    if (!rewrite) return;
+    const poll = setInterval(() => {
+      if (document.visibilityState === "visible") fetchDetail();
+    }, 3000);
+    const timeout = setTimeout(() => {
+      showToast("Вера пока не прислала новый вариант, обновите чат позже", "warning");
+      setRewrite(null);
+    }, 60000);
+    return () => {
+      clearInterval(poll);
+      clearTimeout(timeout);
+    };
+  }, [rewrite, fetchDetail, showToast]);
 
   const handleTakeChat = async () => {
     try {
       await source.take();
       await fetchDetail();
     } catch (err: any) {
+      if (handleAuthFailure(err)) return;
       showToast(err?.detail || err?.message || "Не удалось взять диалог", "error");
     }
   };
@@ -128,6 +187,7 @@ export function Conversation({
         setTimeout(fetchDetail, 5000);
       }
     } catch (err: any) {
+      if (handleAuthFailure(err)) return;
       showToast(err?.detail || err?.message || "Не удалось возобновить диалог", "error");
     }
   };
@@ -138,6 +198,7 @@ export function Conversation({
       await source.release();
       await fetchDetail();
     } catch (err: any) {
+      if (handleAuthFailure(err)) return;
       showToast(err?.detail || err?.message || "Не удалось отпустить диалог", "error");
     }
   };
@@ -149,6 +210,7 @@ export function Conversation({
       showToast("История диалога сброшена", "success");
       onResetSuccess?.();
     } catch (err: any) {
+      if (handleAuthFailure(err)) return;
       showToast(err?.detail || err?.message || "Не удалось сбросить диалог", "error");
     }
   };
@@ -161,6 +223,7 @@ export function Conversation({
       showToast("Черновик отправлен", "success");
       await fetchDetail();
     } catch (err: any) {
+      if (handleAuthFailure(err)) return;
       if (err?.status === 404 || err?.status === 409) {
         showToast("Черновик уже обработан или устарел", "error");
       } else if (err?.reason === "provider_error") {
@@ -180,10 +243,9 @@ export function Conversation({
     try {
       await source.regenerateDraft(detail.draft.approval_id, note);
       showToast("Запрос на переделку отправлен Вере", "success");
-      setTimeout(fetchDetail, 2000);
-      setTimeout(fetchDetail, 5000);
-      setTimeout(fetchDetail, 10000);
+      setRewrite({ approvalId: detail.draft.approval_id, iteration: detail.draft.iteration ?? 0 });
     } catch (err: any) {
+      if (handleAuthFailure(err)) return;
       const detailMsg = err?.detail || err?.message || "Ошибка обновления черновика";
       showToast(detailMsg, "error");
       await fetchDetail();
@@ -191,9 +253,14 @@ export function Conversation({
   };
 
   const handleSendOperatorMessage = async (text: string, files: File[]) => {
-    const res = await source.send(text, files);
-    if (res && res.warning) {
-      showToast(res.warning, "warning");
+    try {
+      const res = await source.send(text, files);
+      if (res && res.warning) {
+        showToast(res.warning, "warning");
+      }
+    } catch (err) {
+      handleAuthFailure(err);
+      throw err;
     }
     await fetchDetail();
   };
@@ -222,11 +289,12 @@ export function Conversation({
           detail={detail}
           onBack={onBack}
           onTogglePanel={() => {
-            setPanelOpen((v) => !v);
-            setDesktopPanelVisible((v) => !v);
+            // Below xl the ⓘ opens the sheet; from xl up it collapses/expands the inline panel
+            if (isXl) setDesktopPanelVisible((v) => !v);
+            else setSheetOpen((v) => !v);
           }}
-          isPanelOpen={panelOpen}
-          onTake={isLinkPage ? undefined : handleTakeChat}
+          isPanelOpen={isXl ? desktopPanelVisible : sheetOpen}
+          onTake={handleTakeChat}
           onResume={handleResumeChat}
           onRelease={source.release ? handleReleaseChat : undefined}
           onReset={source.reset ? handleResetChat : undefined}
@@ -237,6 +305,7 @@ export function Conversation({
           messages={detail.messages}
           turns={detail.turns}
           isAdmin={isAdmin}
+          draftKey={detail.draft ? `${detail.draft.approval_id}:${detail.draft.iteration ?? 0}` : ""}
           draftNode={
             detail.draft ? (
               <DraftBubble
@@ -244,6 +313,7 @@ export function Conversation({
                 onSend={handleSendDraft}
                 onRegenerate={handleRegenerateDraft}
                 isSending={isSendingDraft}
+                isRewriting={Boolean(rewrite)}
               />
             ) : null
           }
@@ -275,8 +345,8 @@ export function Conversation({
 
       {/* Sheet Client Panel for < 1280px (bottom sheet on phones, right sheet on tablets/medium screens) */}
       <Sheet
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
+        open={sheetOpen && !isXl}
+        onClose={() => setSheetOpen(false)}
         title="Информация о клиенте"
       >
         <ClientPanel

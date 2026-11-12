@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { X } from "lucide-react";
 import { IconButton } from "./IconButton";
+import { Portal } from "./Portal";
 
 export interface SheetProps {
   open: boolean;
@@ -35,6 +36,7 @@ export function Sheet({ open, onClose, title, children, className = "" }: SheetP
   if (!open) return null;
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 flex items-end md:items-stretch md:justify-end">
       {/* Backdrop */}
       <div
@@ -75,5 +77,6 @@ export function Sheet({ open, onClose, title, children, className = "" }: SheetP
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

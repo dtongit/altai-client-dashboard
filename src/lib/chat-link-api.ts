@@ -53,12 +53,14 @@ export function extractChatLinkToken(): string | null {
 export class ChatLinkApiError extends Error {
   status: number;
   detail: string;
+  reason?: string;
 
-  constructor(status: number, detail: string) {
+  constructor(status: number, detail: string, reason?: string) {
     super(detail);
     this.name = "ChatLinkApiError";
     this.status = status;
     this.detail = detail;
+    this.reason = reason;
   }
 }
 
@@ -83,15 +85,17 @@ async function chatLinkRequest<T>(
 
   if (!res.ok) {
     let detailMsg = `HTTP ${res.status}`;
+    let reason: string | undefined;
     try {
       const errJson = await res.json();
+      if (typeof errJson?.reason === "string") reason = errJson.reason;
       if (typeof errJson?.detail === "string") {
         detailMsg = errJson.detail;
       } else if (errJson?.message) {
         detailMsg = errJson.message;
       }
     } catch {}
-    throw new ChatLinkApiError(res.status, detailMsg);
+    throw new ChatLinkApiError(res.status, detailMsg, reason);
   }
 
   return res.json();
@@ -100,7 +104,7 @@ async function chatLinkRequest<T>(
 export function createChatLinkSource(token: string): ChatSource {
   return {
     async getDetail() {
-      return chatLinkRequest<ChatLinkDetail>(token, "");
+      return chatLinkRequest<ChatLinkDetail>(token, "/chat");
     },
     async send(text: string, files: File[]) {
       if (files && files.length > 0) {
@@ -144,13 +148,19 @@ export function createChatLinkSource(token: string): ChatSource {
       });
     },
     async pause() {
-      await chatLinkRequest<{ ok: boolean }>(token, "/take", {
+      await chatLinkRequest<{ ok: boolean }>(token, "/pause", {
         method: "POST",
       });
     },
     async getCrm(force = false) {
-      const qs = force ? "?force=true" : "";
-      return chatLinkRequest<ChatCrm>(token, `/crm${qs}`);
+      const qs = force ? "?refresh=1" : "";
+      try {
+        return await chatLinkRequest<ChatCrm>(token, `/crm${qs}`);
+      } catch (err) {
+        // 401 (expired/revoked link) must reach the page; anything else means "no CRM data".
+        if (err instanceof ChatLinkApiError && err.status === 401) throw err;
+        return null;
+      }
     },
   };
 }
