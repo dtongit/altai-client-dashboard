@@ -40,7 +40,6 @@ export function ConversationHeader({
   isPanelOpen = false,
   onTake,
   onResume,
-  onRelease,
   onReset,
   isLinkPage = false,
 }: ConversationHeaderProps) {
@@ -55,7 +54,6 @@ export function ConversationHeader({
 
   const phone = detail.client?.phone || detail.qualification?.client_phone;
   const isPaused = detail.is_paused;
-  const isMeOwner = Boolean(user && detail.owner?.user_id && detail.owner.user_id === user.id);
   const canReset = detail.permissions?.can_reset ?? user?.is_admin ?? false;
 
   const handleTake = async () => {
@@ -72,16 +70,6 @@ export function ConversationHeader({
     setLoadingAction(true);
     try {
       await onResume(triggerReply);
-    } finally {
-      setLoadingAction(false);
-    }
-  };
-
-  const handleRelease = async () => {
-    if (!onRelease) return;
-    setLoadingAction(true);
-    try {
-      await onRelease();
     } finally {
       setLoadingAction(false);
     }
@@ -150,15 +138,7 @@ export function ConversationHeader({
               },
             ]
           : []),
-        ...(isMeOwner && onRelease
-          ? [
-              {
-                label: "Отпустить чат",
-                icon: <UserRound className="h-4 w-4" />,
-                onClick: handleRelease,
-              },
-            ]
-          : []),
+        // «Отпустить чат» is gone: releasing hands the chat back to Vera, which «Вернуть Вере» already does.
         ...(user?.is_admin
           ? [
               {
