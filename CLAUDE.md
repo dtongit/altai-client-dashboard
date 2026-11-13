@@ -22,6 +22,7 @@ NEXT_PUBLIC_API_URL="http://localhost:8000/api/v1/client" npm run dev
   `scripts/deploy.py` in the root repo pushes this repo's HEAD to those branches.
 - The stale `Dockerfile`/`docker-compose.yml` were removed (2026-10-31); a static export can't run in them.
 - Static export => no server code, no middleware, no API routes, no runtime env. `NEXT_PUBLIC_*` are baked at build.
+- Home-screen app (iPhone/Android): `public/manifest.webmanifest` (short name «Optima», standalone), icons in `public/icons/` + `public/apple-touch-icon.png` + `src/app/favicon.ico`, all made from the root repo's `ai-logo.png` (512, white background, logo inside the middle 80% for Android masks); wired in `app/layout.tsx` `metadata`.
 - Demos are **not** part of the dashboard any more (moved to the `optima` repo, 2026-11-01). `public/_redirects` sends `/demo/*` to `https://optima.altaiweb.online/demo/?t=<tenant>`.
 
 ## Structure

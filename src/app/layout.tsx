@@ -21,12 +21,31 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
 };
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://my.altaiweb.online"),
   title: "Altai Optima — Кабинет клиента",
   description: "Панель мониторинга и управления автономным ИИ-продавцом Верой",
+  // Home-screen app (iPhone + Android): icons are made from the root repo's ai-logo.png (public/icons, apple-touch-icon).
+  manifest: "/manifest.webmanifest",
+  icons: {
+    // favicon.ico comes from src/app/favicon.ico (Next adds that link itself).
+    icon: [
+      { url: "/icons/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Optima",
+    statusBarStyle: "default",
+  },
   openGraph: {
     title: "Altai Optima — Кабинет клиента",
     description: "Панель мониторинга и управления автономным ИИ-продавцом Верой",
