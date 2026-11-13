@@ -129,6 +129,13 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     name: "Осенняя B2B акция",
     status: "draft",
   },
+  // Created through POST /admin/tenants/{id}/webhooks (see handleSaveModal): the token is shown once.
+  "tenant-webhooks": {
+    tenant_id: "your_tenant_id",
+    name: "club_signup",
+    description: "Форма заявки на сайте",
+    mode: "capture",
+  },
 };
 
 export default function SuperadminConsolePage() {
@@ -151,6 +158,8 @@ export default function SuperadminConsolePage() {
   const [saving, setSaving] = useState<boolean>(false);
   // One-time plaintext of a freshly issued API key (the backend stores only its hash)
   const [issuedKey, setIssuedKey] = useState<string | null>(null);
+  // One-time URL (with the plaintext token) of a freshly created or re-keyed inbound webhook
+  const [issuedHookUrl, setIssuedHookUrl] = useState<string | null>(null);
 
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(
     null
@@ -284,7 +293,15 @@ export default function SuperadminConsolePage() {
         return;
       }
 
-      if (modalMode === "create") {
+      if (modalMode === "create" && selectedResource === "tenant-webhooks") {
+        const hook = await api.createAdminWebhook(String(parsed.tenant_id || ""), {
+          name: String(parsed.name || ""),
+          description: parsed.description ? String(parsed.description) : undefined,
+          mode: parsed.mode ? String(parsed.mode) : undefined,
+        });
+        setIssuedHookUrl(hook.url);
+        showToast("success", "Вебхук создан — скопируйте адрес сейчас, повторно он не показывается");
+      } else if (modalMode === "create") {
         const created = await api.createAdminCrud(selectedResource, parsed);
         if (created.api_key) {
           setIssuedKey(created.api_key);
@@ -341,6 +358,23 @@ export default function SuperadminConsolePage() {
       await loadResourceItems(selectedResource, search);
     } catch (err: any) {
       showToast("error", err?.message || "Не удалось отозвать ссылку на чат");
+    }
+  };
+
+  const handleRotateWebhookToken = async (hookId: string) => {
+    const ok = await confirmDialog({
+      title: "Выпустить новый адрес?",
+      text: "Старый адрес вебхука сразу перестанет работать. Новый нужно будет указать у отправителя.",
+      confirmLabel: "Выпустить",
+      cancelLabel: "Отмена",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      const hook = await api.rotateAdminWebhookToken(hookId);
+      setIssuedHookUrl(hook.url);
+    } catch (err: any) {
+      showToast("error", err?.message || "Не удалось выпустить новый адрес");
     }
   };
 
@@ -659,6 +693,16 @@ export default function SuperadminConsolePage() {
                                 <span>Отозвать</span>
                               </button>
                             )}
+                            {selectedResource === "tenant-webhooks" && (
+                              <button
+                                onClick={() => handleRotateWebhookToken(row.id)}
+                                className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500 hover:text-zinc-950 text-amber-700 dark:text-amber-400 text-[11px] font-semibold transition-colors inline-flex items-center gap-1 border border-amber-500/30"
+                                title="Выпустить новый адрес (старый перестанет работать)"
+                              >
+                                <RefreshCw className="h-3 w-3" />
+                                <span>Новый адрес</span>
+                              </button>
+                            )}
                             <button
                               onClick={() => openEditModal(row)}
                               className="px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-amber-500 hover:text-zinc-950 dark:bg-zinc-800 dark:hover:bg-amber-500 dark:hover:text-zinc-950 text-[11px] font-semibold transition-colors inline-flex items-center gap-1"
@@ -710,6 +754,39 @@ export default function SuperadminConsolePage() {
               </button>
               <button
                 onClick={() => setIssuedKey(null)}
+                className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold"
+              >
+                Готово
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* One-time inbound webhook URL */}
+      {issuedHookUrl && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-2xl p-6 space-y-4">
+            <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Адрес входящего вебхука</h3>
+            <p className="text-xs text-zinc-500">
+              Адрес содержит секретный токен и показывается один раз, в базе хранится только его хеш. Укажите его у
+              отправителя (например, в настройках формы). Потерянный адрес заменяется кнопкой «Новый адрес».
+            </p>
+            <code className="block break-all rounded-2xl border border-zinc-800 bg-zinc-950 p-3 font-mono text-xs text-emerald-300 select-all">
+              {issuedHookUrl}
+            </code>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => navigator.clipboard?.writeText(issuedHookUrl)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+              >
+                Скопировать
+              </button>
+              <button
+                onClick={() => {
+                  setIssuedHookUrl(null);
+                  loadResourceItems(selectedResource, search);
+                }}
                 className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 text-xs font-bold"
               >
                 Готово

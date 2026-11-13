@@ -38,6 +38,7 @@ import {
   ChatCrm,
   ChatDraft,
   SendMessageResult,
+  TenantWebhookIssued,
 } from "@/types";
 
 const rawApiUrl =
@@ -728,6 +729,29 @@ export const api = {
       { method: "POST" },
       ADMIN_API_BASE_URL
     );
+  },
+
+  /** Creates an inbound webhook of a company; the plaintext token is in the answer once. */
+  async createAdminWebhook(
+    tenantId: string,
+    body: { name: string; description?: string; mode?: string }
+  ): Promise<TenantWebhookIssued> {
+    const res = await request<Omit<TenantWebhookIssued, "url">>(
+      `/tenants/${encodeURIComponent(tenantId)}/webhooks`,
+      { method: "POST", body: JSON.stringify(body) },
+      ADMIN_API_BASE_URL
+    );
+    return { ...res, url: ADMIN_API_BASE_URL.replace(/\/api\/v1\/admin$/, "") + res.url_path };
+  },
+
+  /** New URL token of a webhook; the old URL stops working at once. */
+  async rotateAdminWebhookToken(webhookId: string): Promise<TenantWebhookIssued> {
+    const res = await request<Omit<TenantWebhookIssued, "url">>(
+      `/webhooks/${encodeURIComponent(webhookId)}/rotate-token`,
+      { method: "POST", body: JSON.stringify({}) },
+      ADMIN_API_BASE_URL
+    );
+    return { ...res, url: ADMIN_API_BASE_URL.replace(/\/api\/v1\/admin$/, "") + res.url_path };
   },
 
   async getAdminStats(tenantId?: string): Promise<Record<string, any>> {

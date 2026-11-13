@@ -276,6 +276,51 @@ export interface TeamBotMessage {
   created_at: string;
 }
 
+/** Row of /admin/crud/tenant-webhooks: an inbound webhook endpoint of a company (no token hash is ever returned). */
+export interface TenantWebhook {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description: string;
+  /** capture = only store requests; active = also handle them (later phase); off = answers 404. */
+  mode: "capture" | "active" | "off" | string;
+  /** `vera` or `skill:<tool_name>`; null until phase 2. */
+  handler: string | null;
+  kb_node_id: string | null;
+  max_events_per_hour: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Answer of creating a webhook or rotating its token: the one time the plaintext token is shown. */
+export interface TenantWebhookIssued extends TenantWebhook {
+  ok: boolean;
+  token: string;
+  /** `/api/v1/hooks/{id}/{token}` */
+  url_path: string;
+  /** Full public URL, composed by the dashboard client from the API host. */
+  url: string;
+}
+
+/** Row of /admin/crud/webhook-events: one stored request of an inbound webhook, read-only (personal data, cleared after 30 days). */
+export interface WebhookEvent {
+  id: string;
+  webhook_id: string;
+  tenant_id: string;
+  received_at: string;
+  method: string;
+  content_type: string | null;
+  query: string | null;
+  /** Header names and values; secrets are replaced with "[redacted]". Null after retention. */
+  headers: Record<string, any> | null;
+  body: string | null;
+  body_truncated: boolean;
+  payload: Record<string, any> | null;
+  status: "captured" | "queued" | "handled" | "ignored" | "duplicate" | "rate_limited" | "failed" | string;
+  dedup_key: string | null;
+  result: Record<string, any> | null;
+}
+
 /** Row of /admin/crud/team-trace-steps and a step in the team-bot trace (read-only debug trace of a turn). */
 export interface TeamTraceStep {
   id: string;
