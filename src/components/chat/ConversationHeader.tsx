@@ -106,8 +106,22 @@ export function ConversationHeader({
     }
   };
 
+  // Phone: the header keeps only the name, the channel and ⋯; the take / return button and the client panel move
+  // into the ⋯ sheet.
+  const phoneItems: MenuItem[] = [
+    ...(!isPaused
+      ? onTake
+        ? [{ label: "Взять себе", icon: <UserRound className="h-4 w-4" />, onClick: handleTake, mobileOnly: true }]
+        : []
+      : [{ label: "Вернуть Вере", icon: <RotateCcw className="h-4 w-4" />, onClick: () => handleResume(false), mobileOnly: true }]),
+    ...(onTogglePanel
+      ? [{ label: "Информация о клиенте", icon: <Info className="h-4 w-4" />, onClick: onTogglePanel, mobileOnly: true }]
+      : []),
+  ];
+
   const menuItems: MenuItem[] = isLinkPage
     ? [
+        ...phoneItems,
         ...(isPaused
           ? [
               {
@@ -126,6 +140,7 @@ export function ConversationHeader({
         },
       ]
     : [
+        ...phoneItems,
         ...(isPaused
           ? [
               {
@@ -186,7 +201,9 @@ export function ConversationHeader({
             </IconButton>
           )}
 
-          <Avatar name={displayName} channel={detail.channel} size="md" />
+          <span className="hidden md:block">
+            <Avatar name={displayName} channel={detail.channel} size="md" />
+          </span>
 
           <div className="min-w-0">
             {isLinkPage && (detail as any).business_name && (
@@ -195,14 +212,14 @@ export function ConversationHeader({
               </span>
             )}
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-zinc-900 dark:text-white truncate">
+              <h2 className="text-sm font-bold text-zinc-900 dark:text-white truncate" title={displayName}>
                 {displayName}
               </h2>
               {/* Phone link on desktop */}
               {phone && (
                 <a
                   href={`tel:${phone}`}
-                  className="hidden md:inline-block text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 font-normal"
+                  className="hidden 2xl:inline-block shrink-0 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 font-normal"
                 >
                   {phone}
                 </a>
@@ -211,23 +228,15 @@ export function ConversationHeader({
 
             <div className="flex items-center gap-2 mt-0.5">
               <ChannelBadge channel={detail.channel} />
-
-              {/* Owner chip if present */}
-              {detail.owner && (
-                <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-                  <UserRound className="h-3 w-3" />
-                  <span>Ведёт: {detail.owner.name}</span>
-                </span>
-              )}
             </div>
           </div>
         </div>
 
         {/* Right side actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 md:gap-2 shrink-0">
           {!isLinkPage && (
             /* Status pill (desktop) */
-            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300">
+            <div className="hidden 2xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300">
               <span
                 className={`h-2 w-2 rounded-full ${
                   isPaused
@@ -245,6 +254,8 @@ export function ConversationHeader({
             </div>
           )}
 
+          {/* Take / Return and the client panel: desktop only, on phones they live in the ⋯ sheet */}
+          <div className="hidden md:flex items-center gap-2">
           {/* Primary Take / Return action button (also on the link page) */}
           {!isPaused ? (
             onTake && (
@@ -283,6 +294,8 @@ export function ConversationHeader({
               <Info className="h-5 w-5" />
             </IconButton>
           )}
+
+          </div>
 
           {/* ⋯ Menu */}
           {menuItems.length > 0 && (

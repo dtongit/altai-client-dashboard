@@ -49,18 +49,12 @@ export function ChatList({
   currentUserId,
   isPolling = false,
 }: ChatListProps) {
-  const tabs: Array<{ id: ChatStatusTab; label: string; count?: number; badgeVariant?: "rose" | "zinc" }> = [
-    {
-      id: "attention",
-      label: "Внимание",
-      count: counts?.attention,
-      badgeVariant: "rose",
-    },
-    ...(typeof counts?.mine === "number"
-      ? [{ id: "mine" as const, label: "Мои", count: counts.mine, badgeVariant: "zinc" as const }]
-      : []),
-    { id: "all", label: "Все", count: counts?.all },
-    { id: "paused", label: "Пауза", count: counts?.paused, badgeVariant: "zinc" },
+  // Only «Внимание» carries a number: it is the one that asks for action.
+  const tabs: Array<{ id: ChatStatusTab; label: string; count?: number }> = [
+    { id: "attention", label: "Внимание", count: counts?.attention },
+    ...(typeof counts?.mine === "number" ? [{ id: "mine" as const, label: "Мои" }] : []),
+    { id: "all", label: "Все" },
+    { id: "paused", label: "Пауза" },
   ];
 
   const channelEntries = Object.entries(counts?.by_channel || {})
@@ -94,7 +88,7 @@ export function ChatList({
             type="text"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Поиск по сообщениям, имени, телефону..."
+            placeholder="Поиск по сообщениям, имени, нику, телефону..."
             className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/80 pl-9 pr-8 py-2 text-base text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/40"
           />
           {search && (
@@ -126,13 +120,7 @@ export function ChatList({
               >
                 <span>{tab.label}</span>
                 {typeof tab.count === "number" && tab.count > 0 && (
-                  <span
-                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold leading-4 ${
-                      tab.badgeVariant === "rose"
-                        ? "bg-rose-500 text-white"
-                        : "bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300"
-                    }`}
-                  >
+                  <span className="min-w-[18px] px-1.5 rounded-full text-[10px] font-bold leading-[18px] text-center bg-rose-500 text-white">
                     {tab.count > 99 ? "99+" : tab.count}
                   </span>
                 )}

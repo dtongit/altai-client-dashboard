@@ -169,7 +169,7 @@ export function DraftBubble({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={3}
-              placeholder="Что исправить? Например: предложи LORA и уточни размер"
+              placeholder="Что исправить? Например: короче и без цены, сначала уточни детали"
               className="w-full rounded-xl border border-amber-300 dark:border-amber-800 bg-white dark:bg-zinc-900 p-2.5 text-base text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
               autoFocus
             />

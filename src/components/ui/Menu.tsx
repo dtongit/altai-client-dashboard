@@ -11,6 +11,8 @@ export interface MenuItem {
   onClick: () => void;
   danger?: boolean;
   hidden?: boolean;
+  /** Shown only in the phone action sheet (the desktop has its own button for it). */
+  mobileOnly?: boolean;
 }
 
 export interface MenuProps {
@@ -22,10 +24,15 @@ export interface MenuProps {
 
 export function Menu({ items, trigger, align = "right", className = "" }: MenuProps) {
   const [open, setOpen] = useState(false);
+  // Desktop dropdown position (viewport coordinates of the trigger). The dropdown is portalled to <body> so a parent
+  // with overflow, backdrop-filter or a later sibling (the message list) can never paint over it or eat its clicks.
+  const [pos, setPos] = useState<{ top: number; left: number; right: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const visibleItems = items.filter((item) => !item.hidden);
+  const desktopItems = visibleItems.filter((item) => !item.mobileOnly);
 
   useEffect(() => {
     if (!open) return;
@@ -41,25 +48,37 @@ export function Menu({ items, trigger, align = "right", className = "" }: MenuPr
       if (
         containerRef.current &&
         !containerRef.current.contains(t) &&
-        !(sheetRef.current && sheetRef.current.contains(t))
+        !(sheetRef.current && sheetRef.current.contains(t)) &&
+        !(dropdownRef.current && dropdownRef.current.contains(t))
       ) {
         setOpen(false);
       }
     };
 
+    const place = () => {
+      const r = containerRef.current?.getBoundingClientRect();
+      if (r) setPos({ top: r.bottom + 4, left: r.left, right: window.innerWidth - r.right });
+    };
+    place();
+    const close = () => setOpen(false);
+
     window.addEventListener("keydown", handleKeyDown);
     document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", close, true);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", close, true);
     };
   }, [open]);
 
   if (visibleItems.length === 0) return null;
 
   return (
-    <div ref={containerRef} className={`relative inline-block text-left ${className}`}>
+    <div ref={containerRef} className={`relative inline-block text-left ${desktopItems.length === 0 ? "md:hidden" : ""} ${className}`}>
       <div onClick={() => setOpen(!open)}>
         {trigger || (
           <IconButton
@@ -122,12 +141,15 @@ export function Menu({ items, trigger, align = "right", className = "" }: MenuPr
           </Portal>
 
           {/* Desktop Dropdown (md and up) */}
+          {pos && desktopItems.length > 0 && (
+          <Portal>
           <div
-            className={`hidden md:block absolute z-50 mt-1 min-w-[200px] rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1 shadow-lg ring-1 ring-black/5 animate-in fade-in-0 zoom-in-95 ${
-              align === "left" ? "left-0" : "right-0"
-            }`}
+            ref={dropdownRef}
+            role="menu"
+            style={align === "left" ? { top: pos.top, left: pos.left } : { top: pos.top, right: pos.right }}
+            className="hidden md:block fixed z-[60] min-w-[200px] rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1 shadow-lg ring-1 ring-black/5"
           >
-            {visibleItems.map((item, idx) => (
+            {desktopItems.map((item, idx) => (
               <button
                 key={idx}
                 type="button"
@@ -146,6 +168,8 @@ export function Menu({ items, trigger, align = "right", className = "" }: MenuPr
               </button>
             ))}
           </div>
+          </Portal>
+          )}
         </>
       )}
     </div>

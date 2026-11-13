@@ -14,7 +14,6 @@ import {
   HelpCircle,
   Database,
   ChevronDown,
-  UsersRound,
 } from "lucide-react";
 
 export function Navbar() {
@@ -68,23 +67,23 @@ export function Navbar() {
       <header className="sticky top-0 z-40 w-full border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md transition-colors">
         <div className="flex h-14 md:h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Left: Brand & Business Name Partnership */}
-          <div className="flex items-center gap-3 sm:gap-4 flex-wrap min-w-0">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <Link href="/" className="flex items-center gap-2 shrink-0" title="Главная — Управление ИИ-штатом">
               <img
                 src="/brand_logo.webp"
                 alt="ALTAI Optima"
-                className="h-6 sm:h-7 w-auto object-contain dark:hidden"
+                className="h-4 md:h-6 w-auto object-contain dark:hidden"
               />
               <img
                 src="/brand_logo_dark.webp"
                 alt="ALTAI Optima"
-                className="h-6 sm:h-7 w-auto object-contain hidden dark:block"
+                className="h-4 md:h-6 w-auto object-contain hidden dark:block"
               />
             </Link>
 
             {tenant && (
-              <div className="flex items-center gap-2.5 min-w-0">
-                <span className="text-zinc-400 dark:text-zinc-600 font-light select-none text-base sm:text-lg shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                <span className="text-zinc-400 dark:text-zinc-600 font-light select-none text-sm sm:text-lg shrink-0">
                   +
                 </span>
                 {/* On mobile: truncated business name */}
@@ -183,20 +182,6 @@ export function Navbar() {
               </span>
             )}
 
-            {can("manage_users") && (
-              <Link
-                href="/team"
-                className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border ${
-                  pathname.startsWith("/team")
-                    ? "bg-amber-500 text-zinc-950 border-amber-500"
-                    : "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-200 dark:border-zinc-800"
-                }`}
-                title="Команда и доступы"
-              >
-                <UsersRound className="h-3.5 w-3.5" />
-                <span className="hidden lg:inline">Команда и доступы</span>
-              </Link>
-            )}
 
             {/* Support Link */}
             <a

@@ -24,7 +24,7 @@ export default function ChatsPage() {
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<ChatStatusTab>("all");
+  const [statusFilter, setStatusFilter] = useState<ChatStatusTab>("attention");
   const [channelFilter, setChannelFilter] = useState("");
   const [filtersReady, setFiltersReady] = useState(false);
   const [isPhone, setIsPhone] = useState(false);
@@ -35,9 +35,6 @@ export default function ChatsPage() {
   const inFlight = useRef(false);
   const selectedRef = useRef<string | null>(null);
   selectedRef.current = selectedSessionId;
-  // Default «Внимание» tab is applied once, on the first list load, and only when the URL had no status
-  const urlHadStatusRef = useRef(false);
-  const defaultTabAppliedRef = useRef(false);
   // True when the open chat was added to history with pushState (phone list -> chat)
   const openedByPushRef = useRef(false);
   const loadChatsRef = useRef<(mode?: "reset" | "more" | "silent") => Promise<void>>(async () => {});
@@ -56,7 +53,6 @@ export default function ChatsPage() {
     const sid = p.get("session");
     if (sid) setSelectedSessionId(sid);
     const st = p.get("status") as ChatStatusTab;
-    urlHadStatusRef.current = Boolean(st);
     if (st && ["all", "attention", "paused", "mine"].includes(st)) setStatusFilter(st);
     setChannelFilter(p.get("channel") || "");
     setFiltersReady(true);
@@ -70,7 +66,7 @@ export default function ChatsPage() {
   const updateUrl = useCallback((sid: string | null, push = false) => {
     const p = new URLSearchParams();
     if (sid) p.set("session", sid);
-    if (statusFilter !== "all") p.set("status", statusFilter);
+    if (statusFilter !== "attention") p.set("status", statusFilter);
     if (channelFilter) p.set("channel", channelFilter);
     const qs = p.toString();
     const url = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
@@ -111,12 +107,6 @@ export default function ChatsPage() {
       if (res.counts) {
         setCounts(res.counts);
         if (typeof res.counts.attention === "number") updateAttentionCount(res.counts.attention);
-        if (!defaultTabAppliedRef.current) {
-          defaultTabAppliedRef.current = true;
-          if (!urlHadStatusRef.current && res.counts.attention > 0 && statusFilter === "all") {
-            setStatusFilter("attention");
-          }
-        }
       }
       if (!isPhone && !new URLSearchParams(window.location.search).get("session") && incoming.length > 0 && !selectedRef.current) {
         setSelectedSessionId(incoming[0].session_id);
