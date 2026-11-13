@@ -25,12 +25,12 @@ import {
   Sliders,
   CheckCircle2,
   ExternalLink,
-  Bot,
   Plus,
   X,
   UserCheck,
   Radio,
 } from "lucide-react";
+import { VeraFace } from "@/components/vera-face";
 
 export default function AdminTeamChatsPage() {
   const { user } = useAuth();
@@ -300,7 +300,7 @@ export default function AdminTeamChatsPage() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500">
-                <Bot className="h-4 w-4" />
+                <VeraFace className="h-4 w-4" />
               </div>
               <div className="flex-1 min-w-0">
                 <h1 className="text-sm font-bold text-zinc-900 dark:text-white truncate">
@@ -710,7 +710,7 @@ export default function AdminTeamChatsPage() {
           </>
         ) : (
           <div className="h-full flex flex-col items-center justify-center p-8 text-center text-zinc-400 space-y-3">
-            <Bot className="h-10 w-10 text-indigo-500/40" />
+            <VeraFace className="h-10 w-10 text-indigo-500/40" />
             <div className="space-y-1">
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">
                 Служебный Telegram-бот @{botUsername}
@@ -736,7 +736,7 @@ export default function AdminTeamChatsPage() {
           <div className="w-full max-w-md rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
-                <Bot className="h-5 w-5" />
+                <VeraFace className="h-5 w-5" />
                 <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
                   Написать через @{botUsername}
                 </h3>

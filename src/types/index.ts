@@ -956,3 +956,18 @@ export interface LeadCard {
   created_at?: string | null;
   updated_at?: string | null;
 }
+
+export interface BossButton {
+  text: string;
+  data?: string;
+  url?: string;
+}
+
+export interface BossMessage {
+  id: string;
+  role: "user" | "vera" | "diff";
+  text: string;
+  photos: string[];
+  buttons: BossButton[][] | null;
+  at: string;
+}

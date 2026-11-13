@@ -34,7 +34,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   const showSidebar = !isLoginPage && !isStartPage && !isAdminPage && !isChatLink;
 
   // Page guards (roles epic #75): which capability / AI employee each section needs.
-  const needsVera = ["/vera", "/chats", "/simulator"].some(
+  const needsVera = ["/vera", "/vera-chat", "/chats", "/simulator"].some(
     (p) => cleanPath === p || cleanPath.startsWith(p + "/")
   );
   const needsCap = cleanPath.startsWith("/settings")
@@ -45,7 +45,11 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     ? "manage_users"
     : null;
   const veraOk = hasEmployee("vera");
-  const denied = Boolean(user) && ((needsVera && !veraOk) || (needsCap !== null && !can(needsCap)));
+  // «Тест клиентской Веры» (/simulator) is for superadmins only.
+  const needsAdmin = cleanPath === "/simulator" || cleanPath.startsWith("/simulator/");
+  const adminOk = Boolean(user?.is_admin);
+  const denied =
+    Boolean(user) && ((needsVera && !veraOk) || (needsCap !== null && !can(needsCap)) || (needsAdmin && !adminOk));
 
   useEffect(() => {
     if (!loading && mounted && denied) {
@@ -107,7 +111,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   }
 
   const isChats = cleanPath.startsWith("/chats");
-  const isSimulator = cleanPath.startsWith("/simulator");
+  const isSimulator = cleanPath.startsWith("/simulator") || cleanPath.startsWith("/vera-chat");
 
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">

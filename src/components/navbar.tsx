@@ -201,7 +201,7 @@ export function Navbar() {
 
             {/* User Profile & Logout */}
             {user && (
-              <div className="flex items-center gap-2 pl-2 border-l border-zinc-200 dark:border-zinc-800">
+              <div className="hidden md:flex items-center gap-2 pl-2 border-l border-zinc-200 dark:border-zinc-800">
                 <div className="hidden sm:block text-right">
                   <div className="text-xs font-medium text-zinc-900 dark:text-white">
                     {user.username}

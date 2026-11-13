@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   MessageSquare,
   BarChart3,
-  Bot,
+  FlaskConical,
   Menu as MenuIcon,
   Sliders,
   BookOpen,
@@ -20,6 +20,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useAttentionCount } from "@/lib/use-attention-count";
 import { Sheet } from "@/components/ui/Sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { VeraFace } from "@/components/vera-face";
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -108,10 +109,10 @@ export function BottomNav() {
     },
     {
       label: "Вера",
-      href: "/simulator",
-      icon: Bot,
+      href: "/vera-chat",
+      icon: VeraFace,
       visible: isVeraAllowed,
-      active: cleanPath.startsWith("/simulator"),
+      active: cleanPath.startsWith("/vera-chat"),
     },
   ];
 
@@ -270,6 +271,21 @@ export function BottomNav() {
               >
                 <UsersRound className="h-5 w-5 text-zinc-500 shrink-0" />
                 <span>Команда и доступы</span>
+              </Link>
+            )}
+
+            {user?.is_admin && isVeraAllowed && (
+              <Link
+                href="/simulator"
+                onClick={() => setMoreOpen(false)}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-base font-medium transition-colors ${
+                  cleanPath.startsWith("/simulator")
+                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold"
+                    : "text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                }`}
+              >
+                <FlaskConical className="h-5 w-5 text-zinc-500 shrink-0" />
+                <span>Тест клиентской Веры</span>
               </Link>
             )}
 

@@ -9,26 +9,29 @@ import {
   Sliders,
   BookOpen,
   CheckCircle2,
-  Bot,
+  FlaskConical,
   ArrowLeft,
   Sparkles,
   UsersRound,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useAttentionCount } from "@/lib/use-attention-count";
+import { VeraFace } from "@/components/vera-face";
 
-const navigation: Array<{ name: string; href: string; icon: typeof BarChart3; vera?: boolean; cap?: string }> = [
+const navigation: Array<{ name: string; href: string; icon: React.ComponentType<{ className?: string }>; vera?: boolean; cap?: string; admin?: boolean }> = [
   { name: "Дашборд", href: "/vera", icon: BarChart3, vera: true },
   { name: "Чаты", href: "/chats", icon: MessageSquare, vera: true },
-  { name: "Пообщаться с Верой", href: "/simulator", icon: Bot, vera: true },
+  { name: "Пообщаться с Верой", href: "/vera-chat", icon: VeraFace, vera: true },
   { name: "Выключатели", href: "/settings", icon: Sliders, cap: "settings" },
   { name: "Инструкции для Веры", href: "/knowledge", icon: BookOpen, cap: "instructions" },
   { name: "Команда и доступы", href: "/team", icon: UsersRound, cap: "manage_users" },
+  // Superadmins: talk to the customer-facing Vera of the current company (the former «Пообщаться с Верой»).
+  { name: "Тест клиентской Веры", href: "/simulator", icon: FlaskConical, vera: true, admin: true },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { can, hasEmployee } = useAuth();
+  const { can, hasEmployee, user } = useAuth();
   const attentionCount = useAttentionCount();
   const cleanPath = (pathname || "").replace(/\/+$/, "") || "/";
 
@@ -81,7 +84,7 @@ export function Sidebar() {
           </p>
           <nav className="space-y-1">
             {navigation
-              .filter((item) => (!item.vera || hasEmployee("vera")) && (!item.cap || can(item.cap)))
+              .filter((item) => (!item.vera || hasEmployee("vera")) && (!item.cap || can(item.cap)) && (!item.admin || Boolean(user?.is_admin)))
               .map((item) => {
               const isActive =
                 item.href === "/vera"

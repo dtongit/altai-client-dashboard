@@ -25,7 +25,6 @@ import {
   Sparkles,
   Send,
   RotateCcw,
-  Bot,
   User,
   CheckCircle2,
   FileText,

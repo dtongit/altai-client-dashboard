@@ -1,4 +1,5 @@
 import {
+  BossMessage,
   ChatDetail,
   ChatsListResponse,
   KnowledgeResponse,
@@ -234,6 +235,33 @@ export const api = {
         body: JSON.stringify({ text }),
       }
     );
+  },
+
+  async getBossChat() {
+    return request<{ ok: boolean; messages: BossMessage[] }>("/boss-chat");
+  },
+
+  async sendBossMessage(text: string, files?: File[]) {
+    if (files && files.length > 0) {
+      const fd = new FormData();
+      if (text) fd.append("text", text);
+      files.forEach((f) => fd.append("files", f));
+      return request<{ ok: boolean; messages: BossMessage[] }>("/boss-chat/message", {
+        method: "POST",
+        body: fd,
+      });
+    }
+    return request<{ ok: boolean; messages: BossMessage[] }>("/boss-chat/message", {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    });
+  },
+
+  async pressBossButton(messageId: string, data: string) {
+    return request<{ ok: boolean; toast: string; messages: BossMessage[] }>("/boss-chat/button", {
+      method: "POST",
+      body: JSON.stringify({ message_id: messageId, data }),
+    });
   },
 
   async markChatRead(sessionId: string) {

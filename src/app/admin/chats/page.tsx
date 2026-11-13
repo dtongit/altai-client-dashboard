@@ -26,7 +26,6 @@ import {
   Wrench,
   Sparkles,
   User,
-  Bot,
   Database,
   Search,
   Filter,
@@ -41,6 +40,7 @@ import {
   ExternalLink,
   Mic,
 } from "lucide-react";
+import { VeraFace } from "@/components/vera-face";
 
 type FilterMode = "all" | "chat_only" | "tech_only";
 
@@ -1099,7 +1099,7 @@ function AdminChatsContent() {
                                       <div className="flex items-center justify-between gap-3 flex-wrap">
                                         <div className="flex items-center gap-2">
                                           <div className="h-6 w-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                                            <Bot className="h-3.5 w-3.5" />
+                                            <VeraFace className="h-3.5 w-3.5" />
                                           </div>
                                           <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
                                             {stepNumber}. {item.title}
