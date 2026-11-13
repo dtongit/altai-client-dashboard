@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { useAttentionCount } from "@/lib/use-attention-count";
 import { VeraFace } from "@/components/vera-face";
+import { SidebarFooter } from "@/components/sidebar-footer";
 
 const navigation: Array<{ name: string; href: string; icon: React.ComponentType<{ className?: string }>; vera?: boolean; cap?: string; admin?: boolean }> = [
   { name: "Дашборд", href: "/vera", icon: BarChart3, vera: true, cap: "dashboards" },
@@ -36,8 +37,8 @@ export function Sidebar() {
   const cleanPath = (pathname || "").replace(/\/+$/, "") || "/";
 
   return (
-    <aside className="hidden md:flex w-64 flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col justify-between p-4 min-h-[calc(100dvh-var(--app-top))] transition-colors">
-      <div className="space-y-5">
+    <aside className="hidden md:flex w-64 flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex-col gap-3 p-4 h-full transition-colors">
+      <div className="space-y-5 flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
         {/* Switcher back to All AI Staff (not for a user who has only this AI employee) */}
         {!singleEmployee && (
         <div>
@@ -138,6 +139,7 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+      <SidebarFooter />
     </aside>
   );
 }

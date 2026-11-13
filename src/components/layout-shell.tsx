@@ -121,10 +121,18 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   const isChats = cleanPath.startsWith("/chats");
   const isSimulator = cleanPath.startsWith("/simulator") || cleanPath.startsWith("/vera-chat");
 
+  // The site header (logo + company) shows only on the AI staff list and the superadmin console; elsewhere the page
+  // takes the full height and the header's controls live in the sidebar footer (desktop) and «Ещё» (phone).
+  const showHeader = isStartPage || isAdminPage;
+
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
-      <Navbar />
-      <div className="flex-1 flex overflow-hidden">
+    <div
+      // Fixed to the viewport: only <main> scrolls, so the sidebar (and its footer) stays in place.
+      className="h-dvh flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors"
+      style={showHeader ? undefined : ({ "--app-top": "0px" } as React.CSSProperties)}
+    >
+      {showHeader && <Navbar />}
+      <div className="flex-1 min-h-0 flex overflow-hidden">
         {showSidebar && <Sidebar />}
         <main
           className={`flex-1 min-w-0 bg-zinc-100/60 dark:bg-zinc-950/50 ${

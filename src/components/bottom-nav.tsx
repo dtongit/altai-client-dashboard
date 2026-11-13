@@ -195,6 +195,13 @@ export function BottomNav() {
             </div>
           )}
 
+          {/* Only one company: its name (the header that showed it is gone outside the AI staff list) */}
+          {tenant && availableTenants.length <= 1 && (
+            <div className="px-3 pt-1 text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">
+              Компания: <span className="normal-case tracking-normal text-sm font-bold text-zinc-900 dark:text-white">{tenant.business_name}</span>
+            </div>
+          )}
+
           {/* Master Kill Switch on Mobile */}
           {showMasterSwitch && (
             <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700/60 flex items-center justify-between">

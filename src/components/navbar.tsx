@@ -1,16 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { api } from "@/lib/api";
-import { ROLE_LABELS, formatDateTime } from "@/lib/permissions";
+import { ROLE_LABELS } from "@/lib/permissions";
 import {
-  Power,
   LogOut,
-  AlertCircle,
   HelpCircle,
   Database,
   ChevronDown,
@@ -18,50 +15,9 @@ import {
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, tenant, availableTenants, switchTenant, toggleActive, logout, role, can, hasEmployee } = useAuth();
-  const [pausedBy, setPausedBy] = useState<string | null>(null);
-  const [isToggling, setIsToggling] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  const isActive = tenant?.is_active ?? true;
-  const isVeraSelected =
-    pathname !== "/" &&
-    pathname !== "/login" &&
-    pathname !== "/login/" &&
-    !pathname?.startsWith("/login") &&
-    !pathname?.startsWith("/admin");
-
-  const showSwitch = isVeraSelected && can("master_switch") && hasEmployee("vera");
-  const canAudit = can("audit_log");
-
-  // Who stopped Vera last: latest `vera.paused` audit entry (only for users who may read the audit log).
-  useEffect(() => {
-    if (isActive || !canAudit || !tenant) {
-      setPausedBy(null);
-      return;
-    }
-    let cancelled = false;
-    api
-      .getAuditLog({ action: "vera.paused", limit: 1 })
-      .then((res) => {
-        const e = (res.entries || res.items || [])[0];
-        if (!cancelled) setPausedBy(e ? `${e.actor_name || "—"}, ${formatDateTime(e.created_at)}` : null);
-      })
-      .catch(() => {
-        if (!cancelled) setPausedBy(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [isActive, canAudit, tenant?.id]);
-
-  const handleToggle = async () => {
-    setIsToggling(true);
-    await toggleActive(!isActive);
-    setIsToggling(false);
-    setShowConfirm(false);
-  };
-
+  const { user, tenant, availableTenants, switchTenant, logout, role } = useAuth();
+  // The header shows only on the AI staff list and the superadmin console (layout-shell); the master switch, which
+  // belongs to a selected AI employee, lives in the sidebar footer and the phone «Ещё» sheet.
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md transition-colors">
@@ -143,46 +99,6 @@ export function Navbar() {
               </Link>
             )}
 
-            {/* Global Master Pause/Resume Button - only when Vera is selected */}
-            {showSwitch && (
-              <button
-                onClick={() => setShowConfirm(true)}
-                disabled={isToggling}
-                className={`hidden md:flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all shadow-sm ${
-                  isActive
-                    ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300/80 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 dark:text-emerald-400 dark:border-emerald-600/40"
-                    : "bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300/80 dark:bg-amber-950/60 dark:hover:bg-amber-900/60 dark:text-amber-400 dark:border-amber-600/40"
-                }`}
-                title="Нажмите для экстренной паузы или включения ИИ-продавца во всех каналах"
-              >
-                <Power
-                  className={`h-3.5 w-3.5 ${
-                    isActive
-                      ? "text-emerald-700 dark:text-emerald-400"
-                      : "text-amber-700 dark:text-amber-400"
-                  }`}
-                />
-                <span className="flex items-center gap-1.5">
-                  <span
-                    className={`inline-block h-2 w-2 rounded-full ${
-                      isActive
-                        ? "bg-emerald-500 dark:bg-emerald-400 animate-pulse"
-                        : "bg-amber-500 dark:bg-amber-400"
-                    }`}
-                  />
-                  <span className="hidden sm:inline">
-                    {isActive ? "Вера активна" : "ИИ на паузе"}
-                  </span>
-                </span>
-              </button>
-            )}
-            {showSwitch && !isActive && pausedBy && (
-              <span className="hidden md:inline text-[11px] text-amber-700 dark:text-amber-400 max-w-[14rem] truncate" title={`Остановлена: ${pausedBy}`}>
-                Остановлена: {pausedBy}
-              </span>
-            )}
-
-
             {/* Support Link */}
             <a
               href="https://t.me/altaioptima"
@@ -223,56 +139,6 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* Confirmation Modal for Master Switch */}
-      {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-2xl">
-            <div className="flex items-start gap-4">
-              <div
-                className={`p-3 rounded-xl ${
-                  isActive
-                    ? "bg-amber-500/10 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400"
-                    : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400"
-                }`}
-              >
-                <AlertCircle className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-zinc-900 dark:text-white">
-                  {isActive
-                    ? "Приостановить ИИ-продавца?"
-                    : "Возобновить работу ИИ-продавца?"}
-                </h3>
-                <p className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                  {isActive
-                    ? "Все входящие сообщения от клиентов по-прежнему будут сохраняться в системе и CRM, но Вера перестанет автоматически отвечать клиентам во всех каналах."
-                    : "Вера снова начнет мгновенно отвечать клиентам, консультировать по товарам и квалифицировать заявки."}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setShowConfirm(false)}
-                className="px-4 py-2 rounded-xl text-xs font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800 transition-colors"
-              >
-                Отмена
-              </button>
-              <button
-                onClick={handleToggle}
-                disabled={isToggling}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all shadow-md ${
-                  isActive
-                    ? "bg-amber-500 hover:bg-amber-600 text-zinc-950 shadow-amber-500/20"
-                    : "bg-emerald-500 hover:bg-emerald-600 text-zinc-950 shadow-emerald-500/20"
-                }`}
-              >
-                {isActive ? "Поставить на паузу" : "Включить автоответы"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

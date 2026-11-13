@@ -4,7 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useTheme, Theme } from "@/lib/theme-context";
 import { Sun, Moon, Monitor, Check } from "lucide-react";
 
-export function ThemeToggle() {
+/** `up`: open the menu above the button (sidebar footer at the bottom of the screen); `align`: which edge it hugs. */
+export function ThemeToggle({ up = false, align = "right" }: { up?: boolean; align?: "left" | "right" } = {}) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -64,7 +65,7 @@ export function ThemeToggle() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1.5 shadow-xl dark:shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-100">
+        <div className={`absolute ${align === "left" ? "left-0" : "right-0"} ${up ? "bottom-full mb-2" : "mt-2"} w-52 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1.5 shadow-xl dark:shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-100`}>
           <div className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400 border-b border-zinc-100 dark:border-zinc-800/80 mb-1">
             Тема оформления
           </div>
