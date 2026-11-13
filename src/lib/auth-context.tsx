@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Tenant } from "@/types";
 import { api, clearSelectedTenant, getStoredAuth, setAuthToken, setSelectedTenant } from "@/lib/api";
-import { deriveCaps, globalRole, RoleId } from "@/lib/permissions";
+import { deriveCaps, employeeHome, globalRole, homePath as landingPath, RoleId } from "@/lib/permissions";
 
 interface AvailableTenant {
   id: string;
@@ -28,12 +28,20 @@ interface AuthContextType {
   allowedEmployees: string[];
   can: (cap: string) => boolean;
   hasEmployee: (employeeId: string) => boolean;
+  /** Start page of an AI employee for this user (Vera: dashboard, or chats without `dashboards`). */
+  employeeHome: (employeeId: string) => string;
+  /** Where this user lands after login: the AI staff list, or the only AI employee they have. */
+  homePath: string;
+  /** True when the user sees only one AI employee, so the AI staff list is skipped. */
+  singleEmployee: boolean;
 }
 
 interface AuthPayload {
   user: User;
   permissions?: string[];
   allowed_employees?: string[];
+  /** "all" = every AI employee (also future ones), "selected" = only `allowed_employees`. Old backends: absent. */
+  employee_scope?: "all" | "selected";
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [permissions, setPermissions] = useState<string[]>([]);
   const [allowedEmployees, setAllowedEmployees] = useState<string[]>([]);
+  const [employeeScope, setEmployeeScope] = useState<"all" | "selected">("all");
 
   // Old backends send neither field: derive from the role and open every AI employee.
   const applyPayload = (res: AuthPayload) => {
@@ -53,12 +62,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setAllowedEmployees(
       Array.isArray(res.allowed_employees) ? res.allowed_employees : ["*"]
     );
+    setEmployeeScope(res.employee_scope === "selected" ? "selected" : "all");
   };
 
   const role: RoleId | null = globalRole(user);
   const can = (cap: string) => role === "superadmin" || permissions.includes(cap);
   const hasEmployee = (employeeId: string) =>
     role === "superadmin" || allowedEmployees.includes("*") || allowedEmployees.includes(employeeId);
+  const homeOf = (employeeId: string) => employeeHome(employeeId, can("dashboards"));
+  const homePath = landingPath(role === "superadmin", employeeScope === "all" ? ["*"] : allowedEmployees, can("dashboards"));
+  const singleEmployee = homePath !== "/";
 
   useEffect(() => {
     async function initAuth() {
@@ -206,6 +219,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         allowedEmployees,
         can,
         hasEmployee,
+        employeeHome: homeOf,
+        homePath,
+        singleEmployee,
       }}
     >
       {children}

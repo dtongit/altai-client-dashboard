@@ -11,7 +11,7 @@ import { BottomNav } from "@/components/bottom-nav";
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading, can, hasEmployee } = useAuth();
+  const { user, loading, can, hasEmployee, employeeHome } = useAuth();
   const { showToast } = useToast();
   const [mounted, setMounted] = useState(false);
 
@@ -45,23 +45,31 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     ? "manage_users"
     : null;
   const veraOk = hasEmployee("vera");
+  // The Vera dashboard needs `dashboards`; without it the work with Vera starts in the chats (quiet redirect).
+  const isVeraDashboard = cleanPath === "/vera" || cleanPath.startsWith("/vera/");
+  const noDashboards = Boolean(user) && veraOk && isVeraDashboard && !can("dashboards");
   // «Тест клиентской Веры» (/simulator) is for superadmins only.
   const needsAdmin = cleanPath === "/simulator" || cleanPath.startsWith("/simulator/");
   const adminOk = Boolean(user?.is_admin);
   const denied =
-    Boolean(user) && ((needsVera && !veraOk) || (needsCap !== null && !can(needsCap)) || (needsAdmin && !adminOk));
+    Boolean(user) && ((needsVera && !veraOk) || (needsCap !== null && !can(needsCap)) || (needsAdmin && !adminOk) || noDashboards);
 
   useEffect(() => {
     if (!loading && mounted && denied) {
+      if (noDashboards) {
+        router.replace("/chats");
+        return;
+      }
       showToast(
         needsVera && !veraOk
           ? "Доступ к Вере закрыт. Обратитесь к менеджеру вашей компании."
           : "Недостаточно прав для этого раздела",
         "error"
       );
-      router.replace(veraOk ? "/vera" : "/");
+      router.replace(veraOk ? employeeHome("vera") : "/");
     }
-  }, [loading, mounted, denied, needsVera, veraOk, router, showToast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, mounted, denied, noDashboards, needsVera, veraOk, router, showToast]);
 
   useEffect(() => {
     if (!loading && mounted) {

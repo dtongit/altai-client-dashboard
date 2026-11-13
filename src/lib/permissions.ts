@@ -1,6 +1,7 @@
 import type { Cap, User } from "@/types";
 
 export const ALL_CAPS: Cap[] = [
+  "dashboards",
   "master_switch",
   "settings",
   "instructions",
@@ -11,6 +12,7 @@ export const ALL_CAPS: Cap[] = [
 ];
 
 export const CAP_LABELS: Record<Cap, { title: string; hint: string }> = {
+  dashboards: { title: "Дашборды", hint: "Показатели ИИ-сотрудников: обращения, лиды, расходы. Без этого права работа начинается с чатов" },
   master_switch: { title: "Включать и выключать Веру", hint: "Выключатель Веры в шапке и в Telegram-боте" },
   settings: { title: "Настройки каналов", hint: "Режимы каналов, Umnico, подключение Telegram" },
   instructions: { title: "Инструкции для Веры", hint: "База знаний, промпты и навыки" },
@@ -46,8 +48,26 @@ export function globalRole(user: User | null | undefined): RoleId | null {
 export function legacyCaps(user: User): Cap[] {
   const g = globalRole(user);
   if (g === "superadmin") return ALL_CAPS;
-  if (user.role === "employee" || user.role === "client_operator" || user.role === "tester") return ["master_switch", "bot_changes"];
-  return ["master_switch", "settings", "instructions", "alerts", "bot_changes"];
+  if (user.role === "employee" || user.role === "client_operator" || user.role === "tester") return ["dashboards", "master_switch", "bot_changes"];
+  return ["dashboards", "master_switch", "settings", "instructions", "alerts", "bot_changes"];
+}
+
+/**
+ * Where work with an AI employee starts: its dashboard, or for Vera the chats when the user has no `dashboards`.
+ */
+export function employeeHome(employeeId: string, canDashboards: boolean): string {
+  if (employeeId === "vera") return canDashboards ? "/vera" : "/chats";
+  return "/";
+}
+
+/**
+ * The page a user lands on after login: the AI staff list, unless the membership opens exactly one AI employee
+ * (not "*"), then that employee's start page. Superadmins always see the list.
+ */
+export function homePath(isSuperadmin: boolean, allowedEmployees: string[], canDashboards: boolean): string {
+  if (isSuperadmin || allowedEmployees.includes("*")) return "/";
+  const known = allowedEmployees.filter((id) => AI_EMPLOYEES.some((e) => e.id === id));
+  return known.length === 1 ? employeeHome(known[0], canDashboards) : "/";
 }
 
 export function deriveCaps(user: User, permissions?: string[]): Set<string> {

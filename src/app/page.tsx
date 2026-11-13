@@ -7,14 +7,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
-import { OverviewData } from "@/types";
 import { AlertTriangle, Send } from "lucide-react";
 
 export default function AIStaffManagementPage() {
   const router = useRouter();
-  const { user, tenant, loading: authLoading, hasEmployee } = useAuth();
+  const { user, loading: authLoading, hasEmployee, employeeHome, singleEmployee, homePath } = useAuth();
   const hasVera = hasEmployee("vera");
-  const [data, setData] = useState<OverviewData | null>(null);
+  // Only the Telegram link status: the KPIs (/overview) need the `dashboards` cap.
+  const [tgSubscribed, setTgSubscribed] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [connectingTg, setConnectingTg] = useState(false);
 
@@ -36,8 +36,8 @@ export default function AIStaffManagementPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await api.getOverview();
-      setData(res);
+      const res = await api.getTelegramStatus();
+      setTgSubscribed(Boolean(res?.has_subscribers));
     } catch (err) {
       console.error("Failed to load staff overview:", err);
     } finally {
@@ -50,15 +50,20 @@ export default function AIStaffManagementPage() {
       router.push("/login");
       return;
     }
+    // A user with only one AI employee skips the AI staff list and starts on that employee's page.
+    if (user && singleEmployee) {
+      router.replace(homePath);
+      return;
+    }
 
     if (user && hasVera) {
       loadData();
     } else if (user) {
       setLoading(false);
     }
-  }, [user, authLoading, router, hasVera]);
+  }, [user, authLoading, router, hasVera, singleEmployee, homePath]);
 
-  if (authLoading || loading) {
+  if (authLoading || loading || singleEmployee) {
     return (
       <div className="flex-1 min-h-[calc(100dvh-var(--app-top))] flex items-center justify-center p-12">
         <div className="flex flex-col items-center gap-3">
@@ -71,8 +76,8 @@ export default function AIStaffManagementPage() {
     );
   }
 
-  const tenantId = data?.tenant_id || tenant?.id || "";
-  const isTgSubscribed = data?.telegram_bot?.has_subscribers ?? false;
+  // Unknown (request failed) = no banner rather than a false alarm.
+  const isTgSubscribed = tgSubscribed ?? true;
 
   return (
     <div className="p-4 sm:p-10 space-y-8 max-w-5xl mx-auto">
@@ -130,7 +135,7 @@ export default function AIStaffManagementPage() {
       {/* Active Employee: Vera */}
       {hasVera && (
       <Link
-        href="/vera"
+        href={employeeHome("vera")}
         className="floating-halo-card relative block rounded-3xl transition-transform duration-300 hover:-translate-y-1 group cursor-pointer"
       >
         <div className="relative z-10 rounded-3xl border border-sky-400/25 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md overflow-hidden flex flex-col sm:flex-row items-stretch gap-6 h-full transition-all">

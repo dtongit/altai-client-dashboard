@@ -155,9 +155,10 @@ export default function TeamPage() {
       username: "",
       email: "",
       password: "",
-      caps: ["master_switch", "bot_changes"],
-      allEmployees: true,
-      employeeIds: [],
+      caps: ["dashboards", "master_switch", "bot_changes"],
+      // An editor without access to every AI employee can only hand out the ones it has.
+      allEmployees: isSuper || hasEmployee("*"),
+      employeeIds: isSuper || hasEmployee("*") ? [] : AI_EMPLOYEES.filter((e) => hasEmployee(e.id)).map((e) => e.id),
     });
   };
 
@@ -188,6 +189,7 @@ export default function TeamPage() {
     setFormError(null);
     if (!form.id && !form.username.trim()) return setFormError("Укажите логин");
     if (form.password && form.password.length < 8) return setFormError("Пароль — не короче 8 символов");
+    if (!isSelf && !form.allEmployees && form.employeeIds.length === 0) return setFormError("Выберите хотя бы одного ИИ-сотрудника");
     const employee_ids: "*" | string[] = form.allEmployees ? "*" : form.employeeIds;
     setSaving(true);
     try {
@@ -764,46 +766,84 @@ export default function TeamPage() {
               <>
                 <div className="space-y-2">
                   <div className="text-xs font-medium text-zinc-700 dark:text-zinc-300">Доступ к ИИ-сотрудникам</div>
-                  <label
-                    className={`flex items-center gap-2 text-xs text-zinc-800 dark:text-zinc-200 ${
-                      !hasEmployee("*") && !isSuper ? "opacity-50" : ""
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      className="accent-amber-500"
-                      checked={form.allEmployees}
-                      disabled={!isSuper && !hasEmployee("*")}
-                      onChange={(e) => setForm({ ...form, allEmployees: e.target.checked })}
-                    />
-                    Все ИИ-сотрудники
-                  </label>
-                  {!form.allEmployees &&
-                    AI_EMPLOYEES.map((emp) => {
-                      const lacks = !isSuper && !hasEmployee(emp.id);
-                      return (
-                        <label
-                          key={emp.id}
-                          className={`flex items-center gap-2 text-xs text-zinc-800 dark:text-zinc-200 pl-5 ${lacks ? "opacity-50" : ""}`}
-                        >
-                          <input
-                            type="checkbox"
-                            className="accent-amber-500"
-                            checked={form.employeeIds.includes(emp.id)}
-                            disabled={lacks}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                employeeIds: e.target.checked
-                                  ? [...form.employeeIds, emp.id]
-                                  : form.employeeIds.filter((x) => x !== emp.id),
-                              })
-                            }
-                          />
-                          {emp.name}
-                        </label>
-                      );
-                    })}
+                  {/* Two modes: every AI employee (also the ones added later) or only the selected ones; at least one. */}
+                  <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800/60">
+                    <label
+                      className={`flex items-start gap-3 px-3 py-2.5 ${!isSuper && !hasEmployee("*") ? "opacity-50" : "cursor-pointer"}`}
+                      title={!isSuper && !hasEmployee("*") ? "У вас самих доступ не ко всем ИИ-сотрудникам" : undefined}
+                    >
+                      <input
+                        type="radio"
+                        name="employee-scope"
+                        className="mt-0.5 accent-amber-500"
+                        checked={form.allEmployees}
+                        disabled={!isSuper && !hasEmployee("*")}
+                        onChange={() => setForm({ ...form, allEmployees: true })}
+                      />
+                      <span>
+                        <span className="block text-xs font-medium text-zinc-800 dark:text-zinc-200">Все ИИ-сотрудники</span>
+                        <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Включая тех, кто появится позже</span>
+                      </span>
+                    </label>
+                    <div className="px-3 py-2.5 space-y-2">
+                      <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="employee-scope"
+                          className="mt-0.5 accent-amber-500"
+                          checked={!form.allEmployees}
+                          onChange={() =>
+                            setForm({
+                              ...form,
+                              allEmployees: false,
+                              // Never leave the list empty: start with the AI employees the editor may hand out.
+                              employeeIds: form.employeeIds.length
+                                ? form.employeeIds
+                                : AI_EMPLOYEES.filter((e) => isSuper || hasEmployee(e.id)).slice(0, 1).map((e) => e.id),
+                            })
+                          }
+                        />
+                        <span>
+                          <span className="block text-xs font-medium text-zinc-800 dark:text-zinc-200">Только выбранные</span>
+                          <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">
+                            С одним ИИ-сотрудником человек после входа сразу попадает на его страницу
+                          </span>
+                        </span>
+                      </label>
+                      {!form.allEmployees && (
+                        <div className="pl-7 space-y-1.5">
+                          {AI_EMPLOYEES.map((emp) => {
+                            const lacks = !isSuper && !hasEmployee(emp.id);
+                            const checked = form.employeeIds.includes(emp.id);
+                            const last = checked && form.employeeIds.length === 1;
+                            return (
+                              <label
+                                key={emp.id}
+                                className={`flex items-center gap-2 text-xs text-zinc-800 dark:text-zinc-200 ${lacks ? "opacity-50" : ""}`}
+                                title={last ? "Нужен хотя бы один ИИ-сотрудник" : undefined}
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="accent-amber-500"
+                                  checked={checked}
+                                  disabled={lacks || last}
+                                  onChange={(e) =>
+                                    setForm({
+                                      ...form,
+                                      employeeIds: e.target.checked
+                                        ? [...form.employeeIds, emp.id]
+                                        : form.employeeIds.filter((x) => x !== emp.id),
+                                    })
+                                  }
+                                />
+                                {emp.name}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">

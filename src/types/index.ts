@@ -21,6 +21,7 @@ export interface User {
 
 /** Capability ids of the roles epic (#75). */
 export type Cap =
+  | "dashboards"
   | "master_switch"
   | "settings"
   | "instructions"

@@ -19,7 +19,7 @@ import { useAttentionCount } from "@/lib/use-attention-count";
 import { VeraFace } from "@/components/vera-face";
 
 const navigation: Array<{ name: string; href: string; icon: React.ComponentType<{ className?: string }>; vera?: boolean; cap?: string; admin?: boolean }> = [
-  { name: "Дашборд", href: "/vera", icon: BarChart3, vera: true },
+  { name: "Дашборд", href: "/vera", icon: BarChart3, vera: true, cap: "dashboards" },
   { name: "Чаты", href: "/chats", icon: MessageSquare, vera: true },
   { name: "Пообщаться с Верой", href: "/vera-chat", icon: VeraFace, vera: true },
   { name: "Выключатели", href: "/settings", icon: Sliders, cap: "settings" },
@@ -31,14 +31,15 @@ const navigation: Array<{ name: string; href: string; icon: React.ComponentType<
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { can, hasEmployee, user } = useAuth();
+  const { can, hasEmployee, user, singleEmployee } = useAuth();
   const attentionCount = useAttentionCount();
   const cleanPath = (pathname || "").replace(/\/+$/, "") || "/";
 
   return (
     <aside className="hidden md:flex w-64 flex-shrink-0 border-r border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex flex-col justify-between p-4 min-h-[calc(100dvh-var(--app-top))] transition-colors">
       <div className="space-y-5">
-        {/* Switcher back to All AI Staff */}
+        {/* Switcher back to All AI Staff (not for a user who has only this AI employee) */}
+        {!singleEmployee && (
         <div>
           <Link
             href="/"
@@ -49,6 +50,7 @@ export function Sidebar() {
             <span>Все сотрудники</span>
           </Link>
         </div>
+        )}
 
         {/* Selected Employee Profile Header */}
         <div className="px-3 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20">

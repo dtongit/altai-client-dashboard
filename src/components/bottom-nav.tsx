@@ -25,7 +25,7 @@ import { VeraFace } from "@/components/vera-face";
 export function BottomNav() {
   const pathname = usePathname();
   const cleanPath = (pathname || "").replace(/\/+$/, "") || "/";
-  const { user, tenant, availableTenants, switchTenant, toggleActive, logout, can, hasEmployee } = useAuth();
+  const { user, tenant, availableTenants, switchTenant, toggleActive, logout, can, hasEmployee, singleEmployee } = useAuth();
   const attentionCount = useAttentionCount();
 
   const [moreOpen, setMoreOpen] = useState(false);
@@ -104,7 +104,7 @@ export function BottomNav() {
       label: "Дашборд",
       href: "/vera",
       icon: BarChart3,
-      visible: isVeraAllowed,
+      visible: isVeraAllowed && can("dashboards"),
       active: cleanPath === "/vera" || cleanPath.startsWith("/vera/"),
     },
     {
@@ -289,6 +289,7 @@ export function BottomNav() {
               </Link>
             )}
 
+            {!singleEmployee && (
             <Link
               href="/"
               onClick={() => setMoreOpen(false)}
@@ -297,6 +298,7 @@ export function BottomNav() {
               <ArrowLeft className="h-5 w-5 text-zinc-500 shrink-0" />
               <span>Все ИИ-сотрудники</span>
             </Link>
+            )}
           </div>
 
           {/* Theme & Logout */}

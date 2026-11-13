@@ -60,7 +60,7 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
   "tenant-memberships": {
     user_id: "user_id",
     tenant_id: "your_tenant_id",
-    permissions: ["master_switch", "bot_changes"], // master_switch|settings|instructions|manage_users|audit_log|alerts|bot_changes
+    permissions: ["master_switch", "bot_changes"], // dashboards|master_switch|settings|instructions|manage_users|audit_log|alerts|bot_changes
     employee_ids: "*", // "*" = all AI employees, or ["vera"]
     is_active: true,
   },
