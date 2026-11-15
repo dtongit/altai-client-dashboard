@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import KbMediaEditor from "@/components/knowledge/KbMediaEditor";
+import { KbNodeActionsPanel, ActionsDispositionDialog, looksDated } from "@/components/knowledge/KbNodeActions";
 import {
   EmployeeConfigResponse,
   CustomToolItem,
@@ -16,6 +17,8 @@ import {
   KnowledgeNode,
   KbMediaItem,
   KnowledgeNodeVersion,
+  KbNodeAction,
+  KbActionsDisposition,
   DeletedKnowledgeNode,
   PromptModule,
   SemanticSkillCard,
@@ -290,6 +293,14 @@ export default function EmployeeStudioPage() {
     valid_until: undefined as string | null | undefined,
   });
   const [isSavingNode, setIsSavingNode] = useState(false);
+  // Scheduled actions of the node being edited (#260) and the "what to do with them" dialog.
+  const [nodeActions, setNodeActions] = useState<KbNodeAction[]>([]);
+  const [dispDialog, setDispDialog] = useState<{
+    title: string;
+    actions: KbNodeAction[];
+    run: (d: KbActionsDisposition) => Promise<void>;
+    onCancel?: () => void;
+  } | null>(null);
   const [nodeHistory, setNodeHistory] = useState<KnowledgeNodeVersion[] | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [restoringVersionId, setRestoringVersionId] = useState<number | null>(null);
@@ -639,8 +650,22 @@ export default function EmployeeStudioPage() {
   // -------------------------------------------------------------------------
   // Dynamic Knowledge Base Handlers
   // -------------------------------------------------------------------------
+  const loadNodeActions = async (nodeId: string): Promise<KbNodeAction[]> => {
+    try {
+      const res = await api.getKnowledgeNodeActions(nodeId);
+      setNodeActions(res.actions || []);
+      return res.actions || [];
+    } catch {
+      setNodeActions([]);
+      return [];
+    }
+  };
+
   const handleStartEditNode = (node?: KnowledgeNode) => {
     setNodeHistory(null);
+    setNodeActions([]);
+    setDispDialog(null);
+    if (node) void loadNodeActions(node.id);
     if (node) {
       setSelectedNodeId(node.id);
       setNodeForm({
@@ -689,6 +714,23 @@ export default function EmployeeStudioPage() {
       showToast("error", "Укажите путь узла и заголовок");
       return;
     }
+    const pending = nodeActions.filter((a) => a.status === "pending");
+    if (pending.length > 0) {
+      setDispDialog({ title: nodeForm.title, actions: pending, run: (d) => saveNode(d) });
+      return;
+    }
+    if (!nodeForm.valid_until && looksDated(nodeForm.content, nodeForm.summary)) {
+      const ok = await confirm({
+        title: "В тексте есть дата",
+        text: "Текст похож на датированный (акция, срок, «до 1 ноября»), а ни срока действия, ни запланированного действия у узла нет. После этой даты Вера может продолжить говорить устаревшее. Сохранить как есть? Потом можно запланировать «Изменить текст», «Скрыть статью» или «Спросить менеджера».",
+        confirmLabel: "Сохранить всё равно",
+      });
+      if (!ok) return;
+    }
+    await saveNode();
+  };
+
+  const saveNode = async (disposition?: KbActionsDisposition) => {
     setIsSavingNode(true);
     try {
       const triggers = nodeForm.triggers_csv
@@ -715,11 +757,21 @@ export default function EmployeeStudioPage() {
         valid_from: nodeForm.valid_from,
         valid_until: nodeForm.valid_until,
         change_description: nodeForm.change_description || "Обновление узла базы знаний",
+        ...(disposition ? { actions_disposition: disposition } : {}),
       });
+      setDispDialog(null);
       await loadDynamicData();
       setIsEditingNode(false);
       showToast("success", `Узел «${nodeForm.title}» сохранен`);
     } catch (err: any) {
+      if (err?.status === 409 && selectedNodeId && !disposition) {
+        // The node got pending actions we did not know about: ask what to do with them.
+        const list = (await loadNodeActions(selectedNodeId)).filter((a) => a.status === "pending");
+        if (list.length > 0) {
+          setDispDialog({ title: nodeForm.title, actions: list, run: (d) => saveNode(d) });
+          return;
+        }
+      }
       showToast("error", err?.message || "Ошибка сохранения узла");
     } finally {
       setIsSavingNode(false);
@@ -742,11 +794,40 @@ export default function EmployeeStudioPage() {
     }
   };
 
+  // Restore over a live node with pending actions needs a disposition (409): ask, then retry (#260).
+  const restoreWithDisposition = async (nodeId: string, versionId: number, title: string): Promise<boolean> => {
+    try {
+      await api.restoreKnowledgeNodeVersion(nodeId, versionId);
+      return true;
+    } catch (err: any) {
+      if (err?.status !== 409) throw err;
+      const list = (await api.getKnowledgeNodeActions(nodeId)).actions.filter((a) => a.status === "pending");
+      if (list.length === 0) throw err;
+      return await new Promise<boolean>((resolve, reject) => {
+        setDispDialog({
+          title,
+          actions: list,
+          onCancel: () => resolve(false),
+          run: async (d) => {
+            try {
+              await api.restoreKnowledgeNodeVersion(nodeId, versionId, undefined, d);
+              setDispDialog(null);
+              resolve(true);
+            } catch (e2) {
+              setDispDialog(null);
+              reject(e2);
+            }
+          },
+        });
+      });
+    }
+  };
+
   const handleRestoreNodeVersion = async (node: KnowledgeNode, v: KnowledgeNodeVersion) => {
     if (!(await confirm({ title: "Восстановить версию?", text: `Версия v${v.version} узла «${node.title}» станет текущей. Текущее состояние сохранится в истории.`, confirmLabel: "Восстановить" }))) return;
     setRestoringVersionId(v.id);
     try {
-      await api.restoreKnowledgeNodeVersion(node.id, v.id);
+      if (!(await restoreWithDisposition(node.id, v.id, node.title))) return;
       const res = await api.getKnowledgeNodeVersions(node.id);
       setNodeHistory(res.versions || []);
       await loadDynamicData();
@@ -762,7 +843,7 @@ export default function EmployeeStudioPage() {
     if (!(await confirm({ title: "Восстановить узел?", text: `Удалённый узел «${d.title}» (${d.path}) вернётся в базу знаний.`, confirmLabel: "Восстановить" }))) return;
     setRestoringDeletedId(d.version_id);
     try {
-      await api.restoreKnowledgeNodeVersion(d.node_id, d.version_id);
+      if (!(await restoreWithDisposition(d.node_id, d.version_id, d.title))) return;
       await loadDynamicData();
       showToast("success", `Узел «${d.title}» восстановлен`);
     } catch (err: any) {
@@ -794,6 +875,15 @@ export default function EmployeeStudioPage() {
   return (
     <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
       <ConfirmDialog />
+      {dispDialog && (
+        <ActionsDispositionDialog
+          title={dispDialog.title}
+          actions={dispDialog.actions}
+          busy={isSavingNode}
+          onClose={() => { dispDialog.onCancel?.(); setDispDialog(null); }}
+          onConfirm={dispDialog.run}
+        />
+      )}
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
@@ -1635,6 +1725,13 @@ export default function EmployeeStudioPage() {
                         className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-3.5 font-mono text-base leading-relaxed"
                       />
                     </div>
+
+                    <KbNodeActionsPanel
+                      nodeId={selectedNodeId}
+                      actions={nodeActions}
+                      onChanged={async () => { if (selectedNodeId) await loadNodeActions(selectedNodeId); }}
+                      showToast={showToast}
+                    />
 
                     <div>
                       <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">

@@ -32,6 +32,9 @@ import {
   KbMediaItem,
   KnowledgeNodeVersion,
   DeletedKnowledgeNode,
+  KbNodeAction,
+  NewKbNodeAction,
+  KbActionsDisposition,
   PromptModule,
   SemanticSkillCard,
   PromptPreviewResponse,
@@ -946,6 +949,7 @@ export const api = {
     valid_from?: string | null;
     valid_until?: string | null;
     change_description?: string;
+    actions_disposition?: KbActionsDisposition;
   }, tenantId?: string): Promise<{
     ok: boolean;
     node: KnowledgeNode;
@@ -977,14 +981,31 @@ export const api = {
     return request(`/knowledge/nodes/${encodeURIComponent(nodeId)}/versions${qs}`);
   },
 
-  async restoreKnowledgeNodeVersion(nodeId: string, versionId: number, tenantId?: string): Promise<{
+  async restoreKnowledgeNodeVersion(nodeId: string, versionId: number, tenantId?: string, actionsDisposition?: KbActionsDisposition): Promise<{
     ok: boolean;
     node: KnowledgeNode;
   }> {
     const qs = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
     return request(`/knowledge/nodes/${encodeURIComponent(nodeId)}/restore${qs}`, {
       method: "POST",
-      body: JSON.stringify({ version_id: versionId }),
+      body: JSON.stringify({ version_id: versionId, ...(actionsDisposition ? { actions_disposition: actionsDisposition } : {}) }),
+    });
+  },
+
+  async getKnowledgeNodeActions(nodeId: string): Promise<{ ok: boolean; node_id: string; actions: KbNodeAction[] }> {
+    return request(`/knowledge/nodes/${encodeURIComponent(nodeId)}/actions`);
+  },
+
+  async addKnowledgeNodeAction(nodeId: string, body: NewKbNodeAction): Promise<{ ok: boolean; action: KbNodeAction }> {
+    return request(`/knowledge/nodes/${encodeURIComponent(nodeId)}/actions`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  },
+
+  async cancelKnowledgeNodeAction(nodeId: string, actionId: string): Promise<{ ok: boolean; cancelled: boolean }> {
+    return request(`/knowledge/nodes/${encodeURIComponent(nodeId)}/actions/${encodeURIComponent(actionId)}`, {
+      method: "DELETE",
     });
   },
 

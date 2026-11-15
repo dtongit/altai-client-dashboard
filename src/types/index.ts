@@ -1113,3 +1113,125 @@ export interface EscalationGroupRow {
   created_at?: string;
   updated_at?: string;
 }
+
+/** Scheduled action of a KB node (#260), `GET /knowledge/nodes/{id}/actions`. */
+export type KbActionKind = "change_text" | "soft_delete" | "ask_manager";
+export interface KbNodeActionPayload { content?: string; summary?: string; question?: string }
+export interface KbNodeAction {
+  id: string;
+  node_path: string;
+  action: KbActionKind;
+  run_at: string;
+  payload: KbNodeActionPayload | null;
+  base_version: number;
+  status: "pending" | "done" | "cancelled" | "failed" | (string & {});
+  created_by: string | null;
+  created_at: string;
+  executed_at: string | null;
+  result: string | null;
+}
+/** Body of POST /knowledge/nodes/{id}/actions and items of a `replace` disposition. */
+export interface NewKbNodeAction {
+  action: KbActionKind;
+  run_at: string;
+  payload: KbNodeActionPayload;
+}
+export type KbActionsDisposition =
+  | { mode: "keep" }
+  | { mode: "cancel" }
+  | { mode: "replace"; actions: NewKbNodeAction[] };
+
+/** Row of /admin/crud/kb-node-actions (read-only, #258). */
+export interface KbNodeActionRow {
+  id: string;
+  tenant_id: string;
+  node_path: string;
+  action: "change_text" | "soft_delete" | "ask_manager";
+  run_at: string;
+  payload: { content?: string; summary?: string; question?: string } | string;
+  base_version: number;
+  status: "pending" | "done" | "cancelled" | "failed" | (string & {});
+  created_by: string | null;
+  source_changeset_id: string | null;
+  created_at: string;
+  executed_at: string | null;
+  result: string | null;
+}
+
+/** Rows of the partner tables in /admin (read-only, #390). Money in kopecks. */
+export interface PartnerProfileRow {
+  user_id: string;
+  status: "pending" | "approved" | (string & {});
+  display_name: string | null;
+  ref_code: string;
+  inviter_user_id: string | null;
+  invite_link_id: string | null;
+  created_at: string;
+  approved_at: string | null;
+  approved_by: string | null;
+}
+
+export interface PartnerLinkRow {
+  id: string;
+  code: string;
+  kind: "client" | "partner_invite" | (string & {});
+  owner_user_id: string;
+  label: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface PartnerClientRow {
+  tenant_id: string;
+  partner_user_id: string;
+  link_id: string | null;
+  deal_type: "rep" | "manager" | (string & {});
+  attached_at: string;
+  updated_at: string | null;
+}
+
+export interface ClientPaymentRow {
+  id: string;
+  tenant_id: string;
+  amount_kop: number;
+  kind: "launch" | "subscription" | (string & {});
+  period: string;
+  paid_at: string;
+  entered_by: string | null;
+  created_at: string;
+}
+
+export interface PartnerAccrualRow {
+  id: string;
+  payment_id: string;
+  partner_user_id: string;
+  source_user_id: string;
+  tenant_id: string;
+  layer: number;
+  kind: string;
+  period: string;
+  base_kop: number;
+  rate_bp: number;
+  amount_kop: number;
+  payout_id: string | null;
+  created_at: string;
+}
+
+export interface PartnerPayoutRow {
+  id: string;
+  partner_user_id: string;
+  period: string;
+  amount_kop: number;
+  carried_in_kop: number;
+  status: "due" | "carried" | "paid" | (string & {});
+  due_date: string;
+  paid_at: string | null;
+  paid_by: string | null;
+  created_at: string;
+}
+
+export interface PartnerPeriodRow {
+  period: string;
+  closed_at: string;
+  closed_by: string | null;
+}
