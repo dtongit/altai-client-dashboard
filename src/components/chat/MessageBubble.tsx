@@ -92,7 +92,19 @@ export function MessageBubble({
             <div className="mt-2 flex flex-wrap gap-2">
               {message.media.map((item, idx) => {
                 const safe = safeHttpUrl(item.url);
-                if (!safe) return null;
+                // A photo with no stored link (e.g. it could not be saved from Telegram): still show that one was sent.
+                if (!safe) {
+                  return (
+                    <div
+                      key={idx}
+                      title="Фото отправлено, но его копия не сохранилась"
+                      className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/60 text-xs text-zinc-500 dark:text-zinc-400"
+                    >
+                      <span className="text-lg" aria-hidden>📷</span>
+                      Фото
+                    </div>
+                  );
+                }
                 return (
                   <a
                     key={idx}
