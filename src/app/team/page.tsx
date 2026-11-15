@@ -79,6 +79,8 @@ export default function TeamPage() {
   const { user: me, role: myRole, can, hasEmployee, tenant } = useAuth();
   const { showToast } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
+  // Fallback when the clipboard is blocked: the invite link in a dialog, selected for manual copy.
+  const [inviteLinkFallback, setInviteLinkFallback] = useState<string | null>(null);
   const isSuper = myRole === "superadmin";
 
   const [users, setUsers] = useState<TeamUser[]>([]);
@@ -278,7 +280,7 @@ export default function TeamPage() {
         setTimeout(() => setCopiedId((c) => (c === u.id ? null : c)), 2500);
         showToast(`Ссылка скопирована${res.bot_username ? ` (бот @${res.bot_username})` : ""}. Действует 24 часа, привязывает Telegram к этому пользователю.`, "success");
       } catch {
-        window.prompt("Скопируйте ссылку для Telegram", res.invite_url);
+        setInviteLinkFallback(res.invite_url);
       }
     } catch (e: any) {
       showToast(e?.message || "Не удалось создать ссылку", "error");
@@ -900,6 +902,24 @@ export default function TeamPage() {
       </Sheet>
 
       <ConfirmDialog />
+
+      <Sheet open={inviteLinkFallback !== null} onClose={() => setInviteLinkFallback(null)} title="Ссылка для Telegram">
+        <div className="space-y-3 py-1">
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            Не удалось скопировать автоматически. Скопируйте ссылку вручную: она действует 24 часа.
+          </p>
+          <input
+            readOnly
+            value={inviteLinkFallback ?? ""}
+            onFocus={(e) => e.currentTarget.select()}
+            autoFocus
+            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-base text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+          />
+          <Button variant="primary" className="w-full" onClick={() => setInviteLinkFallback(null)}>
+            Готово
+          </Button>
+        </div>
+      </Sheet>
     </div>
   );
 }

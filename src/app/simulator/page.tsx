@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 
 export default function SimulatorPage() {
+  const { confirm, ConfirmDialog } = useConfirm();
   const { user, tenant } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<SimulatorMessage[]>([]);
@@ -123,7 +125,13 @@ export default function SimulatorPage() {
   };
 
   const handleReset = async () => {
-    if (confirm("Вы уверены, что хотите сбросить текущий тестовый диалог и начать заново?")) {
+    const ok = await confirm({
+      title: "Сбросить тестовый диалог?",
+      text: "Текущий тестовый диалог будет удалён, и вы начнёте заново.",
+      confirmLabel: "Сбросить",
+      danger: true,
+    });
+    if (ok) {
       setResetting(true);
       try {
         await api.resetSimulator();
@@ -153,6 +161,7 @@ export default function SimulatorPage() {
 
   return (
     <div className="p-3 sm:p-6 lg:p-8 space-y-3 sm:space-y-6 max-w-7xl mx-auto flex flex-col h-[calc(100dvh-var(--app-top)-var(--app-bottom))]">
+      <ConfirmDialog />
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0">
         <div>

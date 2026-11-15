@@ -32,11 +32,9 @@ export function extractChatLinkToken(): string | null {
 
   const rawHash = window.location.hash.replace(/^#/, "");
   if (rawHash) {
-    const params = new URLSearchParams(rawHash);
-    const token =
-      params.get("t") ||
-      params.get("token") ||
-      (rawHash.startsWith("t=") ? rawHash.slice(2) : rawHash);
+    // Read the value by hand: URLSearchParams would turn a "+" into a space. Only a base64url token is accepted.
+    const match = /^(?:t=|token=)?([A-Za-z0-9_-]+)$/.exec(rawHash);
+    const token = match ? match[1] : null;
 
     if (token) {
       try {
@@ -45,6 +43,8 @@ export function extractChatLinkToken(): string | null {
       window.history.replaceState(null, "", "/c/");
       return token;
     }
+    // A hash of another shape is not a link token: drop it and fall back to the stored one.
+    window.history.replaceState(null, "", "/c/");
   }
 
   return getStoredChatLinkToken();
@@ -95,6 +95,12 @@ async function chatLinkRequest<T>(
         detailMsg = errJson.message;
       }
     } catch {}
+    if (res.status === 429) {
+      // Too many requests: every caller shows `detail` in a toast, so make it a friendly sentence here.
+      const retry = Number(res.headers.get("Retry-After"));
+      const wait = Number.isFinite(retry) && retry > 0 ? ` Повторите через ${retry < 90 ? `${Math.ceil(retry)} с` : `${Math.ceil(retry / 60)} мин`}.` : " Подождите минуту и попробуйте снова.";
+      detailMsg = `Слишком много запросов.${wait}`;
+    }
     throw new ChatLinkApiError(res.status, detailMsg, reason);
   }
 

@@ -146,6 +146,9 @@ export default function SuperadminConsolePage() {
   const [items, setItems] = useState<Record<string, any>[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [search, setSearch] = useState<string>("");
+  // Журнал ошибок (error-log): фильтры по уровню и периоду
+  const [errLevel, setErrLevel] = useState<string>("");
+  const [errPeriod, setErrPeriod] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [stats, setStats] = useState<Record<string, any> | null>(null);
 
@@ -194,7 +197,14 @@ export default function SuperadminConsolePage() {
   const loadResourceItems = async (resourceName: string, searchQuery: string = search) => {
     setLoading(true);
     try {
+      const periodMs: Record<string, number> = { "1h": 3600e3, "24h": 86400e3, "7d": 7 * 86400e3 };
+      const isErrLog = resourceName === "error-log";
       const res = await api.listAdminCrud(resourceName, {
+        level: isErrLog && errLevel ? errLevel : undefined,
+        since:
+          isErrLog && errPeriod
+            ? new Date(Date.now() - periodMs[errPeriod]).toISOString()
+            : undefined,
         search: searchQuery || undefined,
         limit: 100,
         offset: 0,
@@ -214,7 +224,7 @@ export default function SuperadminConsolePage() {
 
   useEffect(() => {
     loadResourceItems(selectedResource, search);
-  }, [selectedResource]);
+  }, [selectedResource, errLevel, errPeriod]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -604,6 +614,32 @@ export default function SuperadminConsolePage() {
               />
             </form>
 
+            {selectedResource === "error-log" && (
+              <>
+                <select
+                  value={errLevel}
+                  onChange={(e) => setErrLevel(e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-base text-zinc-900 dark:text-white focus:border-amber-500 focus:outline-none"
+                  title="Уровень"
+                >
+                  <option value="">Все уровни</option>
+                  <option value="ERROR">Ошибки</option>
+                  <option value="WARN">Предупреждения</option>
+                </select>
+                <select
+                  value={errPeriod}
+                  onChange={(e) => setErrPeriod(e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-base text-zinc-900 dark:text-white focus:border-amber-500 focus:outline-none"
+                  title="Период"
+                >
+                  <option value="">За всё время</option>
+                  <option value="1h">За час</option>
+                  <option value="24h">За сутки</option>
+                  <option value="7d">За неделю</option>
+                </select>
+              </>
+            )}
+
             <button
               onClick={() => loadResourceItems(selectedResource, search)}
               className="p-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
@@ -681,6 +717,16 @@ export default function SuperadminConsolePage() {
                               >
                                 <Cpu className="h-3 w-3 text-amber-500" />
                                 <span>Трейс диалога</span>
+                              </Link>
+                            )}
+                            {selectedResource === "error-log" && row.last_session_id && (
+                              <Link
+                                href={`/admin/chats/?session_id=${encodeURIComponent(row.last_session_id)}`}
+                                className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500 hover:text-zinc-950 text-amber-700 dark:text-amber-400 text-[11px] font-semibold transition-colors inline-flex items-center gap-1 border border-amber-500/30"
+                                title="Открыть диалог, в котором случилась ошибка"
+                              >
+                                <Cpu className="h-3 w-3 text-amber-500" />
+                                <span>Диалог</span>
                               </Link>
                             )}
                             {selectedResource === "chat-links" && !row.revoked_at && (

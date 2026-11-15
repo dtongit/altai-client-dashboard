@@ -74,11 +74,17 @@ export function ChatListItem({
     messagePrefix = isMe ? "Вы: " : "Менеджер: ";
   }
 
-  const rawLastMessage = chat.last_message || "";
+  // `last_preview` is the text of whoever spoke last, so the prefix always matches the text. Older backends
+  // send only `last_message` (the customer's text): then the role prefix would be wrong, so it is dropped.
+  const hasPreview = typeof chat.last_preview === "string";
+  const rawLastMessage = (hasPreview ? chat.last_preview : chat.last_message) || "";
+  const prefix = hasPreview ? messagePrefix : "";
   const displayLastMessage =
-    messagePrefix && !rawLastMessage.startsWith(messagePrefix)
-      ? `${messagePrefix}${rawLastMessage}`
-      : rawLastMessage || "—";
+    rawLastMessage === ""
+      ? "—"
+      : prefix && !rawLastMessage.startsWith(prefix)
+        ? `${prefix}${rawLastMessage}`
+        : rawLastMessage;
 
   const hasLine3 =
     Boolean(attention) ||

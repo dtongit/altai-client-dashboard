@@ -7,9 +7,13 @@ import { safeHttpUrl } from "@/lib/safe-url";
 // Customer media reaches the dialog as text markers built by the Umnico webhook:
 //   [Медиа-превью: <url>]  a picture (Instagram CDN, links expire)
 //   [Ссылка: <url>]        a shared post / reel / story
-const MARKER_RE = /\[(Медиа-превью|Ссылка):\s*([^\]\s]+)\s*\]/g;
+//   [Ответ на сообщение: «текст»]  what a Telegram customer replied to (context, shown as a short quote)
+//   [История Telegram: id N]       a Telegram story reply without a public link
+const MARKER_RE = /\[(Медиа-превью|Ссылка):\s*([^\]\s]+)\s*\]|\[Ответ на сообщение:\s*«([^\]]*)»\s*\]|\[История Telegram:\s*id\s*(\d+)\s*\]/g;
 
 type Segment =
+  | { kind: "quote"; text: string }
+  | { kind: "story_id"; id: string }
   | { kind: "text"; text: string }
   | { kind: "media"; url: string }
   | { kind: "link"; url: string };
@@ -19,6 +23,12 @@ export function splitMessage(text: string): Segment[] {
   let last = 0;
   for (const m of text.matchAll(MARKER_RE)) {
     const idx = m.index ?? 0;
+    if (m[3] !== undefined || m[4] !== undefined) {
+      if (idx > last) out.push({ kind: "text", text: text.slice(last, idx) });
+      out.push(m[3] !== undefined ? { kind: "quote", text: m[3].trim() } : { kind: "story_id", id: m[4] });
+      last = idx + m[0].length;
+      continue;
+    }
     const url = safeHttpUrl(m[2]);
     if (!url) continue; // leave the unsafe marker inside the surrounding text
     if (idx > last) out.push({ kind: "text", text: text.slice(last, idx) });
@@ -60,10 +70,12 @@ function LinkCard({ url }: { url: string }) {
   if (!safe) return null;
   let host = safe;
   let path = "";
+  let story = false;
   try {
     const u = new URL(safe);
     host = u.hostname.replace(/^www\./, "");
     path = u.pathname.length > 1 ? u.pathname : "";
+    story = host === "t.me" && /^\/[^/]+\/s\/\d+\/?$/.test(u.pathname);
   } catch {
     /* keep the raw url */
   }
@@ -77,7 +89,7 @@ function LinkCard({ url }: { url: string }) {
     >
       <ExternalLink className="h-3.5 w-3.5 shrink-0 text-amber-500" />
       <span className="min-w-0 text-[11px] text-zinc-700 dark:text-zinc-300">
-        <span className="font-semibold">{host}</span>
+        <span className="font-semibold">{story ? "📸 Stories" : host}</span>
         {path && <span className="block truncate text-zinc-500 dark:text-zinc-400">{path}</span>}
       </span>
     </a>
@@ -93,6 +105,21 @@ export function MessageWithMedia({ text }: { text: string }) {
       {segments.map((s, i) => {
         if (s.kind === "text") {
           return <span key={i} className="whitespace-pre-wrap">{s.text}</span>;
+        }
+        if (s.kind === "quote") {
+          const short = s.text.length > 120 ? `${s.text.slice(0, 120)}…` : s.text;
+          return (
+            <div key={i} className="text-[11px] text-zinc-500 dark:text-zinc-400 border-l-2 border-amber-500/60 pl-2">
+              ↪ {short}
+            </div>
+          );
+        }
+        if (s.kind === "story_id") {
+          return (
+            <div key={i} className="text-[11px] text-zinc-500 dark:text-zinc-400">
+              📸 История Telegram (id {s.id})
+            </div>
+          );
         }
         if (s.kind === "media") {
           return <MediaThumb key={i} url={s.url} />;

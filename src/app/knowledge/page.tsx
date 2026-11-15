@@ -5,6 +5,7 @@ import { safeHttpUrl } from "@/lib/safe-url";
 import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import KbMediaEditor from "@/components/knowledge/KbMediaEditor";
 import {
   EmployeeConfigResponse,
@@ -231,6 +232,7 @@ function getToolExplanation(tool: CustomToolItem): ToolExplanation {
 
 export default function EmployeeStudioPage() {
   const { tenant } = useAuth();
+  const { confirm, ConfirmDialog } = useConfirm();
   const employeeId = "vera";
 
   const [config, setConfig] = useState<EmployeeConfigResponse | null>(null);
@@ -296,7 +298,7 @@ export default function EmployeeStudioPage() {
 
   // Semantic Skill Cards & Integrations State
   const [skillCards, setSkillCards] = useState<SemanticSkillCard[]>([]);
-  const [selectedCardSlug, setSelectedCardSlug] = useState<string | null>("tilda_moysklad");
+  const [selectedCardSlug, setSelectedCardSlug] = useState<string | null>(null);
   const [editingCardRules, setEditingCardRules] = useState<string>("");
   const [isSavingCardRules, setIsSavingCardRules] = useState(false);
   const [cardSecretKey, setCardSecretKey] = useState("");
@@ -341,9 +343,16 @@ export default function EmployeeStudioPage() {
       if (cardsRes.cards) {
         setSkillCards(cardsRes.cards);
         if (cardsRes.cards.length > 0) {
-          const current = cardsRes.cards.find((c) => c.group_slug === selectedCardSlug) || cardsRes.cards[0];
-          setSelectedCardSlug(current.group_slug);
-          setEditingCardRules(current.prompt_rules || "");
+          // On a phone the list opens first; on a wide screen the first service is preselected.
+          const isPhone = typeof window !== "undefined" && window.innerWidth < 768;
+          const current =
+            cardsRes.cards.find((c) => c.group_slug === selectedCardSlug) || (isPhone ? undefined : cardsRes.cards[0]);
+          if (current) {
+            setSelectedCardSlug(current.group_slug);
+            setEditingCardRules(current.prompt_rules || "");
+          } else {
+            setSelectedCardSlug(null);
+          }
         }
       }
     } catch (e: any) {
@@ -486,7 +495,7 @@ export default function EmployeeStudioPage() {
 
   // Delete tool
   const handleDeleteTool = async (toolId: string) => {
-    if (!confirm("Вы уверены, что хотите удалить этот навык?")) return;
+    if (!(await confirm({ title: "Удалить навык?", text: "Навык будет удалён без возможности восстановления.", confirmLabel: "Удалить", danger: true }))) return;
     try {
       await api.deleteEmployeeTool(employeeId, toolId);
       setSelectedToolId(null);
@@ -539,7 +548,7 @@ export default function EmployeeStudioPage() {
 
   // Delete integration secret
   const handleDeleteSecret = async (keyName: string) => {
-    if (!confirm(`Удалить ключ ${keyName}?`)) return;
+    if (!(await confirm({ title: "Удалить ключ?", text: `Ключ ${keyName} будет удалён.`, confirmLabel: "Удалить", danger: true }))) return;
     try {
       await api.deleteEmployeeSecret(employeeId, keyName);
       await loadConfig(true);
@@ -734,7 +743,7 @@ export default function EmployeeStudioPage() {
   };
 
   const handleRestoreNodeVersion = async (node: KnowledgeNode, v: KnowledgeNodeVersion) => {
-    if (!confirm(`Восстановить версию v${v.version} узла «${node.title}»? Текущее состояние сохранится в истории.`)) return;
+    if (!(await confirm({ title: "Восстановить версию?", text: `Версия v${v.version} узла «${node.title}» станет текущей. Текущее состояние сохранится в истории.`, confirmLabel: "Восстановить" }))) return;
     setRestoringVersionId(v.id);
     try {
       await api.restoreKnowledgeNodeVersion(node.id, v.id);
@@ -750,7 +759,7 @@ export default function EmployeeStudioPage() {
   };
 
   const handleRestoreDeletedNode = async (d: DeletedKnowledgeNode) => {
-    if (!confirm(`Восстановить удалённый узел «${d.title}» (${d.path})?`)) return;
+    if (!(await confirm({ title: "Восстановить узел?", text: `Удалённый узел «${d.title}» (${d.path}) вернётся в базу знаний.`, confirmLabel: "Восстановить" }))) return;
     setRestoringDeletedId(d.version_id);
     try {
       await api.restoreKnowledgeNodeVersion(d.node_id, d.version_id);
@@ -764,7 +773,7 @@ export default function EmployeeStudioPage() {
   };
 
   const handleDeleteNode = async (node: KnowledgeNode) => {
-    if (!confirm(`Удалить узел знаний «${node.title}» (${node.path})?`)) return;
+    if (!(await confirm({ title: "Удалить узел знаний?", text: `Узел «${node.title}» (${node.path}) будет удалён. Его можно восстановить из списка удалённых.`, confirmLabel: "Удалить", danger: true }))) return;
     try {
       await api.deleteKnowledgeNode(node.id);
       if (selectedNodeId === node.id) setSelectedNodeId(null);
@@ -784,6 +793,7 @@ export default function EmployeeStudioPage() {
 
   return (
     <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
+      <ConfirmDialog />
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
@@ -1606,6 +1616,8 @@ export default function EmployeeStudioPage() {
                         value={nodeForm.media}
                         onChange={(media) => setNodeForm((f) => ({ ...f, media }))}
                         showToast={showToast}
+                        nodeTitle={nodeForm.title}
+                        nodeText={[nodeForm.summary, nodeForm.content].filter(Boolean).join("\n\n")}
                       />
                     </div>
 

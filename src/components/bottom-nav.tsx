@@ -46,14 +46,13 @@ export function BottomNav() {
     checkSession();
     window.addEventListener("resize", checkSession);
     window.addEventListener("popstate", checkSession);
-
-    // Small polling/interval or observer for URL changes in SPA
-    const interval = setInterval(checkSession, 300);
+    // The chats page changes ?session= with pushState / replaceState, which fire no event; it dispatches this one.
+    window.addEventListener("altai:urlchange", checkSession);
 
     return () => {
       window.removeEventListener("resize", checkSession);
       window.removeEventListener("popstate", checkSession);
-      clearInterval(interval);
+      window.removeEventListener("altai:urlchange", checkSession);
     };
   }, [cleanPath]);
 

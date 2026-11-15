@@ -673,9 +673,12 @@ export const api = {
 
   async listAdminCrud(
     resource: string,
-    params: { search?: string; limit?: number; offset?: number } = {}
+    params: { search?: string; limit?: number; offset?: number; level?: string; since?: string; tenant_id?: string } = {}
   ): Promise<{ ok: boolean; resource: string; total: number; items: Record<string, any>[] }> {
     const q = new URLSearchParams();
+    if (params.level) q.append("level", params.level);
+    if (params.since) q.append("since", params.since);
+    if (params.tenant_id) q.append("tenant_id", params.tenant_id);
     if (params.search) q.append("search", params.search);
     if (params.limit) q.append("limit", String(params.limit));
     if (params.offset) q.append("offset", String(params.offset));
@@ -855,7 +858,14 @@ export const api = {
     return request(`/knowledge/nodes/deleted${qs}`);
   },
 
-  async uploadKnowledgeMedia(file: File, caption?: string): Promise<KbMediaItem> {
+  /** Uploads one KB photo. With `suggest` the server also asks a vision model for a caption (#414): the result's
+   * `caption` is then the suggestion (empty when the model failed) and `suggested` is true when it was filled in. */
+  async uploadKnowledgeMedia(
+    file: File,
+    opts?: string | { caption?: string; suggest?: boolean; note?: string; nodeTitle?: string; nodeText?: string },
+  ): Promise<KbMediaItem & { suggested?: boolean }> {
+    const o = typeof opts === "string" ? { caption: opts } : opts || {};
+    const caption = o.caption;
     const { token, tenantId } = getStoredAuth();
     const headers: Record<string, string> = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -863,6 +873,12 @@ export const api = {
     const form = new FormData();
     form.append("file", file);
     if (caption) form.append("caption", caption);
+    if (o.suggest && !caption) {
+      form.append("suggest_caption", "1");
+      if (o.note) form.append("note", o.note);
+      if (o.nodeTitle) form.append("node_title", o.nodeTitle);
+      if (o.nodeText) form.append("node_text", o.nodeText);
+    }
     const res = await fetch(`${API_BASE_URL}/knowledge/media`, {
       method: "POST",
       headers, // no Content-Type: the browser sets the multipart boundary
@@ -873,7 +889,10 @@ export const api = {
       throw new Error(err.detail || `Ошибка сервера (${res.status})`);
     }
     const data = await res.json();
-    return data.item as KbMediaItem;
+    const item = data.item as KbMediaItem;
+    const suggestion = typeof data.suggested_caption === "string" ? data.suggested_caption.trim() : "";
+    if (suggestion && !item.caption) return { ...item, caption: suggestion, suggested: true };
+    return item;
   },
 
   async upsertKnowledgeNode(payload: {

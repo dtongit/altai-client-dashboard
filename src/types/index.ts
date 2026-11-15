@@ -452,6 +452,8 @@ export interface ChatSessionItem {
   owner?: { user_id?: string | null; name: string } | null;
   display_name?: string | null;
   last_message_role?: "customer" | "vera" | "manager" | null;
+  /** Text of whoever spoke last (the customer, Vera or a manager); absent on older backends. */
+  last_preview?: string | null;
   has_crm_contact?: boolean;
 }
 
@@ -754,6 +756,22 @@ export interface AdminCrudResourceSchema {
   primary_key: string;
   read_only?: boolean;
   columns: string[];
+}
+
+/** Row of /admin/crud/error-log (read-only): WARN/ERROR events grouped by fingerprint (#400). */
+export interface AdminErrorLogGroup {
+  fingerprint: string;
+  level: "WARN" | "ERROR";
+  target: string;
+  template: string;
+  count: number;
+  first_seen: string;
+  last_seen: string;
+  last_message: string;
+  last_tenant_id: string | null;
+  last_session_id: string | null;
+  last_turn_id: string | null;
+  last_location: string | null;
 }
 
 /** Row of /admin/crud/context-changesets (read-only: proposals of the team bot, #138). */

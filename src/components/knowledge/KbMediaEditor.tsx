@@ -39,7 +39,11 @@ export default function KbMediaEditor({
   value,
   onChange,
   showToast,
+  nodeTitle,
+  nodeText,
 }: {
+  nodeTitle?: string;
+  nodeText?: string;
   value: KbMediaItem[];
   onChange: (items: KbMediaItem[]) => void;
   showToast: (type: "success" | "error", text: string) => void;
@@ -47,6 +51,7 @@ export default function KbMediaEditor({
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [link, setLink] = useState("");
+  const [note, setNote] = useState("");
 
   const update = (i: number, patch: Partial<KbMediaItem>) =>
     onChange(value.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
@@ -80,7 +85,14 @@ export default function KbMediaEditor({
           continue;
         }
         try {
-          const item = await api.uploadKnowledgeMedia(f);
+          // The caption is only a suggestion: it fills the field, the manager edits it, it is saved with the node.
+          const { suggested, ...item } = await api.uploadKnowledgeMedia(f, {
+            suggest: true,
+            note: note.trim() || undefined,
+            nodeTitle,
+            nodeText,
+          });
+          if (!suggested) showToast("error", `«${f.name}»: подпись не подобралась, напишите её сами`);
           current = [...current, item];
           onChange(current);
         } catch (e: any) {
@@ -167,12 +179,25 @@ export default function KbMediaEditor({
           disabled={uploading || value.length >= MAX_PHOTOS}
           className="rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 px-3.5 py-2 text-xs font-semibold disabled:opacity-50"
         >
-          {uploading ? "Загрузка…" : "Загрузить фото"}
+          {uploading ? "Загрузка и подпись…" : "Загрузить фото"}
         </button>
         <span className="text-[11px] text-zinc-500">
           {value.length}/{MAX_PHOTOS}
         </span>
       </div>
+
+      <input
+        type="text"
+        maxLength={300}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Заметка для подписи (необязательно): модель, цвет…"
+        className={inputCls}
+      />
+      <p className="text-[11px] text-zinc-500">
+        Подпись к новому фото подбирается автоматически за несколько секунд. Проверьте её и поправьте перед
+        сохранением узла.
+      </p>
 
       <div className="flex gap-2">
         <input

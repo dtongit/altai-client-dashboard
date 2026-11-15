@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Bot } from "lucide-react";
 
 const inputCls =
@@ -23,6 +24,7 @@ function ownBotUsername(item: Record<string, any> | undefined): string | null {
 
 /** Superadmin block: the tenant's own Telegram team bot (spec M8). Default = the shared env bot. */
 export default function TeamBotCard({ tenantId }: { tenantId: string }) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [own, setOwn] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [username, setUsername] = useState("");
@@ -66,7 +68,13 @@ export default function TeamBotCard({ tenantId }: { tenantId: string }) {
   };
 
   const reset = async () => {
-    if (!confirm("Вернуть общий бот? Участники собственного бота компании будут отключены.")) return;
+    const ok = await confirm({
+      title: "Вернуть общий бот?",
+      text: "Участники собственного бота компании будут отключены.",
+      confirmLabel: "Вернуть",
+      danger: true,
+    });
+    if (!ok) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -82,6 +90,7 @@ export default function TeamBotCard({ tenantId }: { tenantId: string }) {
 
   return (
     <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 sm:p-6 shadow-sm space-y-4">
+      <ConfirmDialog />
       <div className="flex items-center gap-2.5">
         <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
           <Bot className="h-4 w-4" />

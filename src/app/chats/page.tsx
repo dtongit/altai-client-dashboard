@@ -30,13 +30,16 @@ export default function ChatsPage() {
   const [isPhone, setIsPhone] = useState(false);
   const [liveStatus, setLiveStatus] = useState<LiveStatus>("live");
 
-  const reqSeq = useRef(0);
+  const resetGen = useRef(0);
   const loadedCount = useRef(0);
-  const inFlight = useRef(false);
+  const silentInFlight = useRef(false);
+  const moreInFlight = useRef(false);
+  const chatsRef = useRef<ChatSessionItem[]>([]);
   const selectedRef = useRef<string | null>(null);
   selectedRef.current = selectedSessionId;
   // True when the open chat was added to history with pushState (phone list -> chat)
   const openedByPushRef = useRef(false);
+  chatsRef.current = chats;
   const loadChatsRef = useRef<(mode?: "reset" | "more" | "silent") => Promise<void>>(async () => {});
 
   useEffect(() => {
@@ -71,6 +74,8 @@ export default function ChatsPage() {
     const qs = p.toString();
     const url = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
     push ? window.history.pushState(null, "", url) : window.history.replaceState(null, "", url);
+    // pushState / replaceState fire no event: tell the bottom nav that ?session= may have changed.
+    window.dispatchEvent(new Event("altai:urlchange"));
   }, [statusFilter, channelFilter]);
 
   useEffect(() => {
@@ -83,27 +88,48 @@ export default function ChatsPage() {
   }, [search]);
 
   const loadChats = useCallback(async (mode: "reset" | "more" | "silent" = "reset") => {
-    if (inFlight.current && mode === "silent") return;
-    const seq = ++reqSeq.current;
+    if (mode === "silent" && silentInFlight.current) return;
+    if (mode === "more" && moreInFlight.current) return;
+    // Only a "reset" (new filters / search / manual refresh) invalidates other requests. A silent refresh after
+    // chat.updated must not throw away an in-flight "Показать ещё" result, and the other way round.
+    if (mode === "reset") resetGen.current += 1;
+    const gen = resetGen.current;
+    const startCount = loadedCount.current;
     if (mode === "reset") setLoadingList(true);
-    if (mode === "more") setLoadingMore(true);
-    if (mode === "silent") inFlight.current = true;
+    if (mode === "more") {
+      setLoadingMore(true);
+      moreInFlight.current = true;
+    }
+    if (mode === "silent") silentInFlight.current = true;
 
     try {
       const res = await api.getChats({
         search: debouncedSearch || undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
         channel: channelFilter || undefined,
-        limit: mode === "silent" ? Math.min(200, Math.max(PAGE_SIZE, loadedCount.current)) : PAGE_SIZE,
-        offset: mode === "more" ? loadedCount.current : 0,
+        limit: mode === "silent" ? Math.min(200, Math.max(PAGE_SIZE, startCount)) : PAGE_SIZE,
+        offset: mode === "more" ? startCount : 0,
       });
 
-      if (seq !== reqSeq.current || !res?.ok) return;
+      if (gen !== resetGen.current || !res?.ok) return;
       const incoming = res.chats || [];
-      setChats((prev) => (mode === "more" ? [...prev, ...incoming] : incoming));
-      loadedCount.current = mode === "more" ? loadedCount.current + incoming.length : incoming.length;
-      setTotal(res.total ?? incoming.length);
-      setHasMore(Boolean(res.has_more));
+      const prev = chatsRef.current;
+      let next: ChatSessionItem[];
+      if (mode === "reset") {
+        next = incoming;
+      } else if (mode === "more") {
+        const seen = new Set(prev.map((c) => c.session_id));
+        next = [...prev, ...incoming.filter((c) => !seen.has(c.session_id))];
+      } else {
+        // Replace the refreshed head, keep whatever "Показать ещё" appended meanwhile.
+        const head = new Set(incoming.map((c) => c.session_id));
+        next = [...incoming, ...prev.slice(incoming.length).filter((c) => !head.has(c.session_id))];
+      }
+      chatsRef.current = next;
+      setChats(next);
+      loadedCount.current = next.length;
+      setTotal(res.total ?? next.length);
+      if (mode !== "silent" || !moreInFlight.current) setHasMore(Boolean(res.has_more));
       if (res.counts) {
         setCounts(res.counts);
         if (typeof res.counts.attention === "number") updateAttentionCount(res.counts.attention);
@@ -113,11 +139,12 @@ export default function ChatsPage() {
         updateUrl(incoming[0].session_id, false);
       }
     } finally {
-      inFlight.current = false;
-      if (seq === reqSeq.current) {
-        setLoadingList(false);
+      if (mode === "silent") silentInFlight.current = false;
+      if (mode === "more") {
+        moreInFlight.current = false;
         setLoadingMore(false);
       }
+      if (mode === "reset" && gen === resetGen.current) setLoadingList(false);
     }
   }, [debouncedSearch, statusFilter, channelFilter, isPhone, updateUrl]);
 
