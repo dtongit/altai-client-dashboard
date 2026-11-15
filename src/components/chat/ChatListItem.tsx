@@ -140,6 +140,16 @@ export function ChatListItem({
           )}
         </div>
 
+        {/* Comment text: tells apart several comment chats of one customer under one post (#409) */}
+        {chat.comment_snippet && (
+          <p
+            className="mt-0.5 text-[11px] truncate text-amber-700 dark:text-amber-400"
+            title={chat.comment_snippet}
+          >
+            Комментарий: «{chat.comment_snippet}»
+          </p>
+        )}
+
         {/* Line 3: Chips */}
         {hasLine3 && (
           <div className="mt-2 flex items-center gap-1.5 flex-wrap">

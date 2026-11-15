@@ -455,6 +455,8 @@ export interface ChatSessionItem {
   /** Text of whoever spoke last (the customer, Vera or a manager); absent on older backends. */
   last_preview?: string | null;
   has_crm_contact?: boolean;
+  /** Comment text (≤80 chars) of an `instagram_comment` chat; null/absent for other channels (#409). */
+  comment_snippet?: string | null;
 }
 
 export interface ChatsCounts {
@@ -488,6 +490,8 @@ export interface ChatMessage {
   latency_ms?: number | null;
   author?: string | null;
   media?: { url: string; kind?: "image" | "file" }[];
+  /** Raw tool results of the turn, when the API sends them (needed for «Вера передала: …», #385). */
+  tools_executed?: unknown;
 }
 
 export interface ChatDraft {
@@ -579,6 +583,8 @@ export interface ChatDetail {
   reply_window_closes_at?: string | null;
   capabilities?: { send_media?: boolean };
   messages?: ChatMessage[];
+  /** Comment text (≤80 chars) of an `instagram_comment` chat (#409). */
+  comment_snippet?: string | null;
 }
 
 export interface SendMessageResult {
@@ -635,6 +641,8 @@ export interface SimulatorMessage {
   latency_ms?: number | null;
   /** System note instead of a reply from Vera (escalation, #142). */
   technical?: boolean;
+  /** Raw tool results of the turn (escalation target, #385). */
+  tools_executed?: unknown;
 }
 
 export interface SimulatorQualification {
@@ -652,6 +660,7 @@ export interface SimulatorResponse {
   response: string;
   /** `response` is a system note, not a reply from Vera. */
   technical?: boolean;
+  tools_executed?: unknown;
   latency_ms: number;
   status: string;
   qualification: SimulatorQualification;
@@ -1017,8 +1026,24 @@ export interface LeadCard {
   fields: Record<string, unknown>;
   qualified: boolean;
   qualified_rule?: string | null;
+  /** Что показывает канал о клиенте (#402): имя, логин, телефон, id. Не подтверждено клиентом. */
+  channel_profile?: ChannelProfile | null;
   created_at?: string | null;
   updated_at?: string | null;
+}
+
+export interface ChannelProfile {
+  display_name?: string;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  login?: string;
+  phone?: string;
+  channel_user_id?: string;
+  profile_url?: string;
+  crm_contact_id?: string;
+  source?: string;
+  last_seen_at?: string;
 }
 
 export interface BossButton {
@@ -1034,4 +1059,57 @@ export interface BossMessage {
   photos: string[];
   buttons: BossButton[][] | null;
   at: string;
+}
+
+// ============================================================================
+// Escalation addressees (#281, #385): who Vera may hand a chat to
+// ============================================================================
+
+/** Item of GET /escalation/addressees. The Bitrix24 field is not used by the UI (out of routing, 2026-11-15). */
+export interface EscalationAddressee {
+  id: string;
+  tenant_id: string;
+  /** Short name Vera uses, e.g. «Алина». */
+  name: string;
+  user_id: string | null;
+  username: string | null;
+  bitrix24_user_id: string | null;
+  group_ids: string[];
+  /** false = «В отпуске». */
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EscalationGroup {
+  id: string;
+  tenant_id: string;
+  name: string;
+  bitrix24_queue_id: string | null;
+  members: { id: string; name: string; is_active: boolean }[];
+  created_at: string;
+  updated_at: string;
+}
+
+/** Row of /admin/crud/escalation-addressees (read-only; `group_ids` is a JSON array). */
+export interface EscalationAddresseeRow {
+  id: string;
+  tenant_id: string;
+  name: string;
+  user_id: string | null;
+  bitrix24_user_id: string | null;
+  group_ids: string[] | string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/** Row of /admin/crud/escalation-groups (read-only). */
+export interface EscalationGroupRow {
+  id: string;
+  tenant_id: string;
+  name: string;
+  bitrix24_queue_id: string | null;
+  created_at?: string;
+  updated_at?: string;
 }

@@ -10,6 +10,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ChannelBadge } from "@/components/channel-badge";
 import { ArrowLeft, Info, MoreVertical, RotateCcw, AlertCircle, Wrench, UserRound, ExternalLink, X } from "lucide-react";
 import { formatClientTitle } from "./ChatListItem";
+import { escalationTarget, escalationTargetText } from "@/lib/escalation";
 import { useAuth } from "@/lib/auth-context";
 
 export interface ConversationHeaderProps {
@@ -51,6 +52,16 @@ export function ConversationHeader({
   const displayName =
     detail.display_name ||
     formatClientTitle(detail.channel, detail.user_id, detail.client?.name || detail.qualification?.client_name);
+
+  // Who Vera handed the chat to (#385): from the newest message that carries an escalation tool result.
+  let handedTo: string | null = null;
+  for (const m of [...(detail.messages || [])].reverse()) {
+    const t = escalationTarget(m.tools_executed);
+    if (t) {
+      handedTo = escalationTargetText(t);
+      break;
+    }
+  }
 
   const phone = detail.client?.phone || detail.qualification?.client_phone;
   const isPaused = detail.is_paused;
@@ -209,6 +220,14 @@ export function ConversationHeader({
             <div className="flex items-center gap-2 mt-0.5">
               <ChannelBadge channel={detail.channel} />
             </div>
+            {detail.comment_snippet && (
+              <p
+                className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400 truncate"
+                title={detail.comment_snippet}
+              >
+                Комментарий: «{detail.comment_snippet}»
+              </p>
+            )}
           </div>
         </div>
 
@@ -304,7 +323,8 @@ export function ConversationHeader({
         <div className="px-4 py-2 bg-rose-50 dark:bg-rose-950/40 border-t border-rose-200 dark:border-rose-900/60 flex items-center gap-2 text-xs text-rose-800 dark:text-rose-300 font-medium">
           <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400" />
           <span className="truncate">
-            Вера передала диалог{detail.escalation_reason ? `: ${detail.escalation_reason}` : ""}
+            {handedTo ? `Вера передала: ${handedTo}` : "Вера передала диалог"}
+            {detail.escalation_reason ? `. ${detail.escalation_reason}` : ""}
           </span>
         </div>
       )}

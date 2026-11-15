@@ -25,6 +25,7 @@ import {
 import { Sheet } from "@/components/ui/Sheet";
 import { Menu, MenuItem } from "@/components/ui/Menu";
 import { Button } from "@/components/ui/Button";
+import { EscalationSection } from "./EscalationSection";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const AUDIT_PAGE = 20;
@@ -593,6 +594,8 @@ export default function TeamPage() {
           </table>
         </div>
       </div>
+
+      {can("manage_users") && <EscalationSection users={users} />}
 
       {/* Legacy unlinked Telegram members */}
       {legacy.length > 0 && (

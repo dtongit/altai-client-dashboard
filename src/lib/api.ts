@@ -39,6 +39,8 @@ import {
   ChatDraft,
   SendMessageResult,
   TenantWebhookIssued,
+  EscalationAddressee,
+  EscalationGroup,
 } from "@/types";
 
 const rawApiUrl =
@@ -434,6 +436,40 @@ export const api = {
       method: "POST",
       body: JSON.stringify({}),
     });
+  },
+
+  // Escalation addressees and groups (#281, cap manage_users)
+  async getEscalationAddressees(): Promise<{ ok: boolean; addressees: EscalationAddressee[] }> {
+    return request("/escalation/addressees");
+  },
+  async createEscalationAddressee(data: {
+    name: string;
+    user_id?: string | null;
+    group_ids?: string[];
+    is_active?: boolean;
+  }): Promise<{ ok: boolean; addressee: EscalationAddressee }> {
+    return request("/escalation/addressees", { method: "POST", body: JSON.stringify(data) });
+  },
+  async updateEscalationAddressee(
+    id: string,
+    data: { name?: string; user_id?: string | null; group_ids?: string[]; is_active?: boolean }
+  ): Promise<{ ok: boolean; addressee: EscalationAddressee }> {
+    return request(`/escalation/addressees/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) });
+  },
+  async deleteEscalationAddressee(id: string): Promise<{ ok: boolean }> {
+    return request(`/escalation/addressees/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+  async getEscalationGroups(): Promise<{ ok: boolean; groups: EscalationGroup[] }> {
+    return request("/escalation/groups");
+  },
+  async createEscalationGroup(data: { name: string }): Promise<{ ok: boolean; group: EscalationGroup }> {
+    return request("/escalation/groups", { method: "POST", body: JSON.stringify(data) });
+  },
+  async updateEscalationGroup(id: string, data: { name?: string }): Promise<{ ok: boolean; group: EscalationGroup }> {
+    return request(`/escalation/groups/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) });
+  },
+  async deleteEscalationGroup(id: string): Promise<{ ok: boolean }> {
+    return request(`/escalation/groups/${encodeURIComponent(id)}`, { method: "DELETE" });
   },
 
   // Users, access and audit log (roles epic #75)

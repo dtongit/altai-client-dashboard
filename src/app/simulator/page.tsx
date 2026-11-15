@@ -5,6 +5,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
+import { escalationTarget, escalationTargetText } from "@/lib/escalation";
 import { SimulatorMessage, SimulatorQualification } from "@/types";
 import { FormattedMessageText } from "@/components/formatted-message-text";
 import {
@@ -99,6 +100,7 @@ export default function SimulatorPage() {
           text: res.response,
           latency_ms: res.latency_ms,
           technical: res.technical,
+          tools_executed: res.tools_executed,
           created_at: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, botMsg]);
@@ -255,6 +257,14 @@ export default function SimulatorPage() {
                   <div key={msg.id || idx} className="flex justify-center py-1">
                     <span className="max-w-lg px-3 py-1.5 rounded-xl bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 text-[11px] text-center">
                       {msg.text}
+                      {(() => {
+                        const target = escalationTarget(msg.tools_executed);
+                        return target ? (
+                          <span className="block mt-0.5 font-semibold text-amber-700 dark:text-amber-400">
+                            Вера передала бы: {escalationTargetText(target)}
+                          </span>
+                        ) : null;
+                      })()}
                     </span>
                   </div>
                 );
