@@ -34,7 +34,7 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     crm_type: "amocrm",
     crm_credentials: { mock: true },
     llm_provider: "openrouter",
-    llm_model: "deepseek/deepseek-chat",
+    llm_model: "", // empty = the global default model (#286)
     kind: "live",
     ready_for_auto: false,
     is_paying: false,
