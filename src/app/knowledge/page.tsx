@@ -289,8 +289,6 @@ export default function EmployeeStudioPage() {
     // Kept from the loaded node and sent back on save so an edit does not reset them (#187).
     allowed_employees: undefined as string[] | undefined,
     allowed_roles: undefined as string[] | undefined,
-    valid_from: undefined as string | null | undefined,
-    valid_until: undefined as string | null | undefined,
   });
   const [isSavingNode, setIsSavingNode] = useState(false);
   // Scheduled actions of the node being edited (#260) and the "what to do with them" dialog.
@@ -683,8 +681,6 @@ export default function EmployeeStudioPage() {
         change_description: "",
         allowed_employees: node.allowed_employees,
         allowed_roles: node.allowed_roles,
-        valid_from: node.valid_from ?? null,
-        valid_until: node.valid_until ?? null,
       });
     } else {
       setSelectedNodeId(null);
@@ -701,11 +697,24 @@ export default function EmployeeStudioPage() {
         change_description: "Создание нового узла",
         allowed_employees: undefined,
         allowed_roles: undefined,
-        valid_from: undefined,
-        valid_until: undefined,
       });
     }
     setIsEditingNode(true);
+  };
+
+  const [isTogglingNode, setIsTogglingNode] = useState(false);
+  const handleToggleNodeActive = async (node: KnowledgeNode) => {
+    const next = node.is_active === false;
+    setIsTogglingNode(true);
+    try {
+      await api.setKnowledgeNodeActive(node.id, next);
+      await loadDynamicData();
+      showToast("success", `Узел «${node.title}» ${next ? "включён" : "выключен"}`);
+    } catch (e: any) {
+      showToast("error", e?.message || "Не удалось изменить состояние узла");
+    } finally {
+      setIsTogglingNode(false);
+    }
   };
 
   const handleSaveNode = async (e?: React.FormEvent) => {
@@ -719,10 +728,10 @@ export default function EmployeeStudioPage() {
       setDispDialog({ title: nodeForm.title, actions: pending, run: (d) => saveNode(d) });
       return;
     }
-    if (!nodeForm.valid_until && looksDated(nodeForm.content, nodeForm.summary)) {
+    if (looksDated(nodeForm.content, nodeForm.summary)) {
       const ok = await confirm({
         title: "В тексте есть дата",
-        text: "Текст похож на датированный (акция, срок, «до 1 ноября»), а ни срока действия, ни запланированного действия у узла нет. После этой даты Вера может продолжить говорить устаревшее. Сохранить как есть? Потом можно запланировать «Изменить текст», «Скрыть статью» или «Спросить менеджера».",
+        text: "Текст похож на датированный (акция, срок, «до 1 ноября»), а запланированного действия у узла нет. После этой даты Вера может продолжить говорить устаревшее. Сохранить как есть? Потом можно запланировать «Выключить», «Изменить текст» или «Спросить менеджера».",
         confirmLabel: "Сохранить всё равно",
       });
       if (!ok) return;
@@ -754,8 +763,6 @@ export default function EmployeeStudioPage() {
         media_attachments: media,
         allowed_employees: nodeForm.allowed_employees,
         allowed_roles: nodeForm.allowed_roles,
-        valid_from: nodeForm.valid_from,
-        valid_until: nodeForm.valid_until,
         change_description: nodeForm.change_description || "Обновление узла базы знаний",
         ...(disposition ? { actions_disposition: disposition } : {}),
       });
@@ -1497,6 +1504,8 @@ export default function EmployeeStudioPage() {
                         setIsEditingNode(false);
                       }}
                       className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                        node.is_active === false ? "opacity-60" : ""
+                      } ${
                         isSelected
                           ? "border-amber-500 bg-amber-50/30 dark:bg-amber-950/20 shadow-xs"
                           : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700"
@@ -1508,6 +1517,11 @@ export default function EmployeeStudioPage() {
                         >
                           {node.tier}
                         </span>
+                        {node.is_active === false && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+                            Выключен
+                          </span>
+                        )}
                         <span className="text-[10px] font-mono text-zinc-400 truncate max-w-[200px]">
                           {node.path}
                         </span>
@@ -1792,6 +1806,11 @@ export default function EmployeeStudioPage() {
                             <h3 className="text-base font-bold text-zinc-900 dark:text-white">
                               {node.title}
                             </h3>
+                            {node.is_active === false && (
+                              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
+                                Выключен
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs font-mono text-zinc-400 mt-1">
                             {node.path}
@@ -1805,6 +1824,13 @@ export default function EmployeeStudioPage() {
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                             <span>Редактировать</span>
+                          </button>
+                          <button
+                            onClick={() => handleToggleNodeActive(node)}
+                            disabled={isTogglingNode}
+                            className="px-3 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-40"
+                          >
+                            {node.is_active === false ? "Включить" : "Выключить"}
                           </button>
                           <button
                             onClick={() => handleToggleNodeHistory(node)}

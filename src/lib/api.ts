@@ -946,8 +946,6 @@ export const api = {
     high_confidence_triggers?: string[];
     allowed_employees?: string[];
     allowed_roles?: string[];
-    valid_from?: string | null;
-    valid_until?: string | null;
     change_description?: string;
     actions_disposition?: KbActionsDisposition;
   }, tenantId?: string): Promise<{
@@ -958,6 +956,13 @@ export const api = {
     return request(`/knowledge/nodes${qs}`, {
       method: "POST",
       body: JSON.stringify(payload),
+    });
+  },
+
+  async setKnowledgeNodeActive(nodeId: string, isActive: boolean): Promise<{ ok: boolean; node: KnowledgeNode }> {
+    return request(`/knowledge/nodes/${encodeURIComponent(nodeId)}/active`, {
+      method: "POST",
+      body: JSON.stringify({ is_active: isActive }),
     });
   },
 

@@ -895,8 +895,7 @@ export interface KnowledgeNode {
   high_confidence_triggers?: string[];
   allowed_employees?: string[];
   allowed_roles?: string[];
-  valid_from?: string | null;
-  valid_until?: string | null;
+  is_active?: boolean;
   version: number;
   created_at: string;
   updated_at: string;
@@ -1115,7 +1114,7 @@ export interface EscalationGroupRow {
 }
 
 /** Scheduled action of a KB node (#260), `GET /knowledge/nodes/{id}/actions`. */
-export type KbActionKind = "change_text" | "soft_delete" | "ask_manager";
+export type KbActionKind = "turn_off" | "turn_on" | "change_text" | "soft_delete" | "ask_manager";
 export interface KbNodeActionPayload { content?: string; summary?: string; question?: string }
 export interface KbNodeAction {
   id: string;

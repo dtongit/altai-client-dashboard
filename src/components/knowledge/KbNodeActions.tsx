@@ -11,8 +11,10 @@ const btnCls =
 const labelCls = "block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1";
 
 export const ACTION_LABELS: Record<KbActionKind, string> = {
+  turn_off: "Выключить",
+  turn_on: "Включить",
   change_text: "Изменить текст",
-  soft_delete: "Скрыть статью",
+  soft_delete: "Удалить (скрыть насовсем)",
   ask_manager: "Спросить менеджера",
 };
 
@@ -33,6 +35,8 @@ function preview(a: { action: KbActionKind; payload?: { content?: string; summar
   const p = a.payload || {};
   if (a.action === "change_text") return [p.summary, p.content].filter(Boolean).join(" — ");
   if (a.action === "ask_manager") return p.question || "";
+  if (a.action === "turn_off") return "Статья останется в списке, но Вера перестанет её использовать";
+  if (a.action === "turn_on") return "Статья снова станет доступна Вере";
   return "Статья перестанет попадать к Вере и исчезнет из базы знаний";
 }
 
@@ -60,7 +64,7 @@ function ActionForm({
   busy?: boolean;
   submitLabel?: string;
 }) {
-  const [kind, setKind] = useState<KbActionKind>("change_text");
+  const [kind, setKind] = useState<KbActionKind>("turn_off");
   const [when, setWhen] = useState("");
   const [content, setContent] = useState("");
   const [summary, setSummary] = useState("");
@@ -124,8 +128,14 @@ function ActionForm({
             className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-3 text-base" />
         </div>
       )}
+      {kind === "turn_off" && (
+        <p className="text-xs text-zinc-500">В назначенное время статья будет выключена: Вера перестанет её использовать, но статья останется в списке.</p>
+      )}
+      {kind === "turn_on" && (
+        <p className="text-xs text-zinc-500">В назначенное время статья будет включена: Вера снова начнёт её использовать.</p>
+      )}
       {kind === "soft_delete" && (
-        <p className="text-xs text-zinc-500">В назначенное время статья будет скрыта: Вера перестанет её использовать.</p>
+        <p className="text-xs text-zinc-500">В назначенное время статья будет удалена насовсем (скрыта из базы знаний). Если нужно лишь временно убрать её, выберите «Выключить».</p>
       )}
       {err && <p className="text-xs text-red-600 dark:text-red-400">{err}</p>}
       <button type="button" disabled={busy} onClick={submit}
@@ -207,7 +217,7 @@ export function KbNodeActionsPanel({
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className={labelCls + " mb-0"}>Запланированные действия</div>
-          <p className="text-xs text-zinc-500 mt-0.5">Изменить текст, скрыть статью или спросить менеджера в назначенное время.</p>
+          <p className="text-xs text-zinc-500 mt-0.5">Выключить или включить статью, изменить текст, удалить или спросить менеджера в назначенное время.</p>
         </div>
         {nodeId && !adding && (
           <button type="button" onClick={() => setAdding(true)} className={btnCls}>Добавить</button>
