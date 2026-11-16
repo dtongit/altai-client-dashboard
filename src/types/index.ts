@@ -1113,6 +1113,23 @@ export interface EscalationGroupRow {
   updated_at?: string;
 }
 
+/** `dev-change-requests` (#421): a manager asked Vera to change a prompt or a skill; admin edits `status` and `admin_note`. */
+export interface DevChangeRequestRow {
+  id: string;
+  tenant_id: string;
+  kind: "prompt" | "skill";
+  status: "new" | "done" | "declined";
+  requester_member_id: string | null;
+  requester_name: string | null;
+  request_text: string;
+  summary: string | null;
+  admin_note: string | null;
+  telegram_message_id: string | null;
+  created_at?: string;
+  resolved_at?: string | null;
+  resolved_by?: string | null;
+}
+
 /** Scheduled action of a KB node (#260), `GET /knowledge/nodes/{id}/actions`. */
 export type KbActionKind = "turn_off" | "turn_on" | "change_text" | "soft_delete" | "ask_manager";
 export interface KbNodeActionPayload { content?: string; summary?: string; question?: string }

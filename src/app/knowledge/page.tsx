@@ -234,13 +234,15 @@ function getToolExplanation(tool: CustomToolItem): ToolExplanation {
 }
 
 export default function EmployeeStudioPage() {
-  const { tenant } = useAuth();
+  const { tenant, user } = useAuth();
+  // Prompt modules and the compiled-prompt preview are superadmin-only (#421): the API answers 403 otherwise.
+  const isAdmin = !!user?.is_admin;
   const { confirm, ConfirmDialog } = useConfirm();
   const employeeId = "vera";
 
   const [config, setConfig] = useState<EmployeeConfigResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"prompts" | "kb" | "skills">("prompts");
+  const [activeTab, setActiveTab] = useState<"prompts" | "kb" | "skills">(user?.is_admin ? "prompts" : "kb");
   const [statusBanner, setStatusBanner] = useState<{
     type: "success" | "error";
     text: string;
@@ -341,7 +343,7 @@ export default function EmployeeStudioPage() {
   const loadDynamicData = async () => {
     try {
       const [pmRes, knRes, delRes, cardsRes] = await Promise.all([
-        api.getPromptModules().catch(() => ({ ok: false, modules: [] })),
+        (isAdmin ? api.getPromptModules() : Promise.resolve({ ok: true, modules: [] as PromptModule[] })).catch(() => ({ ok: false, modules: [] })),
         api.getKnowledgeNodes().catch(() => ({ ok: false, nodes: [] })),
         api.getDeletedKnowledgeNodes().catch(() => ({ ok: false, nodes: [] as DeletedKnowledgeNode[] })),
         api.getSkillCards().catch(() => ({ ok: false, cards: [] })),
@@ -451,6 +453,10 @@ export default function EmployeeStudioPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!isAdmin && activeTab === "prompts") setActiveTab("kb");
+  }, [isAdmin, activeTab]);
 
   useEffect(() => {
     loadConfig(false);
@@ -914,6 +920,7 @@ export default function EmployeeStudioPage() {
 
         {/* Studio Navigation Tabs: Strictly 3 Tabs (horizontal scroll on mobile) */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar max-w-full bg-zinc-200/70 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-300/60 dark:border-zinc-800 shrink-0">
+          {isAdmin && (
           <button
             onClick={() => setActiveTab("prompts")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
@@ -928,6 +935,7 @@ export default function EmployeeStudioPage() {
               {promptModules.length}
             </span>
           </button>
+          )}
 
           <button
             onClick={() => setActiveTab("kb")}
@@ -990,7 +998,7 @@ export default function EmployeeStudioPage() {
       {/* ==================================================================== */}
       {/* TAB 1: MODULAR PROMPTS STUDIO & LIVE PREVIEW                          */}
       {/* ==================================================================== */}
-      {activeTab === "prompts" && (
+      {isAdmin && activeTab === "prompts" && (
         <div className="space-y-6">
           {/* Header & Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
@@ -2287,7 +2295,7 @@ export default function EmployeeStudioPage() {
       {/* ==================================================================== */}
       {/* MODAL: LIVE ASSEMBLED SYSTEM PROMPT PREVIEW                          */}
       {/* ==================================================================== */}
-      {showPreviewModal && (
+      {isAdmin && showPreviewModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="w-full max-w-4xl max-h-[90dvh] rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl flex flex-col overflow-hidden">
             {/* Modal Header */}
