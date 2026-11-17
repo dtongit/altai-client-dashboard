@@ -781,6 +781,8 @@ export interface ReplySupervisorRow {
   model: string | null;
   sheet: string;
   sheet_sources: ReplySupervisorSource[];
+  /** Phrase stems the company forbids; a match is always a violation (#293) */
+  banned_phrases: string[];
   include_simulator: boolean;
   stale_alert_sig: string | null;
   updated_by: string | null;

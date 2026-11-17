@@ -136,6 +136,7 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     model: null,
     sheet: "",
     sheet_sources: [],
+    banned_phrases: [],
     include_simulator: false,
   },
   // Created through POST /admin/tenants/{id}/webhooks (see handleSaveModal): the token is shown once.
@@ -176,6 +177,8 @@ export default function SuperadminConsolePage() {
   // Проверка ответов (reply-supervisors): статус «лист устарел» по компаниям и текст поля sheet_sources формы
   const [rsStatus, setRsStatus] = useState<Record<string, ReplySupervisorStatus>>({});
   const [rsSourcesText, setRsSourcesText] = useState<string>("[]");
+  // Запрещённые формулировки: одна на строку (хранятся массивом banned_phrases)
+  const [rsBannedText, setRsBannedText] = useState<string>("");
   const [rsSourcesError, setRsSourcesError] = useState<string>("");
 
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(
@@ -265,6 +268,7 @@ export default function SuperadminConsolePage() {
     setEditingId(null);
     setJsonEditorText(JSON.stringify(template, null, 2));
     setRsSourcesText(JSON.stringify(template.sheet_sources ?? [], null, 2));
+    setRsBannedText(((template.banned_phrases ?? []) as string[]).join("\n"));
     setRsSourcesError("");
     setModalOpen(true);
   };
@@ -280,6 +284,7 @@ export default function SuperadminConsolePage() {
     setEditingId(row[pk]);
     setJsonEditorText(JSON.stringify(row, null, 2));
     setRsSourcesText(JSON.stringify(row.sheet_sources ?? [], null, 2));
+    setRsBannedText(Array.isArray(row.banned_phrases) ? row.banned_phrases.join("\n") : "");
     setRsSourcesError("");
     setModalOpen(true);
   };
@@ -359,6 +364,17 @@ export default function SuperadminConsolePage() {
     } catch {
       setRsSourcesError("Ошибка синтаксиса JSON");
     }
+  };
+
+  const setRsBanned = (text: string) => {
+    setRsBannedText(text);
+    setRsField(
+      "banned_phrases",
+      text
+        .split("\n")
+        .map((x) => x.trim())
+        .filter((x) => x.length > 0),
+    );
   };
 
   const handleSaveModal = async () => {
@@ -1073,6 +1089,18 @@ export default function SuperadminConsolePage() {
                         Статьи базы знаний и их версии, по которым написан лист. При изменении любой из них лист помечается устаревшим.
                       </span>
                     )}
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="font-semibold">Запрещённые формулировки (по одной в строке)</span>
+                    <textarea
+                      value={rsBannedText}
+                      onChange={(e) => setRsBanned(e.target.value)}
+                      rows={4}
+                      className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-base focus:border-amber-500 focus:outline-none"
+                    />
+                    <span className="block text-[11px] text-zinc-500">
+                      Основы слов или фразы («удво», «в два раза»): ищутся без учёта регистра и ё, в любом месте слова. Совпадение всегда считается нарушением. До 50 строк, до 60 символов.
+                    </span>
                   </label>
                 </div>
               )}
