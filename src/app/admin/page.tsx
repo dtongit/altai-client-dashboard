@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
-import { AdminCrudResourceSchema } from "@/types";
+import { AdminCrudResourceSchema, ReplySupervisorStatus } from "@/types";
 import {
   Database,
   Search,
@@ -129,6 +129,15 @@ const DEFAULT_TEMPLATES: Record<string, Record<string, any>> = {
     name: "Осенняя B2B акция",
     status: "draft",
   },
+  // Проверка ответов Веры (#279): лист компании и статьи, по которым он написан.
+  "reply-supervisors": {
+    tenant_id: "your_tenant_id",
+    kind: "single_layer",
+    model: null,
+    sheet: "",
+    sheet_sources: [],
+    include_simulator: false,
+  },
   // Created through POST /admin/tenants/{id}/webhooks (see handleSaveModal): the token is shown once.
   "tenant-webhooks": {
     tenant_id: "your_tenant_id",
@@ -163,6 +172,11 @@ export default function SuperadminConsolePage() {
   const [issuedKey, setIssuedKey] = useState<string | null>(null);
   // One-time URL (with the plaintext token) of a freshly created or re-keyed inbound webhook
   const [issuedHookUrl, setIssuedHookUrl] = useState<string | null>(null);
+
+  // Проверка ответов (reply-supervisors): статус «лист устарел» по компаниям и текст поля sheet_sources формы
+  const [rsStatus, setRsStatus] = useState<Record<string, ReplySupervisorStatus>>({});
+  const [rsSourcesText, setRsSourcesText] = useState<string>("[]");
+  const [rsSourcesError, setRsSourcesError] = useState<string>("");
 
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(
     null
@@ -211,6 +225,20 @@ export default function SuperadminConsolePage() {
       });
       setItems(res.items || []);
       setTotal(res.total || 0);
+      if (resourceName === "reply-supervisors") {
+        const tenantIds: string[] = (res.items || []).map((r) => String(r.tenant_id));
+        const pairs = await Promise.all(
+          tenantIds.map((id) =>
+            api
+              .getReplySupervisorStatus(id)
+              .then((st) => [id, st] as const)
+              .catch(() => null)
+          )
+        );
+        const next: Record<string, ReplySupervisorStatus> = {};
+        for (const p of pairs) if (p) next[p[0]] = p[1];
+        setRsStatus(next);
+      }
     } catch (e: any) {
       showToast("error", e?.message || "Ошибка загрузки записей");
     } finally {
@@ -236,6 +264,8 @@ export default function SuperadminConsolePage() {
     setModalMode("create");
     setEditingId(null);
     setJsonEditorText(JSON.stringify(template, null, 2));
+    setRsSourcesText(JSON.stringify(template.sheet_sources ?? [], null, 2));
+    setRsSourcesError("");
     setModalOpen(true);
   };
 
@@ -249,6 +279,8 @@ export default function SuperadminConsolePage() {
     setEditingRowGlobal(isGlobalModule(row));
     setEditingId(row[pk]);
     setJsonEditorText(JSON.stringify(row, null, 2));
+    setRsSourcesText(JSON.stringify(row.sheet_sources ?? [], null, 2));
+    setRsSourcesError("");
     setModalOpen(true);
   };
 
@@ -288,6 +320,44 @@ export default function SuperadminConsolePage() {
       setJsonEditorText(JSON.stringify(parsed, null, 2));
     } catch {
       showToast("error", "Сначала исправьте синтаксис JSON");
+    }
+  };
+
+  // Форма «Проверка ответов»: поля формы держат JSON-текст редактора в синхронизации.
+  const rsDraft = (() => {
+    if (selectedResource !== "reply-supervisors") return null;
+    try {
+      return JSON.parse(jsonEditorText) as Record<string, any>;
+    } catch {
+      return null;
+    }
+  })();
+
+  const setRsField = (key: string, value: any) => {
+    try {
+      const parsed = JSON.parse(jsonEditorText);
+      parsed[key] = value;
+      setJsonEditorText(JSON.stringify(parsed, null, 2));
+    } catch {
+      showToast("error", "Сначала исправьте синтаксис JSON");
+    }
+  };
+
+  const setRsSources = (text: string) => {
+    setRsSourcesText(text);
+    try {
+      const list = JSON.parse(text);
+      if (
+        !Array.isArray(list) ||
+        list.some((x) => typeof x?.path !== "string" || typeof x?.version !== "number")
+      ) {
+        setRsSourcesError('Нужен массив вида [{"path": "/статья", "version": 3}]');
+        return;
+      }
+      setRsSourcesError("");
+      setRsField("sheet_sources", list);
+    } catch {
+      setRsSourcesError("Ошибка синтаксиса JSON");
     }
   };
 
@@ -422,7 +492,9 @@ export default function SuperadminConsolePage() {
   };
 
   const visibleColumns =
-    currentSchema?.columns ||
+    (selectedResource === "reply-supervisors"
+      ? currentSchema?.columns?.filter((c) => !["sheet", "stale_alert_sig", "created_at"].includes(c))
+      : currentSchema?.columns) ||
     (items.length > 0 ? Object.keys(items[0]).slice(0, 7) : ["id"]);
 
   return (
@@ -739,6 +811,22 @@ export default function SuperadminConsolePage() {
                                 <span>Отозвать</span>
                               </button>
                             )}
+                            {selectedResource === "reply-supervisors" && rsStatus[String(row.tenant_id)] && (
+                              <span
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border ${
+                                  rsStatus[String(row.tenant_id)].out_of_date
+                                    ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30"
+                                    : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                                }`}
+                                title={
+                                  rsStatus[String(row.tenant_id)].out_of_date
+                                    ? `Изменились статьи: ${rsStatus[String(row.tenant_id)].changed_paths.join(", ")}`
+                                    : "Статьи, по которым написан лист, не менялись"
+                                }
+                              >
+                                {rsStatus[String(row.tenant_id)].out_of_date ? "Лист устарел" : "Лист актуален"}
+                              </span>
+                            )}
                             {selectedResource === "tenant-webhooks" && (
                               <button
                                 onClick={() => handleRotateWebhookToken(row.id)}
@@ -897,6 +985,96 @@ export default function SuperadminConsolePage() {
                     </span>
                   </span>
                 </label>
+              )}
+              {selectedResource === "reply-supervisors" && rsDraft && (
+                <div className="space-y-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 text-xs text-zinc-700 dark:text-zinc-300">
+                  {modalMode === "edit" && rsStatus[String(rsDraft.tenant_id)]?.out_of_date && (
+                    <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-amber-800 dark:text-amber-300">
+                      <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      <span>
+                        <span className="font-semibold">Лист устарел.</span> Изменились статьи:{" "}
+                        {rsStatus[String(rsDraft.tenant_id)].changed_paths.join(", ")}. Проверка пока работает по старому листу.
+                        После обновления листа укажите новые версии статей в «Источниках листа».
+                      </span>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <label className="block space-y-1">
+                      <span className="font-semibold">Компания (tenant_id)</span>
+                      <input
+                        value={String(rsDraft.tenant_id ?? "")}
+                        disabled={modalMode === "edit"}
+                        onChange={(e) => setRsField("tenant_id", e.target.value)}
+                        className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-base focus:border-amber-500 focus:outline-none disabled:opacity-60"
+                      />
+                    </label>
+                    <label className="block space-y-1">
+                      <span className="font-semibold">Вид проверки (kind)</span>
+                      <select
+                        value={String(rsDraft.kind ?? "none")}
+                        onChange={(e) => setRsField("kind", e.target.value)}
+                        className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-base focus:border-amber-500 focus:outline-none"
+                      >
+                        <option value="none">none — проверка выключена</option>
+                        <option value="single_layer">single_layer — один вызов модели</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label className="block space-y-1">
+                    <span className="font-semibold">Модель (model)</span>
+                    <input
+                      value={String(rsDraft.model ?? "")}
+                      placeholder="пусто = модель по умолчанию (REPLY_SUPERVISOR_MODEL)"
+                      onChange={(e) => setRsField("model", e.target.value.trim() === "" ? null : e.target.value)}
+                      className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-base focus:border-amber-500 focus:outline-none"
+                    />
+                    <span className="block text-[11px] text-zinc-500">
+                      Точный id модели, без «~»-алиасов. Семейство (часть до «/») должно отличаться от модели Веры этой компании.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(rsDraft.include_simulator)}
+                      onChange={(e) => setRsField("include_simulator", e.target.checked)}
+                      className="mt-0.5 rounded border-zinc-300 dark:border-zinc-700 text-amber-500 focus:ring-amber-500"
+                    />
+                    <span>
+                      <span className="font-semibold">Проверять и тестовые ответы (include_simulator)</span>
+                      <span className="block text-[11px] text-zinc-500">
+                        Включает проверку для симулятора и демо-диалогов: нужно, чтобы оценить проверку на стейдже.
+                      </span>
+                    </span>
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="font-semibold">Лист компании (sheet)</span>
+                    <textarea
+                      value={String(rsDraft.sheet ?? "")}
+                      onChange={(e) => setRsField("sheet", e.target.value)}
+                      rows={10}
+                      className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-base leading-relaxed focus:border-amber-500 focus:outline-none"
+                    />
+                    <span className="block text-[11px] text-zinc-500">
+                      Только устойчивые факты и строгие правила. Клиентские админы лист не видят.
+                    </span>
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="font-semibold">Источники листа (sheet_sources)</span>
+                    <textarea
+                      value={rsSourcesText}
+                      onChange={(e) => setRsSources(e.target.value)}
+                      rows={4}
+                      className="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 font-mono text-base focus:border-amber-500 focus:outline-none"
+                    />
+                    {rsSourcesError ? (
+                      <span className="block text-[11px] text-red-600 dark:text-red-400">{rsSourcesError}</span>
+                    ) : (
+                      <span className="block text-[11px] text-zinc-500">
+                        Статьи базы знаний и их версии, по которым написан лист. При изменении любой из них лист помечается устаревшим.
+                      </span>
+                    )}
+                  </label>
+                </div>
               )}
               <textarea
                 value={jsonEditorText}

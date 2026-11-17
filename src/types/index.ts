@@ -767,6 +767,40 @@ export interface AdminCrudResourceSchema {
   columns: string[];
 }
 
+/** A KB node a reply supervisor sheet was written from (#279). */
+export interface ReplySupervisorSource {
+  path: string;
+  version: number;
+}
+
+/** Row of /admin/crud/reply-supervisors: the check of Vera's outgoing messages attached to a company (#279). No row = `none`. */
+export interface ReplySupervisorRow {
+  tenant_id: string;
+  kind: "none" | "single_layer";
+  /** null = the env default `REPLY_SUPERVISOR_MODEL` */
+  model: string | null;
+  sheet: string;
+  sheet_sources: ReplySupervisorSource[];
+  include_simulator: boolean;
+  stale_alert_sig: string | null;
+  updated_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** GET /admin/reply-supervisors/{tenant_id}/status (superadmin only). */
+export interface ReplySupervisorStatus {
+  ok: boolean;
+  tenant_id: string;
+  configured: boolean;
+  kind: "none" | "single_layer";
+  model?: string;
+  include_simulator?: boolean;
+  sources?: number;
+  out_of_date: boolean;
+  changed_paths: string[];
+}
+
 /** Row of /admin/crud/error-log (read-only): WARN/ERROR events grouped by fingerprint (#400). */
 export interface AdminErrorLogGroup {
   fingerprint: string;

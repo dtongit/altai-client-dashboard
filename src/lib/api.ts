@@ -42,6 +42,7 @@ import {
   ChatDraft,
   SendMessageResult,
   TenantWebhookIssued,
+  ReplySupervisorStatus,
   EscalationAddressee,
   EscalationGroup,
 } from "@/types";
@@ -794,6 +795,15 @@ export const api = {
       ADMIN_API_BASE_URL
     );
     return { ...res, url: ADMIN_API_BASE_URL.replace(/\/api\/v1\/admin$/, "") + res.url_path };
+  },
+
+  /** Reply supervisor of a company: kind, out-of-date flag and the changed KB node paths (#279). */
+  async getReplySupervisorStatus(tenantId: string): Promise<ReplySupervisorStatus> {
+    return request<ReplySupervisorStatus>(
+      `/reply-supervisors/${encodeURIComponent(tenantId)}/status`,
+      {},
+      ADMIN_API_BASE_URL
+    );
   },
 
   async getAdminStats(tenantId?: string): Promise<Record<string, any>> {
