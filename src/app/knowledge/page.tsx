@@ -755,6 +755,8 @@ export default function EmployeeStudioPage() {
       const media = nodeForm.media.map((m) => ({
         ...(m.id ? { id: m.id } : {}),
         url: m.url,
+        ...(m.type ? { type: m.type } : {}),
+        ...(m.name ? { name: m.name } : {}),
         ...(m.caption && m.caption.trim() ? { caption: m.caption.trim() } : {}),
       }));
       await api.upsertKnowledgeNode({
@@ -1929,6 +1931,25 @@ export default function EmployeeStudioPage() {
                                   <div key={idx} className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-2 text-[10px] text-zinc-500 break-all">
                                     {String(typeof m === "string" ? m : m?.url ?? "")}
                                   </div>
+                                );
+                              }
+                              if (typeof m === "object" && m?.type === "file") {
+                                return (
+                                  <a
+                                    key={idx}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 p-2 h-full hover:opacity-90 transition-opacity"
+                                  >
+                                    <FileText className="w-6 h-6 shrink-0 text-amber-600 dark:text-amber-500" aria-hidden />
+                                    <div className="min-w-0 text-[10px] text-zinc-500">
+                                      <div className="truncate font-medium text-zinc-700 dark:text-zinc-300">
+                                        {m.name || decodeURIComponent(url.split("?")[0].split("/").pop() || "") || "Файл"}
+                                      </div>
+                                      {m.caption && <div className="truncate">{m.caption}</div>}
+                                    </div>
+                                  </a>
                                 );
                               }
                               return (

@@ -1,17 +1,56 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import { FileText } from "lucide-react";
 import { api } from "@/lib/api";
+import { safeHttpUrl } from "@/lib/safe-url";
 import type { KbMediaItem } from "@/types";
 
 const MAX_PHOTOS = 10;
 const MAX_BYTES = 10 * 1024 * 1024;
-const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 
 const inputCls =
   "w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-base";
 const btnCls =
   "rounded-xl border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 text-xs font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50";
+
+function isFile(m: KbMediaItem) {
+  return m.type === "file";
+}
+
+function fileName(m: KbMediaItem) {
+  if (m.name) return m.name;
+  try {
+    const last = new URL(m.url).pathname.split("/").filter(Boolean).pop();
+    if (last) return decodeURIComponent(last);
+  } catch {
+    /* fall through */
+  }
+  return "Файл";
+}
+
+function FileTile({ m }: { m: KbMediaItem }) {
+  const href = safeHttpUrl(m.url);
+  return (
+    <div className="w-20 shrink-0 flex flex-col items-center justify-center gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-900 p-1.5 text-center">
+      <FileText className="w-7 h-7 text-amber-600 dark:text-amber-500" aria-hidden />
+      <span className="w-full truncate text-[10px] text-zinc-600 dark:text-zinc-300" title={fileName(m)}>
+        {fileName(m)}
+      </span>
+      {href && (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] font-medium text-amber-600 dark:text-amber-500 hover:underline"
+        >
+          Открыть
+        </a>
+      )}
+    </div>
+  );
+}
 
 function Thumb({ url }: { url: string }) {
   const [broken, setBroken] = useState(false);
@@ -73,11 +112,11 @@ export default function KbMediaEditor({
     try {
       for (const f of list) {
         if (current.length >= MAX_PHOTOS) {
-          showToast("error", `Не больше ${MAX_PHOTOS} фото на узел`);
+          showToast("error", `Не больше ${MAX_PHOTOS} файлов на узел`);
           break;
         }
         if (!ALLOWED.includes(f.type)) {
-          showToast("error", `«${f.name}»: допустимы только JPG, PNG и WebP`);
+          showToast("error", `«${f.name}»: допустимы только JPG, PNG, WebP и PDF`);
           continue;
         }
         if (f.size > MAX_BYTES) {
@@ -111,7 +150,7 @@ export default function KbMediaEditor({
       return;
     }
     if (value.length >= MAX_PHOTOS) {
-      showToast("error", `Не больше ${MAX_PHOTOS} фото на узел`);
+      showToast("error", `Не больше ${MAX_PHOTOS} файлов на узел`);
       return;
     }
     onChange([...value, { url }]);
@@ -121,7 +160,7 @@ export default function KbMediaEditor({
   return (
     <div className="space-y-3">
       <p className="text-[11px] text-zinc-500">
-        Вера отправляет фото клиенту, только когда они помогают ответу. Подпись описывает, что на фото.
+        Фото и PDF-файлы. Вера отправляет их клиенту, только когда они помогают ответу. Подпись описывает, что на фото или в файле.
       </p>
 
       {value.map((m, i) => (
@@ -129,7 +168,7 @@ export default function KbMediaEditor({
           key={`${m.id || m.url}-${i}`}
           className="flex gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800 p-2.5"
         >
-          <Thumb url={m.url} />
+          {isFile(m) ? <FileTile m={m} /> : <Thumb url={m.url} />}
           <div className="flex-1 min-w-0 space-y-2">
             <input
               type="text"
@@ -168,7 +207,7 @@ export default function KbMediaEditor({
         <input
           ref={fileRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png,image/webp,application/pdf"
           multiple
           className="hidden"
           onChange={(e) => handleFiles(e.target.files)}
@@ -179,7 +218,7 @@ export default function KbMediaEditor({
           disabled={uploading || value.length >= MAX_PHOTOS}
           className="rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 px-3.5 py-2 text-xs font-semibold disabled:opacity-50"
         >
-          {uploading ? "Загрузка и подпись…" : "Загрузить фото"}
+          {uploading ? "Загрузка…" : "Загрузить фото или PDF"}
         </button>
         <span className="text-[11px] text-zinc-500">
           {value.length}/{MAX_PHOTOS}
@@ -195,8 +234,8 @@ export default function KbMediaEditor({
         className={inputCls}
       />
       <p className="text-[11px] text-zinc-500">
-        Подпись к новому фото подбирается автоматически за несколько секунд. Проверьте её и поправьте перед
-        сохранением узла.
+        Подпись к новому фото подбирается автоматически за несколько секунд (для PDF напишите её сами). Проверьте
+        её и поправьте перед сохранением узла.
       </p>
 
       <div className="flex gap-2">

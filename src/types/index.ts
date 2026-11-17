@@ -909,12 +909,15 @@ export interface AdminChatTraceResponse {
 // DYNAMIC KNOWLEDGE BASE & CATALOG & MODULAR PROMPTS
 // ============================================================================
 
-/** Photo attached to a KB node (uploaded to storage or added by https link). */
+/** Photo or PDF file attached to a KB node (uploaded to storage; photos may also be added by https link).
+ * No `type` means a photo. */
 export interface KbMediaItem {
   id?: string;
   url: string;
   caption?: string;
-  type?: string;
+  type?: "photo" | "file";
+  /** File name, set for `type: "file"`. */
+  name?: string;
 }
 
 export interface KnowledgeNode {

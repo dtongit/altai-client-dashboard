@@ -907,7 +907,7 @@ export const api = {
     return request(`/knowledge/nodes/deleted${qs}`);
   },
 
-  /** Uploads one KB photo. With `suggest` the server also asks a vision model for a caption (#414): the result's
+  /** Uploads one KB photo or PDF file (no caption suggestion for PDFs). With `suggest` the server also asks a vision model for a caption (#414): the result's
    * `caption` is then the suggestion (empty when the model failed) and `suggested` is true when it was filled in. */
   async uploadKnowledgeMedia(
     file: File,
@@ -922,7 +922,7 @@ export const api = {
     const form = new FormData();
     form.append("file", file);
     if (caption) form.append("caption", caption);
-    if (o.suggest && !caption) {
+    if (o.suggest && !caption && file.type !== "application/pdf") {
       form.append("suggest_caption", "1");
       if (o.note) form.append("note", o.note);
       if (o.nodeTitle) form.append("node_title", o.nodeTitle);
