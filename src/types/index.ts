@@ -124,10 +124,14 @@ export interface OverviewKPIs {
   today_conversations: number;
   qualified_leads: number;
   conversion_rate_pct: number;
-  average_latency_ms: number;
+  /** Median customer wait for Vera's delivered replies; null when there were none. */
+  average_latency_ms: number | null;
+  /** Vera's replies that reached customers in the period. */
+  vera_replies?: number;
   total_tokens: number;
   total_cost_usd: number;
   estimated_payroll_saved_rub: number;
+  payroll_basis?: { minutes_per_reply: number; hourly_rate_rub: number };
 }
 
 export interface SystemStatus {

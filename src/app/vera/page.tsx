@@ -117,27 +117,16 @@ export default function VeraOverviewPage() {
   const tenantId = data.tenant_id || tenant?.id || "";
   const isTgSubscribed = data.telegram_bot?.has_subscribers ?? false;
 
-  // Defensive filtering: strictly exclude simulators, demos, and testing channels
-  const excludedChannels = ["simulator", "web_simulator", "aitest", "landing_demo", "demo"];
-  const filteredChannels = Object.entries(channel_breakdown).filter(
-    ([ch]) => !excludedChannels.includes(ch.toLowerCase())
-  );
-
-  // If there are zero live channel messages/conversations, ensure timeline reflects real live traffic only
-  const hasLiveTraffic = filteredChannels.length > 0;
-  const daily_timeline = hasLiveTraffic
-    ? rawTimeline
-    : rawTimeline.map((item) => ({ ...item, conversations: 0, messages: 0 }));
-
-  const kpis = hasLiveTraffic
-    ? rawKpis
-    : {
-        ...rawKpis,
-        total_conversations: 0,
-        today_conversations: 0,
-        qualified_leads: 0,
-        conversion_rate_pct: 0,
-      };
+  // The backend counts only real customer chats (no simulator, no landing demo on a live company).
+  const filteredChannels = Object.entries(channel_breakdown);
+  const daily_timeline = rawTimeline;
+  const kpis = rawKpis;
+  const replies = kpis.vera_replies ?? 0;
+  const basis = kpis.payroll_basis;
+  const formatDay = (val: string) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(val ?? ""));
+    return m ? `${m[3]}.${m[2]}` : String(val ?? "");
+  };
 
   const tooltipBg = resolvedTheme === "dark" ? "#18181b" : "#ffffff";
   const tooltipBorder = resolvedTheme === "dark" ? "#27272a" : "#e4e4e7";
@@ -191,7 +180,7 @@ export default function VeraOverviewPage() {
         <MetricCard
           title="Входящие диалоги"
           value={formatNumber(kpis.total_conversations)}
-          subtitle={`Сегодня новых: +${kpis.today_conversations} чатов`}
+          subtitle={`Сегодня: ${kpis.today_conversations}`}
           icon={MessageSquare}
           accent="blue"
         />
@@ -205,18 +194,21 @@ export default function VeraOverviewPage() {
 
         <MetricCard
           title="Скорость ответа"
-          value={`${(kpis.average_latency_ms / 1000).toFixed(1)} сек`}
-          subtitle="В 30 раз быстрее штатного менеджера"
+          value={kpis.average_latency_ms == null ? "—" : `${(kpis.average_latency_ms / 1000).toFixed(1)} сек`}
+          subtitle={kpis.average_latency_ms == null ? "Пока нет ответов клиентам" : "Медиана ожидания клиента"}
           icon={Zap}
-          trend="Мгновенно"
           accent="emerald"
         />
 
         <MetricCard
           title="Экономия на ФОТ"
-          value={formatCurrency(kpis.estimated_payroll_saved_rub)}
+          value={replies > 0 ? formatCurrency(kpis.estimated_payroll_saved_rub) : "—"}
+          subtitle={
+            replies > 0 && basis
+              ? `${formatNumber(replies)} ответов × ${String(basis.minutes_per_reply).replace(".", ",")} мин × ${formatNumber(basis.hourly_rate_rub)} ₽/ч`
+              : "Пока нет ответов клиентам"
+          }
           icon={PiggyBank}
-          trend="Выгода 3x"
           accent="purple"
         />
       </div>
@@ -254,10 +246,7 @@ export default function VeraOverviewPage() {
                   tickLine={false}
                   axisLine={false}
                   tick={{ fill: axisColor, fontSize: 11 }}
-                  tickFormatter={(val) => {
-                    const parts = val.split("-");
-                    return `${parts[2]}.${parts[1]}`;
-                  }}
+                  tickFormatter={formatDay}
                 />
                 <YAxis
                   tickLine={false}
@@ -275,7 +264,7 @@ export default function VeraOverviewPage() {
                     boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                   }}
                   formatter={(val: any) => [val, "Живых диалогов"]}
-                  labelFormatter={(lbl) => `Дата: ${lbl}`}
+                  labelFormatter={(lbl) => `Дата: ${formatDay(String(lbl))}`}
                 />
                 <Area
                   type="monotone"
