@@ -1463,7 +1463,7 @@ export default function EmployeeStudioPage() {
                 type="text"
                 value={kbSearch}
                 onChange={(e) => setKbSearch(e.target.value)}
-                placeholder={isAdmin ? "Поиск по пути, заголовку или триггерам..." : "Поиск по названию..."}
+                placeholder={isAdmin ? "Поиск по пути, заголовку или триггерам..." : "Поиск по тексту..."}
                 className="w-full pl-9 pr-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-base"
               />
             </div>
@@ -1478,7 +1478,11 @@ export default function EmployeeStudioPage() {
                   if (!kbSearch.trim()) return true;
                   const q = kbSearch.toLowerCase();
                   if (!isAdmin) {
-                    return n.title.toLowerCase().includes(q) || (n.summary || "").toLowerCase().includes(q);
+                    return (
+                      n.title.toLowerCase().includes(q) ||
+                      (n.summary || "").toLowerCase().includes(q) ||
+                      (n.content || "").toLowerCase().includes(q)
+                    );
                   }
                   return (
                     n.title.toLowerCase().includes(q) ||

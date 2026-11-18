@@ -118,14 +118,14 @@ export function Navbar() {
             {/* User Profile & Logout */}
             {user && (
               <div className="hidden md:flex items-center gap-2 pl-2 border-l border-zinc-200 dark:border-zinc-800">
-                <div className="hidden sm:block text-right">
+                <Link href="/account" title="Сменить пароль" className="hidden sm:block text-right rounded-lg px-1.5 py-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors">
                   <div className="text-xs font-medium text-zinc-900 dark:text-white">
                     {user.username}
                   </div>
                   <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
                     {role ? ROLE_LABELS[role] : ""}
                   </div>
-                </div>
+                </Link>
                 <button
                   onClick={logout}
                   className="p-2 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"

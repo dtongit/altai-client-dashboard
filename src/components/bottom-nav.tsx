@@ -15,6 +15,7 @@ import {
   Power,
   LogOut,
   ChevronDown,
+  KeyRound,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useAttentionCount } from "@/lib/use-attention-count";
@@ -313,6 +314,15 @@ export function BottomNav() {
               <span className="text-xs text-zinc-500 dark:text-zinc-400">Тема:</span>
               <ThemeToggle />
             </div>
+
+            <Link
+              href="/account"
+              onClick={() => setMoreOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              <KeyRound className="h-4 w-4 text-zinc-500" />
+              <span>Пароль</span>
+            </Link>
 
             <button
               type="button"

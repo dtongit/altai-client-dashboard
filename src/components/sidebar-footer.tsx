@@ -116,10 +116,10 @@ export function SidebarFooter() {
       {/* User, theme, support, console, logout */}
       {user && (
         <div className="flex items-center gap-1 pl-1.5">
-          <div className="min-w-0 flex-1">
+          <Link href="/account" title="Сменить пароль" className="min-w-0 flex-1 rounded-lg px-1 -mx-1 py-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors">
             <div className="text-xs font-medium text-zinc-900 dark:text-white truncate">{user.username}</div>
             {role && <div className="text-[10px] text-zinc-500 dark:text-zinc-400 truncate">{ROLE_LABELS[role]}</div>}
-          </div>
+          </Link>
           <ThemeToggle up align="left" />
           <a
             href="https://t.me/altaioptima"

@@ -106,7 +106,7 @@ export default function SettingsPage() {
   };
   const crmName = CRM_NAMES[crmType] || crmType.toUpperCase();
 
-  let crmBadgeText = "CRM не подключена";
+  let crmBadgeText = "Вера не ведёт CRM";
   let crmBadgeStyle =
     "bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700";
 
@@ -294,7 +294,7 @@ export default function SettingsPage() {
             </div>
           ) : (
             <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-400">
-              CRM не подключена. Чтобы подключить amoCRM или Битрикс24, напишите в техподдержку.
+              Вера не записывает заявки и сделки в CRM.
             </div>
           )}
         </div>

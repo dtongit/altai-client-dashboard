@@ -161,6 +161,16 @@ export const api = {
     return res;
   },
 
+  /** Own password change with the current one; every other session dies, this one gets the fresh token. */
+  async changePassword(current_password: string, new_password: string) {
+    const res = await request<{ ok: boolean; token?: string }>("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ current_password, new_password }),
+    });
+    if (res.token) setAuthToken(res.token, currentTenantId);
+    return res;
+  },
+
   /** Revokes every session of the account on the server (#160); errors are ignored, the caller clears local state. */
   async logout() {
     try {
