@@ -46,6 +46,8 @@ NEXT_PUBLIC_API_URL="http://localhost:8000/api/v1/client" npm run dev
 - Big single-file pages (`knowledge/page.tsx`, `admin/chats/page.tsx`): prefer targeted edits; extract components
   only when asked.
 
+- Partner program (epic #389, contract: root repo `design/partners.md`): portal `/partner/*` (`app/partner/`, own layout, no tenant navbar, palette in `globals.css` `.pp`, shared pieces `components/partner/ui.tsx`, `lib/partner-format.ts`, calculator `lib/partner-calc.ts`; client card is `/partner/clients/?id=`, static export has no dynamic routes). Partner accounts have no tenant: `auth-context` treats a tenant-less account whose `GET /partner/me` answers as `partnerOnly`; `/` goes to `/partner` on hosts `partner.*`/`stage-partner.*` or for `partnerOnly`. Admin screens `/admin/partners` and `/admin/billing` (super-admins, amber look, `components/admin-money-ui.tsx`); API calls `api.partner*` / `api.admin*Partner*|Billing*|Tariff*|Invoice*`. Copy rules: «вы», short hyphen only, never «сеть», «структура», «уровень», «реферал».
+
 ## Known issues (review 2026-10-31)
 - Dead `/catalog/*` API calls and types were removed (2026-10-31). `/admin` create templates (`DEFAULT_TEMPLATES`) only exist for resources whose backend `crud_create` is implemented (tenants, users, prompt-modules, knowledge-nodes, tenant-secrets, tenant-employees, campaigns, openrouter-models).
 - Auth token in `localStorage` is readable by any XSS; the backend also sets an HttpOnly cookie, so one of the two is

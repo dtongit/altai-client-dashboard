@@ -11,7 +11,11 @@ import { AlertTriangle, Send } from "lucide-react";
 
 export default function AIStaffManagementPage() {
   const router = useRouter();
-  const { user, loading: authLoading, hasEmployee, employeeHome, singleEmployee, homePath } = useAuth();
+  const { user, loading: authLoading, hasEmployee, employeeHome, singleEmployee, homePath, partnerOnly } = useAuth();
+  // On partner.* / stage-partner.* the root is the partner portal; a tenant-less partner account lands there anywhere.
+  const onPartnerHost =
+    typeof window !== "undefined" && /^(stage-)?partner\./.test(window.location.hostname);
+  const goPartner = Boolean(user) && (onPartnerHost || partnerOnly);
   const hasVera = hasEmployee("vera");
   // Only the Telegram link status: the KPIs (/overview) need the `dashboards` cap.
   const [tgSubscribed, setTgSubscribed] = useState<boolean | null>(null);
@@ -50,6 +54,10 @@ export default function AIStaffManagementPage() {
       router.push("/login");
       return;
     }
+    if (user && goPartner) {
+      router.replace("/partner");
+      return;
+    }
     // A user with only one AI employee skips the AI staff list and starts on that employee's page.
     if (user && singleEmployee) {
       router.replace(homePath);
@@ -61,9 +69,9 @@ export default function AIStaffManagementPage() {
     } else if (user) {
       setLoading(false);
     }
-  }, [user, authLoading, router, hasVera, singleEmployee, homePath]);
+  }, [user, authLoading, router, hasVera, singleEmployee, homePath, goPartner]);
 
-  if (authLoading || loading || singleEmployee) {
+  if (authLoading || loading || singleEmployee || goPartner) {
     return (
       <div className="flex-1 min-h-[calc(100dvh-var(--app-top))] flex items-center justify-center p-12">
         <div className="flex flex-col items-center gap-3">

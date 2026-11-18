@@ -89,3 +89,55 @@ select,
   animation: float-shimmer 5s ease-in-out infinite alternate;
   pointer-events: none;
 }
+
+/* ---------- Partner portal (/partner): own palette, not the amber dashboard look ---------- */
+.pp {
+  --pp-bg: #eef4f9;
+  --pp-surface: #ffffff;
+  --pp-card: #ffffff;
+  --pp-line: #d5e3ee;
+  --pp-text: #12304a;
+  --pp-muted: #5b7790;
+  --pp-accent: #0284c7;
+  --pp-accent-soft: rgba(2, 132, 199, 0.1);
+  --pp-money: #059669;
+  background: var(--pp-bg);
+  color: var(--pp-text);
+  font-family: "Inter", system-ui, sans-serif;
+}
+.dark .pp {
+  --pp-bg: #07172c;
+  --pp-surface: #0f172a;
+  --pp-card: #12233b;
+  --pp-line: #1f3550;
+  --pp-text: #c9dfeb;
+  --pp-muted: #86a3b8;
+  --pp-accent-soft: rgba(2, 132, 199, 0.18);
+  --pp-money: #34d399;
+}
+/* Uppercase headings: Benzin is not shipped with the app, so a heavy uppercase Manrope stands in. */
+.pp-head {
+  font-family: "Manrope", "Inter", system-ui, sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pp-num {
+  font-family: "Inter", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.pp input,
+.pp select,
+.pp textarea {
+  background: var(--pp-bg);
+  color: var(--pp-text);
+  border: 1px solid var(--pp-line);
+  border-radius: 0.75rem;
+}
+.pp input:focus,
+.pp select:focus,
+.pp textarea:focus {
+  outline: none;
+  border-color: var(--pp-accent);
+  box-shadow: 0 0 0 2px var(--pp-accent-soft);
+}

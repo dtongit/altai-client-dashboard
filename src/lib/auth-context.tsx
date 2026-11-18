@@ -34,6 +34,8 @@ interface AuthContextType {
   homePath: string;
   /** True when the user sees only one AI employee, so the AI staff list is skipped. */
   singleEmployee: boolean;
+  /** Signed in without a tenant and with a partner profile (`GET /partner/me` answered): lands on /partner. */
+  partnerOnly: boolean;
 }
 
 interface AuthPayload {
@@ -55,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [permissions, setPermissions] = useState<string[]>([]);
   const [allowedEmployees, setAllowedEmployees] = useState<string[]>([]);
   const [employeeScope, setEmployeeScope] = useState<"all" | "selected">("all");
+  const [partnerOnly, setPartnerOnly] = useState(false);
 
   // Old backends send neither field: derive from the role and open every AI employee.
   const applyPayload = (res: AuthPayload) => {
@@ -72,6 +75,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const homeOf = (employeeId: string) => employeeHome(employeeId, can("dashboards"));
   const homePath = landingPath(role === "superadmin", employeeScope === "all" ? ["*"] : allowedEmployees, can("dashboards"));
   const singleEmployee = homePath !== "/";
+
+  // A tenant-less account with a partner profile is a partner. `known` = the user from /auth/me, if it answered.
+  const adoptPartner = async (known: User | null): Promise<boolean> => {
+    try {
+      const me = await api.partnerMe();
+      setUser(
+        known ?? {
+          id: me.profile.user_id,
+          username: me.username,
+          email: "",
+          is_admin: false,
+          role: "partner",
+        }
+      );
+      setTenant(null);
+      setPermissions([]);
+      setAllowedEmployees([]);
+      setPartnerOnly(true);
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
   useEffect(() => {
     async function initAuth() {
@@ -105,6 +131,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (res.available_tenants) {
               setAvailableTenants(res.available_tenants);
             }
+          } else if (res.ok && res.user && (await adoptPartner(res.user))) {
+            // Partner account: no tenant, only a partner profile.
           } else {
             setAuthToken(null, null);
             setUser(null);
@@ -112,10 +140,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setTokenState(null);
           }
         } catch {
-          setAuthToken(null, null);
-          setUser(null);
-          setTenant(null);
-          setTokenState(null);
+          // A partner account may have no tenant, so /auth/me can fail for it: the partner profile decides.
+          if (!(await adoptPartner(null))) {
+            setAuthToken(null, null);
+            setUser(null);
+            setTenant(null);
+            setTokenState(null);
+          }
         }
       }
       setLoading(false);
@@ -129,12 +160,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (res.ok && res.user && res.tenant) {
         setUser(res.user);
         setTenant(res.tenant);
+        setPartnerOnly(false);
         applyPayload(res);
         setTokenState(res.token);
         if (res.available_tenants) {
           setAvailableTenants(res.available_tenants);
         }
         return true;
+      }
+      if (res.ok && res.user && !res.tenant) {
+        setTokenState(res.token);
+        return await adoptPartner(res.user);
       }
       return false;
     } catch {
@@ -149,6 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setTenant(null);
       setAvailableTenants([]);
+      setPartnerOnly(false);
       setTokenState(null);
       if (typeof window !== "undefined") {
         window.location.href = "/login";
@@ -222,6 +259,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         employeeHome: homeOf,
         homePath,
         singleEmployee,
+        partnerOnly,
       }}
     >
       {children}

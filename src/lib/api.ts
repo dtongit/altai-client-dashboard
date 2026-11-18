@@ -45,6 +45,30 @@ import {
   ReplySupervisorStatus,
   EscalationAddressee,
   EscalationGroup,
+  PartnerMe,
+  PartnerMePatch,
+  PartnerOverview,
+  PartnerClientRowView,
+  PartnerClientCard,
+  PartnerTeam,
+  PartnerAccruals,
+  PartnerStatements,
+  PartnerForecast,
+  AdminPartner,
+  AdminPartnerCreate,
+  AdminPartnerPatch,
+  AdminPartnerClientAttach,
+  AdminPaymentCreate,
+  AdminPayment,
+  AdminPayout,
+  BillingSettings,
+  Tariff,
+  TariffInput,
+  BillingClient,
+  BillingClientPatch,
+  ClientInvoice,
+  InvoiceCreate,
+  InvoiceStatus,
 } from "@/types";
 
 const rawApiUrl =
@@ -101,7 +125,34 @@ export function getStoredAuth() {
   return { token: authToken, tenantId: currentTenantId };
 }
 
-export { API_BASE_URL, ADMIN_API_BASE_URL };
+/** Partner portal API (`/api/v1/partner`), same host as the client API. */
+const PARTNER_API_BASE_URL = API_BASE_URL.replace(/\/api\/v1\/client\/?$/, "/api/v1/partner");
+
+export { API_BASE_URL, ADMIN_API_BASE_URL, PARTNER_API_BASE_URL };
+
+/** The backend may answer a list as a bare array or wrapped as `{ items: [...] }` (or a named key); accept both. */
+function asList<T>(res: unknown, ...keys: string[]): T[] {
+  if (Array.isArray(res)) return res as T[];
+  if (res && typeof res === "object") {
+    const o = res as Record<string, unknown>;
+    for (const k of ["items", ...keys]) {
+      if (Array.isArray(o[k])) return o[k] as T[];
+    }
+  }
+  return [];
+}
+
+/** Partner and billing routes: no tenant header, session only. */
+function partnerRequest<T>(endpoint: string, options: RequestInit = {}) {
+  return request<T>(endpoint, options, PARTNER_API_BASE_URL);
+}
+
+const ADMIN_PARTNERS = `${ADMIN_API_BASE_URL}`;
+function adminRequest<T>(endpoint: string, options: RequestInit = {}) {
+  return request<T>(endpoint, options, ADMIN_PARTNERS);
+}
+
+const jsonBody = (body: unknown) => ({ body: JSON.stringify(body) });
 
 async function request<T>(
   endpoint: string,
@@ -148,7 +199,8 @@ export const api = {
       ok: boolean;
       token: string;
       user: User;
-      tenant: Tenant;
+      /** Absent or null for a partner account (no tenant). */
+      tenant?: Tenant | null;
       permissions?: string[];
       allowed_employees?: string[];
       role?: string;
@@ -157,7 +209,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ username_or_email, password, tenant_id }),
     });
-    setAuthToken(res.token, res.tenant.id);
+    setAuthToken(res.token, res.tenant?.id ?? null);
     return res;
   },
 
@@ -184,7 +236,8 @@ export const api = {
     return request<{
       ok: boolean;
       user: User;
-      tenant: Tenant;
+      /** Absent or null for a partner account (no tenant). */
+      tenant?: Tenant | null;
       permissions?: string[];
       allowed_employees?: string[];
       role?: string;
@@ -1125,5 +1178,138 @@ export const api = {
     if (params?.case_tag) query.set("case_tag", params.case_tag);
     const qs = query.toString() ? `?${query.toString()}` : "";
     return request(`/prompts/preview${qs}`);
+  },
+
+  // ==========================================================================
+  // Partner portal (/api/v1/partner/*, root repo design/partners.md)
+  // ==========================================================================
+
+  async partnerMe(): Promise<PartnerMe> {
+    return partnerRequest<PartnerMe>("/me");
+  },
+  async partnerUpdateMe(patch: PartnerMePatch): Promise<PartnerMe> {
+    return partnerRequest<PartnerMe>("/me", { method: "PATCH", ...jsonBody(patch) });
+  },
+  async partnerOverview(): Promise<PartnerOverview> {
+    return partnerRequest<PartnerOverview>("/overview");
+  },
+  async partnerClients(): Promise<PartnerClientRowView[]> {
+    return asList<PartnerClientRowView>(await partnerRequest<unknown>("/clients"), "clients");
+  },
+  async partnerClient(tenantId: string): Promise<PartnerClientCard> {
+    return partnerRequest<PartnerClientCard>(`/clients/${encodeURIComponent(tenantId)}`);
+  },
+  async partnerTeam(): Promise<PartnerTeam> {
+    return partnerRequest<PartnerTeam>("/team");
+  },
+  async partnerAccruals(period?: string): Promise<PartnerAccruals> {
+    const qs = period ? `?period=${encodeURIComponent(period)}` : "";
+    return partnerRequest<PartnerAccruals>(`/accruals${qs}`);
+  },
+  async partnerStatements(): Promise<PartnerStatements> {
+    return partnerRequest<PartnerStatements>("/statements");
+  },
+  async partnerForecast(): Promise<PartnerForecast> {
+    return partnerRequest<PartnerForecast>("/forecast");
+  },
+
+  // ==========================================================================
+  // Admin: partners (/api/v1/admin/partners/*)
+  // ==========================================================================
+
+  async adminListPartners(status?: string): Promise<AdminPartner[]> {
+    const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+    return asList<AdminPartner>(await adminRequest<unknown>(`/partners${qs}`), "partners");
+  },
+  async adminCreatePartner(body: AdminPartnerCreate) {
+    return adminRequest<unknown>("/partners", { method: "POST", ...jsonBody(body) });
+  },
+  async adminUpdatePartner(userId: string, body: AdminPartnerPatch) {
+    return adminRequest<unknown>(`/partners/${encodeURIComponent(userId)}`, { method: "PATCH", ...jsonBody(body) });
+  },
+  async adminAttachPartnerClient(body: AdminPartnerClientAttach) {
+    return adminRequest<unknown>("/partners/clients", { method: "POST", ...jsonBody(body) });
+  },
+  async adminRecordPayment(body: AdminPaymentCreate) {
+    return adminRequest<unknown>("/partners/payments", { method: "POST", ...jsonBody(body) });
+  },
+  async adminListPayments(tenantId: string): Promise<AdminPayment[]> {
+    return asList<AdminPayment>(
+      await adminRequest<unknown>(`/partners/payments?tenant_id=${encodeURIComponent(tenantId)}`),
+      "payments"
+    );
+  },
+  async adminClosePeriod(period: string) {
+    return adminRequest<unknown>(`/partners/periods/${encodeURIComponent(period)}/close`, { method: "POST" });
+  },
+  async adminListPayouts(): Promise<AdminPayout[]> {
+    return asList<AdminPayout>(await adminRequest<unknown>("/partners/payouts"), "payouts");
+  },
+  async adminMarkPayoutPaid(payoutId: string) {
+    return adminRequest<unknown>(`/partners/payouts/${encodeURIComponent(payoutId)}/paid`, { method: "POST" });
+  },
+
+  // ==========================================================================
+  // Admin: billing (/api/v1/admin/billing/*)
+  // ==========================================================================
+
+  async adminGetBillingSettings(): Promise<BillingSettings> {
+    return adminRequest<BillingSettings>("/billing/settings");
+  },
+  async adminPutBillingSettings(body: Partial<BillingSettings>) {
+    return adminRequest<unknown>("/billing/settings", { method: "PUT", ...jsonBody(body) });
+  },
+  async adminListTariffs(): Promise<Tariff[]> {
+    return asList<Tariff>(await adminRequest<unknown>("/billing/tariffs"), "tariffs");
+  },
+  async adminCreateTariff(body: TariffInput) {
+    return adminRequest<unknown>("/billing/tariffs", { method: "POST", ...jsonBody(body) });
+  },
+  async adminUpdateTariff(id: string, body: Partial<TariffInput>) {
+    return adminRequest<unknown>(`/billing/tariffs/${encodeURIComponent(id)}`, { method: "PATCH", ...jsonBody(body) });
+  },
+  async adminListBillingClients(): Promise<BillingClient[]> {
+    return asList<BillingClient>(await adminRequest<unknown>("/billing/clients"), "clients");
+  },
+  async adminPutBillingClient(tenantId: string, body: BillingClientPatch) {
+    return adminRequest<unknown>(`/billing/clients/${encodeURIComponent(tenantId)}`, { method: "PUT", ...jsonBody(body) });
+  },
+  async adminListInvoices(params: { tenant_id?: string; status?: InvoiceStatus | "" } = {}): Promise<ClientInvoice[]> {
+    const q = new URLSearchParams();
+    if (params.tenant_id) q.set("tenant_id", params.tenant_id);
+    if (params.status) q.set("status", params.status);
+    const qs = q.toString() ? `?${q.toString()}` : "";
+    return asList<ClientInvoice>(await adminRequest<unknown>(`/billing/invoices${qs}`), "invoices");
+  },
+  async adminCreateInvoice(body: InvoiceCreate) {
+    return adminRequest<unknown>("/billing/invoices", { method: "POST", ...jsonBody(body) });
+  },
+  async adminMarkInvoicePaid(id: string, paidAt?: string) {
+    return adminRequest<unknown>(`/billing/invoices/${encodeURIComponent(id)}/paid`, {
+      method: "POST",
+      ...jsonBody(paidAt ? { paid_at: paidAt } : {}),
+    });
+  },
+  async adminCancelInvoice(id: string) {
+    return adminRequest<unknown>(`/billing/invoices/${encodeURIComponent(id)}/cancel`, { method: "POST" });
+  },
+  /** The printable счёт is HTML behind the session header: fetch it with the token and show it from a blob URL. */
+  async adminOpenInvoiceHtml(id: string): Promise<void> {
+    // Open the tab synchronously (popup blockers), fill it after the fetch.
+    const win = window.open("", "_blank");
+    try {
+      const { token } = getStoredAuth();
+      const res = await fetch(`${ADMIN_API_BASE_URL}/billing/invoices/${encodeURIComponent(id)}/html`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error(`Ошибка сервера (${res.status})`);
+      const html = await res.text();
+      const url = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" }));
+      if (win) win.location.href = url;
+      else window.location.href = url;
+    } catch (e) {
+      win?.close();
+      throw e;
+    }
   },
 };

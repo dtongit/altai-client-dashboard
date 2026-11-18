@@ -31,7 +31,9 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   const isStartPage =
     cleanPath === "/" || cleanPath === "" || cleanPath === "/index.html";
   const isAdminPage = cleanPath.startsWith("/admin");
-  const showSidebar = !isLoginPage && !isStartPage && !isAdminPage && !isChatLink;
+  // The partner portal has its own navigation and look (src/app/partner/layout.tsx): no tenant navbar or sidebar.
+  const isPartnerPage = cleanPath === "/partner" || cleanPath.startsWith("/partner/");
+  const showSidebar = !isLoginPage && !isStartPage && !isAdminPage && !isChatLink && !isPartnerPage;
 
   // Page guards (roles epic #75): which capability / AI employee each section needs.
   const needsVera = ["/vera", "/vera-chat", "/chats", "/simulator"].some(
@@ -74,6 +76,12 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!loading && mounted) {
       if (!user && !isLoginPage && !isChatLink) {
+        // Remember where the person wanted to go: the login page sends them back there.
+        try {
+          if (cleanPath !== "/") sessionStorage.setItem("altai_next", cleanPath + window.location.search);
+        } catch {
+          /* storage blocked: land on the start page */
+        }
         router.replace("/login");
       } else if (user && isLoginPage) {
         router.replace("/");
@@ -124,6 +132,10 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   // The site header (logo + company) shows only on the AI staff list and the superadmin console; elsewhere the page
   // takes the full height and the header's controls live in the sidebar footer (desktop) and «Ещё» (phone).
   const showHeader = isStartPage || isAdminPage;
+
+  if (isPartnerPage) {
+    return <div className="min-h-dvh">{children}</div>;
+  }
 
   return (
     <div

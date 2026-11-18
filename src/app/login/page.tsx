@@ -23,7 +23,16 @@ export default function LoginPage() {
     try {
       const ok = await login(username, password);
       if (ok) {
-        router.push("/");
+        let next = "/";
+        try {
+          const saved = sessionStorage.getItem("altai_next");
+          sessionStorage.removeItem("altai_next");
+          // Only same-site paths.
+          if (saved && saved.startsWith("/") && !saved.startsWith("//")) next = saved;
+        } catch {
+          /* storage blocked */
+        }
+        router.push(next);
       } else {
         setError("Неверный логин или пароль");
       }

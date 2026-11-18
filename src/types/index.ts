@@ -1220,11 +1220,18 @@ export interface KbNodeActionRow {
 /** Rows of the partner tables in /admin (read-only, #390). Money in kopecks. */
 export interface PartnerProfileRow {
   user_id: string;
-  status: "pending" | "approved" | (string & {});
+  status: "pending" | "approved" | "blocked" | (string & {});
   display_name: string | null;
   ref_code: string;
+  ref_code_changed: boolean;
   inviter_user_id: string | null;
   invite_link_id: string | null;
+  default_deal_type: PartnerDealType | null;
+  contact: string | null;
+  legal_status: PartnerLegalStatus | null;
+  inn: string | null;
+  payout_details: string | null;
+  goal_kop: number | null;
   created_at: string;
   approved_at: string | null;
   approved_by: string | null;
@@ -1253,10 +1260,11 @@ export interface ClientPaymentRow {
   id: string;
   tenant_id: string;
   amount_kop: number;
-  kind: "launch" | "subscription" | (string & {});
+  kind: "launch" | "subscription" | "pack" | (string & {});
   period: string;
   paid_at: string;
   entered_by: string | null;
+  invoice_id: string | null;
   created_at: string;
 }
 
@@ -1267,6 +1275,7 @@ export interface PartnerAccrualRow {
   source_user_id: string;
   tenant_id: string;
   layer: number;
+  depth: number;
   kind: string;
   period: string;
   base_kop: number;
@@ -1293,4 +1302,395 @@ export interface PartnerPeriodRow {
   period: string;
   closed_at: string;
   closed_by: string | null;
+}
+
+/** /admin rows of the billing tables (read-only, epic #389; writes go through /admin/billing/*). Money in kopecks. */
+export interface BillingSettingRow {
+  key: string;
+  value: string;
+  updated_at: string | null;
+  updated_by: string | null;
+}
+
+export interface TariffRow {
+  id: string;
+  code: string;
+  name: string;
+  monthly_kop: number;
+  launch_kop: number;
+  messages_limit: number;
+  pack_kop: number;
+  is_active: boolean;
+  sort: number;
+}
+
+export interface ClientBillingRow {
+  tenant_id: string;
+  tariff_id: string | null;
+  status: BillingClientStatus;
+  legal_name: string | null;
+  inn: string | null;
+  address: string | null;
+  email: string | null;
+  notes: string | null;
+  updated_at: string | null;
+}
+
+export interface ClientInvoiceRow {
+  id: string;
+  number: number;
+  tenant_id: string;
+  kind: PaymentKind;
+  period: string;
+  amount_kop: number;
+  description: string | null;
+  status: InvoiceStatus;
+  seller_json: string;
+  buyer_json: string;
+  issued_at: string;
+  paid_at: string | null;
+  payment_id: string | null;
+  created_by: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Partner program (epic #389, root repo design/partners.md). Money in kopecks, rates in basis points.
+// ---------------------------------------------------------------------------
+
+export type PartnerDealType = "rep" | "manager";
+export type PartnerLegalStatus = "ip" | "ooo" | "npd";
+export type PaymentKind = "launch" | "subscription" | "pack";
+export type InvoiceStatus = "issued" | "paid" | "cancelled";
+export type BillingClientStatus = "lead" | "demo" | "launch_paid" | "paying" | "paused" | "churned";
+
+/** `GET/PATCH /api/v1/partner/me`. */
+export interface PartnerProfile {
+  user_id: string;
+  status: "pending" | "approved" | "blocked";
+  display_name: string | null;
+  ref_code: string;
+  ref_code_changed: boolean;
+  default_deal_type: PartnerDealType | null;
+  contact: string | null;
+  legal_status: PartnerLegalStatus | null;
+  inn: string | null;
+  payout_details: string | null;
+  goal_kop: number | null;
+  has_inviter: boolean;
+  created_at: string;
+}
+
+export interface PartnerMe {
+  profile: PartnerProfile;
+  username: string;
+  is_agency: boolean;
+  min_payout_kop: number;
+  payout_day: number;
+}
+
+export interface PartnerMePatch {
+  display_name?: string;
+  contact?: string;
+  legal_status?: PartnerLegalStatus | null;
+  inn?: string;
+  payout_details?: string;
+  goal_kop?: number;
+  default_deal_type?: PartnerDealType;
+  ref_code?: string;
+}
+
+export interface PartnerNextPayout {
+  amount_kop: number;
+  due_date: string | null;
+  launches_kop: number;
+  own_kop: number;
+  team_kop: number;
+}
+
+export interface PartnerChartPoint {
+  period: string;
+  launch_kop: number;
+  own_kop: number;
+  team_kop: number;
+}
+
+export interface PartnerEvent {
+  at: string;
+  text_kind: string;
+  client_name?: string | null;
+  partner_name?: string | null;
+  amount_kop: number;
+}
+
+export interface PartnerOverview {
+  monthly_income_kop: number;
+  monthly_own_kop: number;
+  monthly_team_kop: number;
+  next_payout: PartnerNextPayout | null;
+  earned_total_kop: number;
+  counters: { paying_clients: number; leads: number; team_partners: number };
+  chart: PartnerChartPoint[];
+  events: PartnerEvent[];
+}
+
+export interface PartnerClientRowView {
+  tenant_id: string;
+  business_name: string;
+  tariff_name: string | null;
+  status: BillingClientStatus | (string & {});
+  deal_type: PartnerDealType;
+  attached_at: string;
+  monthly_to_me_kop: number;
+  total_to_me_kop: number;
+  last_paid_period: string | null;
+}
+
+export interface PartnerClientPayment {
+  period: string;
+  kind: PaymentKind;
+  amount_kop: number;
+  paid_at: string;
+  my_accrual_kop: number;
+}
+
+export interface PartnerClientCard extends PartnerClientRowView {
+  payments: PartnerClientPayment[];
+}
+
+export interface PartnerTeamLayer1 {
+  name: string;
+  joined_at: string;
+  paying_clients: number;
+  monthly_to_me_kop: number;
+  total_to_me_kop: number;
+  layer2: { partners: number; paying_clients: number; monthly_to_me_kop: number };
+}
+
+export interface PartnerTeam {
+  is_agency: boolean;
+  monthly_team_kop: number;
+  partners_total: number;
+  layer1: PartnerTeamLayer1[];
+}
+
+export interface PartnerAccrualItem {
+  period: string;
+  layer: 0 | 1 | 2;
+  kind: PaymentKind;
+  base_kop: number;
+  rate_bp: number;
+  amount_kop: number;
+  settled: boolean;
+  client_name?: string | null;
+  partner_name?: string | null;
+  created_at: string;
+}
+
+export interface PartnerAccruals {
+  total_kop: number;
+  items: PartnerAccrualItem[];
+}
+
+export interface PartnerStatementPayout {
+  id: string;
+  period: string;
+  amount_kop: number;
+  carried_in_kop: number;
+  status: "due" | "paid" | "carried";
+  due_date: string | null;
+  paid_at: string | null;
+  launches_kop: number;
+  own_kop: number;
+  team_kop: number;
+}
+
+export interface PartnerStatements {
+  min_payout_kop: number;
+  unsettled_kop: number;
+  payouts: PartnerStatementPayout[];
+}
+
+/** `split_rates` setting: arrays indexed by depth, each `[seller, a1, a2]` in basis points. */
+export interface SplitRates {
+  rep: { launch: number[][]; monthly: number[][] };
+  manager: { launch: number[][]; monthly: number[][] };
+}
+
+export interface PartnerForecast {
+  tariffs: Array<{ code: string; name: string; monthly_kop: number; launch_kop: number }>;
+  split_rates: SplitRates;
+  default_deal_type: PartnerDealType | null;
+  /** Approved agencies above the partner (0..2). */
+  depth?: number;
+  goal_kop: number | null;
+  paying_clients: number;
+  team: { layer1_partners: number; layer1_clients: number; layer2_partners: number; layer2_clients: number };
+  monthly_income_kop: number;
+}
+
+// --- Admin API (/api/v1/admin/partners/*, /api/v1/admin/billing/*) ---
+
+export interface AdminPartner {
+  user_id: string;
+  username: string;
+  email: string;
+  status: "pending" | "approved" | "blocked";
+  display_name: string | null;
+  ref_code: string;
+  inviter_name?: string | null;
+  inviter_ref_code?: string | null;
+  default_deal_type?: PartnerDealType | null;
+  contact?: string | null;
+  legal_status?: PartnerLegalStatus | null;
+  inn?: string | null;
+  payout_details?: string | null;
+  clients: number;
+  paying_clients: number;
+  unsettled_kop: number;
+  has_details: boolean;
+}
+
+export interface AdminPartnerCreate {
+  username: string;
+  email: string;
+  password: string;
+  display_name: string;
+  inviter_ref_code?: string;
+  default_deal_type?: PartnerDealType;
+  contact?: string;
+}
+
+export interface AdminPartnerPatch {
+  display_name?: string;
+  status?: "approved" | "blocked";
+  /** null detaches the inviter. */
+  inviter_ref_code?: string | null;
+  default_deal_type?: PartnerDealType;
+  contact?: string;
+  legal_status?: PartnerLegalStatus | null;
+  inn?: string;
+  payout_details?: string;
+}
+
+export interface AdminPartnerClientAttach {
+  tenant_id: string;
+  ref_code?: string;
+  partner_user_id?: string;
+  deal_type: PartnerDealType;
+}
+
+export interface AdminPaymentCreate {
+  tenant_id: string;
+  kind: PaymentKind;
+  amount_kop: number;
+  period: string;
+  paid_at?: string;
+}
+
+export interface AdminPayment {
+  id: string;
+  tenant_id: string;
+  amount_kop: number;
+  kind: PaymentKind;
+  period: string;
+  paid_at: string;
+  invoice_id?: string | null;
+}
+
+export interface AdminPayout {
+  id: string;
+  partner_user_id: string;
+  partner_name?: string | null;
+  period: string;
+  amount_kop: number;
+  carried_in_kop: number;
+  status: "due" | "paid" | "carried";
+  due_date: string | null;
+  paid_at: string | null;
+  has_details?: boolean;
+}
+
+export interface SellerRequisites {
+  name: string;
+  inn: string;
+  ogrnip: string;
+  address: string;
+  bank: string;
+  bik: string;
+  account: string;
+  corr_account: string;
+  email: string;
+  phone: string;
+  vat_note: string;
+}
+
+export interface BillingSettings {
+  split_rates: SplitRates;
+  min_payout_kop: number;
+  payout_day: number;
+  seller: SellerRequisites;
+}
+
+export interface Tariff {
+  id: string;
+  code: string;
+  name: string;
+  monthly_kop: number;
+  launch_kop: number;
+  messages_limit: number;
+  pack_kop: number;
+  is_active: boolean;
+  sort: number;
+}
+
+export type TariffInput = Omit<Tariff, "id">;
+
+export interface BillingClient {
+  tenant_id: string;
+  business_name: string;
+  tariff_id: string | null;
+  tariff_name?: string | null;
+  status: BillingClientStatus | null;
+  legal_name?: string | null;
+  inn?: string | null;
+  address?: string | null;
+  email?: string | null;
+  notes?: string | null;
+  partner?: { user_id?: string; name: string | null; ref_code: string; deal_type: PartnerDealType } | null;
+  last_payment_period?: string | null;
+  unpaid_invoices?: number;
+}
+
+export interface BillingClientPatch {
+  tariff_id?: string | null;
+  status?: BillingClientStatus;
+  legal_name?: string;
+  inn?: string;
+  address?: string;
+  email?: string;
+  notes?: string;
+}
+
+export interface ClientInvoice {
+  id: string;
+  number: number;
+  tenant_id: string;
+  business_name?: string | null;
+  kind: PaymentKind;
+  period: string;
+  amount_kop: number;
+  description: string | null;
+  status: InvoiceStatus;
+  issued_at: string;
+  paid_at: string | null;
+  payment_id: string | null;
+}
+
+export interface InvoiceCreate {
+  tenant_id: string;
+  kind: PaymentKind;
+  period: string;
+  amount_kop?: number;
+  packs?: number;
+  description?: string;
 }

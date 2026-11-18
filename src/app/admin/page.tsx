@@ -556,6 +556,20 @@ export default function SuperadminConsolePage() {
             <Users className="h-4 w-4 text-indigo-500" />
             <span>Командные боты и логи</span>
           </Link>
+          <Link
+            href="/admin/partners"
+            className="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-sky-700 dark:text-sky-400 bg-sky-500/10 hover:bg-sky-500/20 transition-all border border-sky-500/25"
+          >
+            <Users className="h-4 w-4 text-sky-500" />
+            <span>Партнёры и выплаты</span>
+          </Link>
+          <Link
+            href="/admin/billing"
+            className="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all border border-emerald-500/25"
+          >
+            <Database className="h-4 w-4 text-emerald-500" />
+            <span>Биллинг, счета, тарифы</span>
+          </Link>
         </div>
 
         <nav className="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-1.5 lg:gap-0 lg:space-y-1 pb-2 lg:pb-0 no-scrollbar">
