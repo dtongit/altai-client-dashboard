@@ -1639,7 +1639,7 @@ export default function EmployeeStudioPage() {
                           onChange={(e) =>
                             setNodeForm({ ...nodeForm, path: e.target.value })
                           }
-                          placeholder="catalog/footwear/care"
+                          placeholder="/catalog/footwear/care"
                           className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 font-mono text-base"
                         />
                       </div>
