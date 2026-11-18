@@ -346,7 +346,7 @@ export default function EmployeeStudioPage() {
         (isAdmin ? api.getPromptModules() : Promise.resolve({ ok: true, modules: [] as PromptModule[] })).catch(() => ({ ok: false, modules: [] })),
         api.getKnowledgeNodes().catch(() => ({ ok: false, nodes: [] })),
         api.getDeletedKnowledgeNodes().catch(() => ({ ok: false, nodes: [] as DeletedKnowledgeNode[] })),
-        api.getSkillCards().catch(() => ({ ok: false, cards: [] })),
+        (isAdmin ? api.getSkillCards() : Promise.resolve({ ok: true, cards: [] as SemanticSkillCard[] })).catch(() => ({ ok: false, cards: [] })),
       ]);
       if (pmRes.modules) setPromptModules(pmRes.modules);
       if (knRes.nodes) setKnowledgeNodes(knRes.nodes);
@@ -455,8 +455,13 @@ export default function EmployeeStudioPage() {
   };
 
   useEffect(() => {
-    if (!isAdmin && activeTab === "prompts") setActiveTab("kb");
+    if (!isAdmin && (activeTab === "prompts" || activeTab === "skills")) setActiveTab("kb");
   }, [isAdmin, activeTab]);
+
+  // Managers see a node's scheduled actions in the detail view, so load them on selection.
+  useEffect(() => {
+    if (!isAdmin && selectedNodeId && !isEditingNode) void loadNodeActions(selectedNodeId);
+  }, [isAdmin, selectedNodeId, isEditingNode]);
 
   useEffect(() => {
     loadConfig(false);
@@ -665,46 +670,28 @@ export default function EmployeeStudioPage() {
     }
   };
 
-  const handleStartEditNode = (node?: KnowledgeNode) => {
+  const handleStartEditNode = (node: KnowledgeNode) => {
     setNodeHistory(null);
     setNodeActions([]);
     setDispDialog(null);
-    if (node) void loadNodeActions(node.id);
-    if (node) {
-      setSelectedNodeId(node.id);
-      setNodeForm({
-        path: node.path,
-        parent_path: node.parent_path || "",
-        title: node.title,
-        tier: node.tier || "L2",
-        node_type: node.node_type || "article",
-        summary: node.summary || "",
-        content: node.content || "",
-        triggers_csv: (node.high_confidence_triggers || []).join(", "),
-        media: (node.media_attachments || []).map((m: any) =>
-          typeof m === "string" ? { url: m } : { ...m }
-        ) as KbMediaItem[],
-        change_description: "",
-        allowed_employees: node.allowed_employees,
-        allowed_roles: node.allowed_roles,
-      });
-    } else {
-      setSelectedNodeId(null);
-      setNodeForm({
-        path: "",
-        parent_path: "",
-        title: "",
-        tier: "L2",
-        node_type: "article",
-        summary: "",
-        content: "",
-        triggers_csv: "",
-        media: [],
-        change_description: "Создание нового узла",
-        allowed_employees: undefined,
-        allowed_roles: undefined,
-      });
-    }
+    void loadNodeActions(node.id);
+    setSelectedNodeId(node.id);
+    setNodeForm({
+      path: node.path,
+      parent_path: node.parent_path || "",
+      title: node.title,
+      tier: node.tier || "L2",
+      node_type: node.node_type || "article",
+      summary: node.summary || "",
+      content: node.content || "",
+      triggers_csv: (node.high_confidence_triggers || []).join(", "),
+      media: (node.media_attachments || []).map((m: any) =>
+        typeof m === "string" ? { url: m } : { ...m }
+      ) as KbMediaItem[],
+      change_description: "",
+      allowed_employees: node.allowed_employees,
+      allowed_roles: node.allowed_roles,
+    });
     setIsEditingNode(true);
   };
 
@@ -948,12 +935,13 @@ export default function EmployeeStudioPage() {
             }`}
           >
             <FolderTree className="h-4 w-4" />
-            <span>База знаний (Mind-Map)</span>
+            <span>{isAdmin ? "База знаний (Mind-Map)" : "База знаний"}</span>
             <span className="px-1.5 py-0.2 rounded-md text-[10px] bg-black/10 dark:bg-white/10 font-bold">
               {knowledgeNodes.length}
             </span>
           </button>
 
+          {isAdmin && (
           <button
             onClick={() => setActiveTab("skills")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
@@ -968,6 +956,7 @@ export default function EmployeeStudioPage() {
               {skillCards.length}
             </span>
           </button>
+          )}
         </div>
       </div>
 
@@ -1432,23 +1421,19 @@ export default function EmployeeStudioPage() {
             <div>
               <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
                 <FolderTree className="h-4 w-4 text-amber-500" />
-                <span>Динамическая база знаний (Mind-Map L0 / L1 / L2)</span>
+                <span>{isAdmin ? "Динамическая база знаний (Mind-Map L0 / L1 / L2)" : "База знаний"}</span>
               </h2>
-              <p className="text-xs text-zinc-500 mt-1">
-                L0 — ядро диалога (всегда в контексте), L1 — оглавление тем, L2 — детальные статьи (подгружаются по триггерам).
-              </p>
+              {isAdmin && (
+                <p className="text-xs text-zinc-500 mt-1">
+                  L0 — ядро диалога (всегда в контексте), L1 — оглавление тем, L2 — детальные статьи (подгружаются по триггерам).
+                </p>
+              )}
             </div>
-            <button
-              onClick={() => handleStartEditNode()}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer self-start sm:self-auto"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Добавить узел</span>
-            </button>
           </div>
 
           {/* Filters & Search */}
           <div className="flex flex-wrap items-center gap-3">
+            {isAdmin && (
             <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800/80 p-1 rounded-xl">
               {(["all", "L0", "L1", "L2"] as const).map((tier) => (
                 <button
@@ -1470,6 +1455,7 @@ export default function EmployeeStudioPage() {
                 </button>
               ))}
             </div>
+            )}
 
             <div className="relative flex-1 min-w-[200px] max-w-sm ml-auto">
               <Search className="h-3.5 w-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
@@ -1477,7 +1463,7 @@ export default function EmployeeStudioPage() {
                 type="text"
                 value={kbSearch}
                 onChange={(e) => setKbSearch(e.target.value)}
-                placeholder="Поиск по пути, заголовку или триггерам..."
+                placeholder={isAdmin ? "Поиск по пути, заголовку или триггерам..." : "Поиск по названию..."}
                 className="w-full pl-9 pr-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-base"
               />
             </div>
@@ -1487,10 +1473,13 @@ export default function EmployeeStudioPage() {
             {/* Left 5 cols: Nodes list */}
             <div className={`lg:col-span-5 space-y-3 ${selectedNodeId || isEditingNode ? "hidden md:block" : "block"}`}>
               {knowledgeNodes
-                .filter((n) => kbTierFilter === "all" || n.tier === kbTierFilter)
+                .filter((n) => !isAdmin || kbTierFilter === "all" || n.tier === kbTierFilter)
                 .filter((n) => {
                   if (!kbSearch.trim()) return true;
                   const q = kbSearch.toLowerCase();
+                  if (!isAdmin) {
+                    return n.title.toLowerCase().includes(q) || (n.summary || "").toLowerCase().includes(q);
+                  }
                   return (
                     n.title.toLowerCase().includes(q) ||
                     n.path.toLowerCase().includes(q) ||
@@ -1499,12 +1488,6 @@ export default function EmployeeStudioPage() {
                 })
                 .map((node) => {
                   const isSelected = selectedNodeId === node.id;
-                  const tierColor =
-                    node.tier === "L0"
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                      : node.tier === "L1"
-                      ? "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20"
-                      : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
                   return (
                     <div
                       key={node.id}
@@ -1521,45 +1504,13 @@ export default function EmployeeStudioPage() {
                           : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700"
                       }`}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <span
-                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${tierColor}`}
-                        >
-                          {node.tier}
-                        </span>
-                        {node.is_active === false && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
-                            Выключен
-                          </span>
-                        )}
-                        <span className="text-[10px] font-mono text-zinc-400 truncate max-w-[200px]">
-                          {node.path}
-                        </span>
-                      </div>
-                      <h4 className="text-sm font-bold text-zinc-900 dark:text-white mt-1.5">
+                      <h4 className="text-sm font-bold text-zinc-900 dark:text-white">
                         {node.title}
                       </h4>
                       {node.summary && (
                         <p className="text-xs text-zinc-500 line-clamp-2 mt-1">
                           {node.summary}
                         </p>
-                      )}
-                      {node.high_confidence_triggers && node.high_confidence_triggers.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2.5">
-                          {node.high_confidence_triggers.slice(0, 3).map((t) => (
-                            <span
-                              key={t}
-                              className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400"
-                            >
-                              #{t}
-                            </span>
-                          ))}
-                          {node.high_confidence_triggers.length > 3 && (
-                            <span className="text-[10px] text-zinc-400">
-                              +{node.high_confidence_triggers.length - 3}
-                            </span>
-                          )}
-                        </div>
                       )}
                     </div>
                   );
@@ -1577,7 +1528,7 @@ export default function EmployeeStudioPage() {
                     >
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-zinc-900 dark:text-white truncate">{d.title}</div>
-                        <div className="text-[10px] font-mono text-zinc-400 truncate">{d.path}</div>
+                        {isAdmin && <div className="text-[10px] font-mono text-zinc-400 truncate">{d.path}</div>}
                         <div className="text-[10px] text-zinc-400">
                           {d.deleted_at}
                           {d.deleted_by ? ` · ${d.deleted_by}` : ""}
@@ -1617,7 +1568,7 @@ export default function EmployeeStudioPage() {
                 <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 space-y-4 shadow-sm">
                   <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
                     <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
-                      {selectedNodeId ? "Редактирование узла" : "Новый узел базы знаний"}
+                      Редактирование узла
                     </h3>
                     <button
                       onClick={() => setIsEditingNode(false)}
@@ -1628,6 +1579,7 @@ export default function EmployeeStudioPage() {
                   </div>
 
                   <form onSubmit={handleSaveNode} className="space-y-4">
+                    {isAdmin && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
@@ -1658,6 +1610,7 @@ export default function EmployeeStudioPage() {
                         />
                       </div>
                     </div>
+                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -1674,6 +1627,7 @@ export default function EmployeeStudioPage() {
                           className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-base"
                         />
                       </div>
+                      {isAdmin && (
                       <div>
                         <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
                           Уровень контекста (Tier)
@@ -1690,11 +1644,12 @@ export default function EmployeeStudioPage() {
                           <option value="L2">L2 — Детальная статья (по требованию)</option>
                         </select>
                       </div>
+                      )}
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
-                        Краткое резюме (Summary — для L1 оглавления)
+                        {isAdmin ? "Краткое резюме (Summary — для L1 оглавления)" : "Краткое описание"}
                       </label>
                       <textarea
                         value={nodeForm.summary}
@@ -1707,6 +1662,7 @@ export default function EmployeeStudioPage() {
                       />
                     </div>
 
+                    {isAdmin && (
                     <div>
                       <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
                         Триггеры авто-подгрузки (через запятую)
@@ -1721,6 +1677,7 @@ export default function EmployeeStudioPage() {
                         className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-base"
                       />
                     </div>
+                    )}
 
                     <div>
                       <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
@@ -1757,6 +1714,7 @@ export default function EmployeeStudioPage() {
                       showToast={showToast}
                     />
 
+                    {isAdmin && (
                     <div>
                       <label className="block text-[11px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">
                         Описание изменения
@@ -1774,6 +1732,7 @@ export default function EmployeeStudioPage() {
                         className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2 text-base"
                       />
                     </div>
+                    )}
 
                     <div className="flex items-center gap-2 pt-2">
                       <button
@@ -1802,29 +1761,33 @@ export default function EmployeeStudioPage() {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-100 dark:border-zinc-800">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span
-                              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                                node.tier === "L0"
-                                  ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                                  : node.tier === "L1"
-                                  ? "bg-sky-500/10 text-sky-600 border-sky-500/20"
-                                  : "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                              }`}
-                            >
-                              {node.tier}
-                            </span>
+                            {isAdmin && (
+                              <span
+                                className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                                  node.tier === "L0"
+                                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                    : node.tier === "L1"
+                                    ? "bg-sky-500/10 text-sky-600 border-sky-500/20"
+                                    : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                                }`}
+                              >
+                                {node.tier}
+                              </span>
+                            )}
                             <h3 className="text-base font-bold text-zinc-900 dark:text-white">
                               {node.title}
                             </h3>
-                            {node.is_active === false && (
+                            {isAdmin && node.is_active === false && (
                               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
                                 Выключен
                               </span>
                             )}
                           </div>
-                          <div className="text-xs font-mono text-zinc-400 mt-1">
-                            {node.path}
-                          </div>
+                          {isAdmin && (
+                            <div className="text-xs font-mono text-zinc-400 mt-1">
+                              {node.path}
+                            </div>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -1835,6 +1798,7 @@ export default function EmployeeStudioPage() {
                             <Edit2 className="h-3.5 w-3.5" />
                             <span>Редактировать</span>
                           </button>
+                          {isAdmin && (
                           <button
                             onClick={() => handleToggleNodeActive(node)}
                             disabled={isTogglingNode}
@@ -1842,6 +1806,8 @@ export default function EmployeeStudioPage() {
                           >
                             {node.is_active === false ? "Включить" : "Выключить"}
                           </button>
+                          )}
+                          {isAdmin && (
                           <button
                             onClick={() => handleToggleNodeHistory(node)}
                             disabled={isLoadingHistory}
@@ -1850,6 +1816,7 @@ export default function EmployeeStudioPage() {
                             <History className="h-3.5 w-3.5" />
                             <span>{nodeHistory ? "Скрыть историю" : "История"}</span>
                           </button>
+                          )}
                           <button
                             onClick={() => handleDeleteNode(node)}
                             className="p-2 rounded-xl text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
@@ -1860,7 +1827,7 @@ export default function EmployeeStudioPage() {
                         </div>
                       </div>
 
-                      {nodeHistory && (
+                      {isAdmin && nodeHistory && (
                         <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800 overflow-hidden">
                           {nodeHistory.length === 0 && (
                             <div className="p-3 text-xs text-zinc-500">История пока пуста</div>
@@ -1900,7 +1867,7 @@ export default function EmployeeStudioPage() {
                         </div>
                       )}
 
-                      {node.high_confidence_triggers && node.high_confidence_triggers.length > 0 && (
+                      {isAdmin && node.high_confidence_triggers && node.high_confidence_triggers.length > 0 && (
                         <div>
                           <div className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
                             Триггеры автоматической подгрузки:
@@ -1981,6 +1948,15 @@ export default function EmployeeStudioPage() {
                       <div className="bg-zinc-50 dark:bg-zinc-950/50 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800 text-xs">
                         <MarkdownView content={node.content} />
                       </div>
+
+                      {!isAdmin && (
+                        <KbNodeActionsPanel
+                          nodeId={node.id}
+                          actions={nodeActions}
+                          onChanged={async () => { await loadNodeActions(node.id); }}
+                          showToast={showToast}
+                        />
+                      )}
                     </div>
                   );
                 })()
@@ -1998,7 +1974,7 @@ export default function EmployeeStudioPage() {
       {/* ==================================================================== */}
       {/* TAB: SEMANTIC SKILL CARDS & INTEGRATIONS                             */}
       {/* ==================================================================== */}
-      {activeTab === "skills" && (
+      {isAdmin && activeTab === "skills" && (
         <div className="space-y-6">
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">

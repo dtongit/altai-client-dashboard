@@ -96,49 +96,39 @@ export default function SettingsPage() {
     loadStatus();
   }, []);
 
-  const crmType = (statusData?.crm?.type || tenant?.crm_type || "excel").toLowerCase();
-  const isCrmConfigured = statusData?.crm?.configured ?? true;
+  const crmType = (statusData?.crm?.type || tenant?.crm_type || "").toLowerCase();
+  const isCrmConfigured = statusData?.crm?.configured ?? false;
 
-  let crmBadgeText = "CRM не настроена";
+  const CRM_NAMES: Record<string, string> = {
+    amocrm: "amoCRM",
+    bitrix24: "Битрикс24",
+    tg_topic: "Telegram-топик",
+  };
+  const crmName = CRM_NAMES[crmType] || crmType.toUpperCase();
+
+  let crmBadgeText = "CRM не подключена";
   let crmBadgeStyle =
     "bg-zinc-100 text-zinc-600 border border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700";
 
   if (isCrmConfigured) {
-    if (crmType === "excel") {
-      crmBadgeText = "Excel (Яндекс Диск) подключен";
-      crmBadgeStyle =
-        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30";
-    } else if (crmType === "amocrm") {
-      crmBadgeText = "amoCRM v4 подключена";
-      crmBadgeStyle =
-        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30";
-    } else if (crmType === "bitrix24") {
-      crmBadgeText = "Битрикс24 подключен";
-      crmBadgeStyle =
-        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30";
-    } else if (crmType === "tg_topic") {
-      crmBadgeText = "Telegram-топик подключен";
-      crmBadgeStyle =
-        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30";
-    } else {
-      crmBadgeText = `${crmType.toUpperCase()} подключена`;
-      crmBadgeStyle =
-        "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30";
-    }
+    crmBadgeText =
+      crmType === "amocrm"
+        ? "amoCRM v4 подключена"
+        : crmType === "bitrix24"
+        ? "Битрикс24 подключен"
+        : crmType === "tg_topic"
+        ? "Telegram-топик подключен"
+        : `${crmName} подключена`;
+    crmBadgeStyle =
+      "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30";
   }
 
   const getCrmUrl = () => {
+    if (!isCrmConfigured) return null;
     if (statusData?.crm?.url) return statusData.crm.url;
-    if (crmType === "excel") {
-      return "https://disk.yandex.ru/client/disk/CRM";
-    }
-    if (crmType === "amocrm") {
-      return "https://www.amocrm.ru";
-    }
-    if (crmType === "bitrix24") {
-      return "https://www.bitrix24.ru";
-    }
-    return "https://disk.yandex.ru/client/disk";
+    if (crmType === "amocrm") return "https://www.amocrm.ru";
+    if (crmType === "bitrix24") return "https://www.bitrix24.ru";
+    return null;
   };
 
   const crmUrl = safeHttpUrl(getCrmUrl());
@@ -285,38 +275,28 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-700 dark:text-zinc-300 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-zinc-500">Тип CRM:</span>
-              <span className="font-semibold uppercase text-zinc-900 dark:text-white">
-                {crmType === "excel" ? "Excel (файл на Яндекс Диске)" : crmType.toUpperCase()}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-zinc-500">Режим создания лида:</span>
-              <span className="text-emerald-700 dark:text-emerald-400 font-medium">
-                {crmType === "excel"
-                  ? "Автоматическая запись строк в онлайн-таблицу .xlsx"
-                  : "Complex Lead с передачей контакта и суммы"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-zinc-500">Передача истории переписки:</span>
-              <span className="text-zinc-700 dark:text-zinc-300">
-                {crmType === "excel"
-                  ? "Фиксация колонок: BANT-потребность, телефон, бюджет, резюме диалога"
-                  : "Автоматически в примечание сделки"}
-              </span>
-            </div>
-            {crmType === "excel" && (
-              <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60 dark:border-zinc-800/60">
-                <span className="text-zinc-500">Хранилище таблицы:</span>
-                <span className="text-zinc-700 dark:text-zinc-300">
-                  Яндекс Диск (папка /CRM/leads.xlsx)
+          {isCrmConfigured ? (
+            <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-700 dark:text-zinc-300 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Тип CRM:</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">{crmName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Режим создания лида:</span>
+                <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+                  Complex Lead с передачей контакта и суммы
                 </span>
               </div>
-            )}
-          </div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Передача истории переписки:</span>
+                <span className="text-zinc-700 dark:text-zinc-300">Автоматически в примечание сделки</span>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-400">
+              CRM не подключена. Чтобы подключить amoCRM или Битрикс24, напишите в техподдержку.
+            </div>
+          )}
         </div>
         </div>
       </div>
