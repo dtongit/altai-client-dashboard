@@ -65,6 +65,9 @@ export function ConversationHeader({
 
   const phone = detail.client?.phone || detail.qualification?.client_phone;
   const isPaused = detail.is_paused;
+  // Bitrix24 Open Lines: Bitrix decides who holds the chat (Vera rejoins only in a new session), so the dashboard offers
+  // no take / return actions there.
+  const bitrixManaged = detail.channel === "bitrix24_openline";
   const canReset = detail.permissions?.can_reset ?? user?.is_admin ?? false;
 
   const handleTake = async () => {
@@ -108,7 +111,9 @@ export function ConversationHeader({
   // Phone: the header keeps only the name, the channel and ⋯; the take / return button and the client panel move
   // into the ⋯ sheet.
   const phoneItems: MenuItem[] = [
-    ...(!isPaused
+    ...(bitrixManaged
+      ? []
+      : !isPaused
       ? onTake
         ? [{ label: "Взять себе", icon: <UserRound className="h-4 w-4" />, onClick: handleTake, mobileOnly: true }]
         : []
@@ -121,7 +126,7 @@ export function ConversationHeader({
   const menuItems: MenuItem[] = isLinkPage
     ? [
         ...phoneItems,
-        ...(isPaused
+        ...(isPaused && !bitrixManaged
           ? [
               {
                 label: "Вернуть и ответить сразу",
@@ -140,7 +145,7 @@ export function ConversationHeader({
       ]
     : [
         ...phoneItems,
-        ...(isPaused
+        ...(isPaused && !bitrixManaged
           ? [
               {
                 label: "Вернуть и ответить сразу",
@@ -256,7 +261,9 @@ export function ConversationHeader({
           {/* Take / Return and the client panel: desktop only, on phones they live in the ⋯ sheet */}
           <div className="hidden md:flex items-center gap-2">
           {/* Primary Take / Return action button (also on the link page) */}
-          {!isPaused ? (
+          {bitrixManaged ? (
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Чатом управляет Битрикс24</span>
+          ) : !isPaused ? (
             onTake && (
               <Button
                 variant="primary"
