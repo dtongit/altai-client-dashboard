@@ -167,9 +167,7 @@ export default function PartnerHome() {
       </div>
 
       {empty ? (
-        <Card className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/partner/vera-smile.webp" alt="Вера" className="h-40 w-auto shrink-0 object-contain" />
+        <Card>
           <div>
             <div className="pp-head text-sm mb-2">Пока пусто</div>
             <p className="text-sm text-[var(--pp-muted)] leading-relaxed">
@@ -210,9 +208,7 @@ export default function PartnerHome() {
       </Card>
 
       <Link href={ph("/partner/demo")} className="block">
-        <Card className="flex items-center gap-4 transition hover:border-[var(--pp-accent)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/partner/vera-laptop-side.webp" alt="Вера за ноутбуком" className="h-20 w-20 shrink-0 rounded-2xl object-cover" />
+        <Card className="transition hover:border-[var(--pp-accent)]">
           <div className="min-w-0">
             <Label>Демо для клиента</Label>
             <p className="text-sm">Соберите Веру на сайте клиента с помощью Claude Code, Codex или Antigravity и отправьте ему ссылку.</p>

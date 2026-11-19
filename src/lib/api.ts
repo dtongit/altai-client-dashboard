@@ -1220,6 +1220,14 @@ export const api = {
   async partnerForecast(): Promise<PartnerForecast> {
     return partnerRequest<PartnerForecast>("/forecast");
   },
+  /** The partner's personal demo key (`dmk_...`, demo scope `own`); created on first read if missing. */
+  async partnerDemoKey(): Promise<{ ok: boolean; key: string }> {
+    return partnerRequest<{ ok: boolean; key: string }>("/demo-key");
+  },
+  /** Revokes the current demo key and returns a new one. */
+  async partnerRegenerateDemoKey(): Promise<{ ok: boolean; key: string }> {
+    return partnerRequest<{ ok: boolean; key: string }>("/demo-key/regenerate", { method: "POST" });
+  },
 
   // ==========================================================================
   // Admin: partners (/api/v1/admin/partners/*)
