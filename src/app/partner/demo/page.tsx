@@ -12,7 +12,7 @@ const TELEGRAM = "https://t.me/altaioptima";
 const ENV = /stage-api\./.test(API_BASE_URL) ? "stage" : "prod";
 
 const AGENTS = [
-  { name: "Claude Code", href: "https://claude.com/claude-code", note: "в приложении Claude откройте вкладку Code, не обычный чат" },
+  { name: "Claude Code", href: "https://claude.com/claude-code", note: "в приложении Claude откройте вкладку Code и выберите папку на своём компьютере (Local, не облако); обычный чат и Cowork не подойдут" },
   { name: "Codex", href: "https://openai.com/codex", note: "приложение Codex или Codex CLI, не обычный чат ChatGPT" },
   { name: "Antigravity", href: "https://antigravity.google", note: "агент в редакторе Antigravity" },
 ];
@@ -65,6 +65,7 @@ const mask = (key: string) => (key.length > 12 ? `${key.slice(0, 8)}${"•".repe
 function teachText(key: string) {
   return [
     "Научись собирать демо Веры (ИИ-менеджера ALTAI Optima) для моих клиентов.",
+    "0. Это работает только в агенте с терминалом на моём компьютере. Если ты в облачной песочнице или в чате без терминала, ничего не устанавливай и не сохраняй ключ: сразу скажи мне, где открыть агента (раздел «First: check where you run» в инструкции).",
     `1. Прочитай инструкцию и выполни раздел «Install»: ${SKILL_START}`,
     `2. Мой личный ключ демо: ${key} (окружение: ${ENV}). Сохрани его, как сказано в инструкции, и больше нигде не показывай.`,
     "3. Перед каждым новым демо обновляй скил до последней версии (раздел «Sync»).",
