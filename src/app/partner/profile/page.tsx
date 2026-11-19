@@ -140,9 +140,64 @@ export default function PartnerProfilePage() {
         )}
       </Card>
 
+      <PasswordCard />
+
       <button type="button" onClick={logout} className={`${btnGhost} w-full sm:w-auto`}>
         Выйти из кабинета
       </button>
     </div>
+  );
+}
+
+const MIN_PASSWORD = 8;
+
+/** Own password change (`POST /auth/change-password`): other sessions end, this one gets a fresh cookie. */
+function PasswordCard() {
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  const tooShort = next.length > 0 && next.length < MIN_PASSWORD;
+  const canSave = current.length > 0 && next.length >= MIN_PASSWORD && !saving;
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSave) return;
+    setSaving(true);
+    setError(null);
+    setDone(false);
+    try {
+      await api.changePassword(current, next);
+      setCurrent("");
+      setNext("");
+      setDone(true);
+    } catch (err) {
+      setError((err as { detail?: string })?.detail || "Не удалось сменить пароль. Попробуйте ещё раз.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={onSubmit}>
+      <Card className="space-y-3">
+        <h2 className="pp-head text-sm">Пароль</h2>
+        <label className="block">
+          <Label>Текущий пароль</Label>
+          <input type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} className={inputCls} />
+        </label>
+        <label className="block">
+          <Label>Новый пароль, не короче {MIN_PASSWORD} символов</Label>
+          <input type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} className={inputCls} />
+        </label>
+        {tooShort && <p className="text-xs text-red-500">Слишком короткий пароль.</p>}
+        {error && <p className="text-xs text-red-500">{error}</p>}
+        {done && <p className="text-xs text-[var(--pp-accent)]">Пароль изменён. На других устройствах нужно войти заново.</p>}
+        <button type="submit" disabled={!canSave} className={btnPrimary}>
+          {saving ? "Сохраняем..." : "Сменить пароль"}
+        </button>
+      </Card>
+    </form>
   );
 }
