@@ -101,6 +101,18 @@ export function Navbar() {
               </Link>
             )}
 
+            {/* Partner portal (an account with a partner profile, also with companies or as superadmin) */}
+            {hasPartnerProfile && (
+              <a
+                href={partnerPortalUrl()}
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border-zinc-200 dark:border-zinc-800"
+                title="Кабинет партнёра"
+              >
+                <Handshake className="h-3.5 w-3.5" />
+                <span>КАБИНЕТ ПАРТНЁРА</span>
+              </a>
+            )}
+
             {/* Support Link */}
             <a
               href="https://t.me/altaioptima"
@@ -128,16 +140,6 @@ export function Navbar() {
                     {role ? ROLE_LABELS[role] : ""}
                   </div>
                 </Link>
-                {hasPartnerProfile && (
-                  <a
-                    href={partnerPortalUrl()}
-                    className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-900 transition-colors"
-                    title="Кабинет партнёра"
-                    aria-label="Кабинет партнёра"
-                  >
-                    <Handshake className="h-4 w-4" />
-                  </a>
-                )}
                 <button
                   onClick={logout}
                   className="p-2 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"

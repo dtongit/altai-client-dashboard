@@ -2,12 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, ChevronDown, Database, Handshake, HelpCircle, LogOut, Power } from "lucide-react";
+import { AlertCircle, ChevronDown, Database, HelpCircle, LogOut, Power } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { api } from "@/lib/api";
 import { ROLE_LABELS, formatDateTime } from "@/lib/permissions";
-import { partnerPortalUrl } from "@/lib/portal-path";
 
 /**
  * Bottom of the desktop sidebar. The site header shows only on the AI staff list (`/`), so on every other page this
@@ -15,7 +14,7 @@ import { partnerPortalUrl } from "@/lib/portal-path";
  * the superadmin console and logout. Phones have the same in the «Ещё» sheet.
  */
 export function SidebarFooter() {
-  const { user, tenant, availableTenants, switchTenant, toggleActive, logout, role, can, hasEmployee, hasPartnerProfile } = useAuth();
+  const { user, tenant, availableTenants, switchTenant, toggleActive, logout, role, can, hasEmployee } = useAuth();
   const [pausedBy, setPausedBy] = useState<string | null>(null);
   const [isToggling, setIsToggling] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -132,16 +131,6 @@ export function SidebarFooter() {
           >
             <HelpCircle className="h-4 w-4" />
           </a>
-          {hasPartnerProfile && (
-            <a
-              href={partnerPortalUrl()}
-              className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-900 transition-colors"
-              title="Кабинет партнёра"
-              aria-label="Кабинет партнёра"
-            >
-              <Handshake className="h-4 w-4" />
-            </a>
-          )}
           {user.is_admin && (
             <Link
               href="/admin"
