@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { User, Tenant } from "@/types";
-import { api, clearSelectedTenant, getStoredAuth, setAuthToken, setSelectedTenant } from "@/lib/api";
+import { api, clearSelectedTenant, clearStoredAuth, dropLegacyToken, getStoredAuth, legacyToken, setSelectedTenant } from "@/lib/api";
 import { deriveCaps, employeeHome, globalRole, homePath as landingPath, RoleId } from "@/lib/permissions";
 
 interface AvailableTenant {
@@ -15,7 +15,6 @@ interface AuthContextType {
   user: User | null;
   tenant: Tenant | null;
   availableTenants: AvailableTenant[];
-  token: string | null;
   loading: boolean;
   login: (username: string, password: string, tenantId?: string) => Promise<boolean>;
   logout: () => void;
@@ -52,7 +51,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [availableTenants, setAvailableTenants] = useState<AvailableTenant[]>([]);
-  const [token, setTokenState] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [permissions, setPermissions] = useState<string[]>([]);
   const [allowedEmployees, setAllowedEmployees] = useState<string[]>([]);
@@ -109,44 +107,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const { token: savedToken } = getStoredAuth();
-      if (savedToken) {
-        setTokenState(savedToken);
+      // The session is the API-host cookie (#440): /auth/me decides whether we are signed in.
+      const signedOut = () => {
+        clearStoredAuth();
+        setUser(null);
+        setTenant(null);
+      };
+      const me = async () => {
         try {
-          let res;
-          try {
-            res = await api.getMe();
-          } catch (e) {
-            // The remembered company may no longer be open to this account (membership removed): forget it and
-            // let the backend pick the default company instead of logging the user out.
-            if (!getStoredAuth().tenantId) throw e;
-            clearSelectedTenant();
-            res = await api.getMe();
+          return await api.getMe();
+        } catch (e: any) {
+          // A pre-#440 token in localStorage that is no longer valid must not hide a valid cookie.
+          if (e?.status === 401 && legacyToken()) {
+            dropLegacyToken();
+            return await api.getMe();
           }
-          if (res.ok && res.tenant) setSelectedTenant(res.tenant.id);
-          if (res.ok && res.user && res.tenant) {
-            setUser(res.user);
-            setTenant(res.tenant);
-            applyPayload(res);
-            if (res.available_tenants) {
-              setAvailableTenants(res.available_tenants);
-            }
-          } else if (res.ok && res.user && (await adoptPartner(res.user))) {
-            // Partner account: no tenant, only a partner profile.
-          } else {
-            setAuthToken(null, null);
-            setUser(null);
-            setTenant(null);
-            setTokenState(null);
+          throw e;
+        }
+      };
+      try {
+        let res;
+        try {
+          res = await me();
+        } catch (e: any) {
+          // The remembered company may no longer be open to this account (membership removed): forget it and
+          // let the backend pick the default company instead of logging the user out.
+          if (e?.status === 401 || !getStoredAuth().tenantId) throw e;
+          clearSelectedTenant();
+          res = await me();
+        }
+        // /auth/me answered, so the cookie session is set: the old localStorage token is no longer needed.
+        dropLegacyToken();
+        if (res.ok && res.tenant) setSelectedTenant(res.tenant.id);
+        if (res.ok && res.user && res.tenant) {
+          setUser(res.user);
+          setTenant(res.tenant);
+          applyPayload(res);
+          if (res.available_tenants) {
+            setAvailableTenants(res.available_tenants);
           }
-        } catch {
-          // A partner account may have no tenant, so /auth/me can fail for it: the partner profile decides.
-          if (!(await adoptPartner(null))) {
-            setAuthToken(null, null);
-            setUser(null);
-            setTenant(null);
-            setTokenState(null);
-          }
+        } else if (res.ok && res.user && (await adoptPartner(res.user))) {
+          // Partner account: no tenant, only a partner profile.
+        } else {
+          signedOut();
+        }
+      } catch (e: any) {
+        // A partner account may have no tenant, so /auth/me can fail for it: the partner profile decides.
+        if (e?.status === 401 || !(await adoptPartner(null))) {
+          signedOut();
         }
       }
       setLoading(false);
@@ -162,14 +170,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTenant(res.tenant);
         setPartnerOnly(false);
         applyPayload(res);
-        setTokenState(res.token);
         if (res.available_tenants) {
           setAvailableTenants(res.available_tenants);
         }
         return true;
       }
       if (res.ok && res.user && !res.tenant) {
-        setTokenState(res.token);
         return await adoptPartner(res.user);
       }
       return false;
@@ -179,14 +185,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
-    // Revoke the session on the server first (it needs the token), then clear local state either way.
+    // Revoke the session on the server first (it clears the cookie for every host), then local state either way.
     void api.logout().finally(() => {
-      setAuthToken(null, null);
+      clearStoredAuth();
       setUser(null);
       setTenant(null);
       setAvailableTenants([]);
       setPartnerOnly(false);
-      setTokenState(null);
       if (typeof window !== "undefined") {
         window.location.href = "/login";
       }
@@ -244,7 +249,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         tenant,
         availableTenants,
-        token,
         loading,
         login,
         logout,

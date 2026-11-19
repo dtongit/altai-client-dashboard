@@ -27,8 +27,9 @@ NEXT_PUBLIC_API_URL="http://localhost:8000/api/v1/client" npm run dev
 
 ## Structure
 - `src/lib/api.ts` — the only HTTP client. Base URL from `NEXT_PUBLIC_API_URL`; derives `/api/v1/admin`.
-  Token + tenant kept in memory and `localStorage` (`altai_token`, `altai_tenant`); sends
-  `Authorization: Bearer` and `X-Tenant-ID`.
+  Cookie session (#440): every call uses `credentials: 'include'` and `sessionHeaders()` (`X-Requested-With: altai`,
+  `X-Tenant-ID`); no token in the page. Only the company choice is in `localStorage` (`altai_tenant`). An old
+  `altai_token` is sent once as a bearer to `/auth/me` (which sets the cookie) and then deleted.
 - `src/lib/auth-context.tsx` (`useAuth`: `role` = global flag only `superadmin|demo_manager|null`, `permissions`, `allowedEmployees`, `can(cap)`, `hasEmployee(id)`, `availableTenants`, `switchTenant`; permissions and AI-employee access are per company (epic #324 memberships); if `/auth/me` has no `permissions` (old backend) `legacyCaps` in `lib/permissions.ts` is the fallback), `src/lib/permissions.ts` (cap ids, Russian labels, AI employee list, `ROLE_LABELS` only «Администратор»/«Демо-менеджер»; no role presets any more), `src/lib/toast-context.tsx` (`useToast`), `src/lib/theme-context.tsx`.
 - `src/types/index.ts` — keep in sync with Rust DTOs in `altai-core/src/models/mod.rs` and handler JSON in
   `altai-core/src/api/*.rs`.
@@ -50,7 +51,5 @@ NEXT_PUBLIC_API_URL="http://localhost:8000/api/v1/client" npm run dev
 
 ## Known issues (review 2026-10-31)
 - Dead `/catalog/*` API calls and types were removed (2026-10-31). `/admin` create templates (`DEFAULT_TEMPLATES`) only exist for resources whose backend `crud_create` is implemented (tenants, users, prompt-modules, knowledge-nodes, tenant-secrets, tenant-employees, campaigns, openrouter-models).
-- Auth token in `localStorage` is readable by any XSS; the backend also sets an HttpOnly cookie, so one of the two is
-  redundant. Decision (#21, 2026-11-09): keep `localStorage` while there is no XSS surface.
 - Link allowlist (#21): every data-driven `href` / `window.open` goes through `safeHttpUrl` (`src/lib/safe-url.ts`, absolute http(s) only); anything else renders as plain text.
 - `/admin` is hidden client-side; the backend requires an active `is_admin` user on every `/admin/*` route (test `altai-core/src/services/admin_access_tests.rs`, #20). Resources `feedbacks`, `training-runs`, `tester-templates`, `emulation-results` are `read_only` in the CRUD schema (JSON view and delete only).

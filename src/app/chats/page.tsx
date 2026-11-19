@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { api, getStoredAuth, API_BASE_URL } from "@/lib/api";
+import { api, sessionHeaders, API_BASE_URL } from "@/lib/api";
 import type { ChatSessionItem, ChatsCounts } from "@/types";
 import { ChatList, ChatStatusTab } from "@/components/chat/ChatList";
 import { Conversation } from "@/components/chat/Conversation";
@@ -160,10 +160,7 @@ export default function ChatsPage() {
     if (!filtersReady) return;
     const unsub = subscribeLiveEvents({
       url: `${API_BASE_URL}/events`,
-      headers: () => {
-        const { token, tenantId } = getStoredAuth();
-        return { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(tenantId ? { "X-Tenant-ID": tenantId } : {}) };
-      },
+      headers: sessionHeaders,
       onChatUpdated: (sid) => {
         loadChatsRef.current("silent");
         if (sid === selectedRef.current) window.dispatchEvent(new CustomEvent("chat-updated", { detail: sid }));

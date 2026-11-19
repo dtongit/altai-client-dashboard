@@ -82,47 +82,64 @@ const API_BASE_URL = rawApiUrl.replace(
 
 const ADMIN_API_BASE_URL = API_BASE_URL.replace(/\/api\/v1\/client\/?$/, "/api/v1/admin");
 
-// In-memory token storage (also mirrored in localStorage in browser)
-let authToken: string | null = null;
+// Session (#440): the API host sets an HttpOnly cookie at login, and every call goes out with
+// `credentials: "include"`, so one login covers every dashboard host (my., partner. and the stage twins). No token is
+// kept in the page. Only the chosen company stays in `localStorage` (not a secret).
+// Rollout: a tab signed in before #440 still has `altai_token` in `localStorage`. It is sent once as a bearer to
+// `/auth/me`, which answers with the cookie; then it is deleted (`dropLegacyToken`).
+const LEGACY_TOKEN_KEY = "altai_token";
+const TENANT_KEY = "altai_tenant";
 let currentTenantId: string | null = null;
 
-export function setAuthToken(token: string | null, tenantId?: string | null) {
-  authToken = token;
-  if (tenantId) currentTenantId = tenantId;
-  if (typeof window !== "undefined") {
-    if (token) {
-      localStorage.setItem("altai_token", token);
-      if (tenantId) localStorage.setItem("altai_tenant", tenantId);
-    } else {
-      localStorage.removeItem("altai_token");
-      localStorage.removeItem("altai_tenant");
-    }
+function storage(): Storage | null {
+  try {
+    return typeof window !== "undefined" ? window.localStorage : null;
+  } catch {
+    return null;
   }
+}
+
+export function legacyToken(): string | null {
+  return storage()?.getItem(LEGACY_TOKEN_KEY) ?? null;
+}
+
+/** Forget the pre-#440 `localStorage` token once the cookie session has taken over. */
+export function dropLegacyToken() {
+  storage()?.removeItem(LEGACY_TOKEN_KEY);
+}
+
+/** Signed out: forget the company choice and any old token. */
+export function clearStoredAuth() {
+  currentTenantId = null;
+  storage()?.removeItem(LEGACY_TOKEN_KEY);
+  storage()?.removeItem(TENANT_KEY);
 }
 
 export function setSelectedTenant(tenantId: string) {
   currentTenantId = tenantId;
-  if (typeof window !== "undefined") {
-    localStorage.setItem("altai_tenant", tenantId);
-  }
+  storage()?.setItem(TENANT_KEY, tenantId);
 }
 
 export function clearSelectedTenant() {
   currentTenantId = null;
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("altai_tenant");
-  }
+  storage()?.removeItem(TENANT_KEY);
 }
 
 export function getStoredAuth() {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("altai_token");
-    const tenantId = localStorage.getItem("altai_tenant");
-    if (token) authToken = token;
-    if (tenantId) currentTenantId = tenantId;
-    return { token, tenantId };
-  }
-  return { token: authToken, tenantId: currentTenantId };
+  const tenantId = storage()?.getItem(TENANT_KEY) ?? currentTenantId;
+  if (tenantId) currentTenantId = tenantId;
+  return { tenantId };
+}
+
+/** Headers every API call carries: the company, the CSRF marker the API wants on cookie-session writes, and the old
+ * bearer while a pre-#440 tab migrates. Use with `credentials: "include"`. */
+export function sessionHeaders(): Record<string, string> {
+  const { tenantId } = getStoredAuth();
+  const headers: Record<string, string> = { "X-Requested-With": "altai" };
+  const legacy = legacyToken();
+  if (legacy) headers["Authorization"] = `Bearer ${legacy}`;
+  if (tenantId) headers["X-Tenant-ID"] = tenantId;
+  return headers;
 }
 
 /** Partner portal API (`/api/v1/partner`), same host as the client API. */
@@ -159,9 +176,8 @@ async function request<T>(
   options: RequestInit = {},
   baseUrl: string = API_BASE_URL
 ): Promise<T> {
-  const { token, tenantId } = getStoredAuth();
-
   const headers: Record<string, string> = {
+    ...sessionHeaders(),
     ...(options.headers as Record<string, string>),
   };
 
@@ -169,16 +185,10 @@ async function request<T>(
     headers["Content-Type"] = headers["Content-Type"] || "application/json";
   }
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  if (tenantId) {
-    headers["X-Tenant-ID"] = tenantId;
-  }
-
   const res = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
     headers,
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -209,7 +219,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ username_or_email, password, tenant_id }),
     });
-    setAuthToken(res.token, res.tenant?.id ?? null);
+    dropLegacyToken();
+    if (res.tenant?.id) setSelectedTenant(res.tenant.id);
     return res;
   },
 
@@ -219,7 +230,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ current_password, new_password }),
     });
-    if (res.token) setAuthToken(res.token, currentTenantId);
+    // The fresh session comes back as the cookie too.
     return res;
   },
 
@@ -567,8 +578,7 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(data),
     });
-    // Own password change revokes every session, this one too; the backend returns a fresh token (#160).
-    if (res.token) setAuthToken(res.token, currentTenantId);
+    // Own password change revokes every session, this one too; the backend sets a fresh session cookie (#160).
     return res;
   },
 
@@ -978,10 +988,7 @@ export const api = {
   ): Promise<KbMediaItem & { suggested?: boolean }> {
     const o = typeof opts === "string" ? { caption: opts } : opts || {};
     const caption = o.caption;
-    const { token, tenantId } = getStoredAuth();
-    const headers: Record<string, string> = {};
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-    if (tenantId) headers["X-Tenant-ID"] = tenantId;
+    const headers = sessionHeaders();
     const form = new FormData();
     form.append("file", file);
     if (caption) form.append("caption", caption);
@@ -995,6 +1002,7 @@ export const api = {
       method: "POST",
       headers, // no Content-Type: the browser sets the multipart boundary
       body: form,
+      credentials: "include",
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: res.statusText }));
@@ -1293,14 +1301,14 @@ export const api = {
   async adminCancelInvoice(id: string) {
     return adminRequest<unknown>(`/billing/invoices/${encodeURIComponent(id)}/cancel`, { method: "POST" });
   },
-  /** The printable счёт is HTML behind the session header: fetch it with the token and show it from a blob URL. */
+  /** The printable счёт is HTML behind the session: fetch it with the cookie and show it from a blob URL. */
   async adminOpenInvoiceHtml(id: string): Promise<void> {
     // Open the tab synchronously (popup blockers), fill it after the fetch.
     const win = window.open("", "_blank");
     try {
-      const { token } = getStoredAuth();
       const res = await fetch(`${ADMIN_API_BASE_URL}/billing/invoices/${encodeURIComponent(id)}/html`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: sessionHeaders(),
+        credentials: "include",
       });
       if (!res.ok) throw new Error(`Ошибка сервера (${res.status})`);
       const html = await res.text();

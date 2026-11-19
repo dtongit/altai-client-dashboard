@@ -42,6 +42,7 @@ export function subscribeLiveEvents(opts: {
     try {
       const response = await fetch(opts.url, {
         headers: opts.headers(),
+        credentials: "include",
         signal: abortController.signal,
       });
 
