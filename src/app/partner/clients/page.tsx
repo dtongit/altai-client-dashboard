@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Search } from "lucide-react";
 import { api } from "@/lib/api";
+import { usePortalHref } from "@/lib/portal-path";
 import {
   CLIENT_STATUS_LABELS,
   DEAL_TYPE_LABELS,
@@ -17,9 +18,10 @@ import { Card, Chip, Empty, ErrorBox, Label, Money, PageTitle, Spinner, clientSt
 
 function ClientCard({ tenantId }: { tenantId: string }) {
   const { data, error, loading, reload } = useLoad(() => api.partnerClient(tenantId), [tenantId]);
+  const ph = usePortalHref();
   return (
     <div className="space-y-4">
-      <Link href="/partner/clients" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--pp-accent)]">
+      <Link href={ph("/partner/clients")} className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--pp-accent)]">
         <ArrowLeft className="h-4 w-4" />
         Все клиенты
       </Link>
@@ -88,6 +90,7 @@ function ClientCard({ tenantId }: { tenantId: string }) {
 }
 
 function ClientList() {
+  const ph = usePortalHref();
   const { data, error, loading, reload } = useLoad(() => api.partnerClients());
   const [filter, setFilter] = useState<string>("all");
   const [q, setQ] = useState("");
@@ -150,7 +153,7 @@ function ClientList() {
         {rows.map((c) => (
           <Link
             key={c.tenant_id}
-            href={`/partner/clients/?id=${encodeURIComponent(c.tenant_id)}`}
+            href={ph(`/partner/clients/?id=${encodeURIComponent(c.tenant_id)}`)}
             className="block rounded-2xl border border-[var(--pp-line)] bg-[var(--pp-card)] p-4 hover:border-[var(--pp-accent)] transition"
           >
             <div className="flex items-start justify-between gap-3">

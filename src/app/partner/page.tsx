@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Check, Copy } from "lucide-react";
 import { api } from "@/lib/api";
+import { usePortalHref } from "@/lib/portal-path";
 import { PartnerEvent, PartnerChartPoint } from "@/types";
 import { formatDayMonth, formatRub, shortMonth, PAYMENT_KIND_LABELS } from "@/lib/partner-format";
 import { Card, CountUp, ErrorBox, Label, Money, Spinner, btnPrimary, useLoad, usePartner } from "@/components/partner/ui";
@@ -95,6 +96,7 @@ function eventText(e: PartnerEvent): string {
 
 export default function PartnerHome() {
   const { me } = usePartner();
+  const ph = usePortalHref();
   const { data, error, loading, reload } = useLoad(() => api.partnerOverview());
   const goal = me.profile.goal_kop ?? 0;
 
@@ -107,8 +109,8 @@ export default function PartnerHome() {
 
   let hint: React.ReactNode;
   if (empty) hint = "Передайте ваш код тем, кому нужна Вера: мы подключим клиента к вам, и он появится здесь.";
-  else if (goal <= 0) hint = <>Задайте цель, и мы посчитаем, сколько клиентов вам нужно. <Link href="/partner/goal" className="font-semibold text-[var(--pp-accent)]">Моя цель</Link></>;
-  else if (pct < 100) hint = <>До цели осталось {formatRub(goal - data.monthly_income_kop)} в месяц. <Link href="/partner/goal" className="font-semibold text-[var(--pp-accent)]">Посчитать, сколько клиентов нужно</Link></>;
+  else if (goal <= 0) hint = <>Задайте цель, и мы посчитаем, сколько клиентов вам нужно. <Link href={ph("/partner/goal")} className="font-semibold text-[var(--pp-accent)]">Моя цель</Link></>;
+  else if (pct < 100) hint = <>До цели осталось {formatRub(goal - data.monthly_income_kop)} в месяц. <Link href={ph("/partner/goal")} className="font-semibold text-[var(--pp-accent)]">Посчитать, сколько клиентов нужно</Link></>;
   else hint = "Цель достигнута. Можно поставить следующую.";
 
   return (
@@ -207,7 +209,7 @@ export default function PartnerHome() {
         <p className="text-sm">{hint}</p>
       </Card>
 
-      <Link href="/partner/demo" className="block">
+      <Link href={ph("/partner/demo")} className="block">
         <Card className="flex items-center gap-4 transition hover:border-[var(--pp-accent)]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/partner/vera-laptop-side.webp" alt="Вера за ноутбуком" className="h-20 w-20 shrink-0 rounded-2xl object-cover" />

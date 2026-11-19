@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { PartnerMe } from "@/types";
 import { PartnerContext, Spinner } from "@/components/partner/ui";
+import { portalRoute, usePortalHref } from "@/lib/portal-path";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 // The landing's text font; headings use Benzin (globals.css).
@@ -39,7 +40,9 @@ function dashboardHomeUrl(): string {
 
 export default function PartnerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/partner";
-  const clean = pathname.replace(/\/+$/, "") || "/partner";
+  // The route in the /partner/... form, also when the partner host serves it at "/goal" (lib/portal-path.ts).
+  const clean = portalRoute(pathname) ?? "/partner";
+  const ph = usePortalHref();
   const { user, loading, logout } = useAuth();
   const [me, setMe] = useState<PartnerMe | null>(null);
   const [state, setState] = useState<"loading" | "ok" | "none">("loading");
@@ -124,7 +127,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
               return (
                 <Link
                   key={n.href}
-                  href={n.href}
+                  href={ph(n.href)}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
                     on ? "bg-[var(--pp-accent)] text-white" : "text-[var(--pp-text)] hover:bg-[var(--pp-accent-soft)]"
                   }`}
@@ -153,7 +156,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
               <span className="pp-head text-[10px] text-[var(--pp-accent)] truncate">Устрой Веру на работу</span>
             </span>
             <div className="flex items-center gap-1">
-              <Link href="/partner/profile" aria-label="Профиль" className={`p-2 ${isActive("/partner/profile") ? "text-[var(--pp-accent)]" : "text-[var(--pp-muted)]"}`}>
+              <Link href={ph("/partner/profile")} aria-label="Профиль" className={`p-2 ${isActive("/partner/profile") ? "text-[var(--pp-accent)]" : "text-[var(--pp-muted)]"}`}>
                 <UserRound className="h-4 w-4" />
               </Link>
               <ThemeToggle align="right" />
@@ -173,7 +176,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
             return (
               <Link
                 key={n.href}
-                href={n.href}
+                href={ph(n.href)}
                 className={`flex flex-col items-center gap-0.5 py-2 text-[10px] font-semibold ${
                   on ? "text-[var(--pp-accent)]" : "text-[var(--pp-muted)]"
                 }`}

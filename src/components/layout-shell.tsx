@@ -7,6 +7,7 @@ import { useToast } from "@/lib/toast-context";
 import { Navbar } from "@/components/navbar";
 import { Sidebar } from "@/components/sidebar";
 import { BottomNav } from "@/components/bottom-nav";
+import { isPartnerHost, portalRoute } from "@/lib/portal-path";
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -29,29 +30,32 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   const isLoginPage = cleanPath === "/login" || cleanPath.startsWith("/login");
   const isChatLink = cleanPath === "/c" || cleanPath.startsWith("/c/");
   const isStartPage =
-    cleanPath === "/" || cleanPath === "" || cleanPath === "/index.html";
+    (cleanPath === "/" || cleanPath === "" || cleanPath === "/index.html") && !isPartnerHost();
   const isAdminPage = cleanPath.startsWith("/admin");
   // The partner portal has its own navigation and look (src/app/partner/layout.tsx): no tenant navbar or sidebar.
-  const isPartnerPage = cleanPath === "/partner" || cleanPath.startsWith("/partner/");
+  // On partner.* the portal is served at the root ("/goal", "/team"): see lib/portal-path.ts.
+  const isPartnerPage = portalRoute(cleanPath) !== null;
   const showSidebar = !isLoginPage && !isStartPage && !isAdminPage && !isChatLink && !isPartnerPage;
 
   // Page guards (roles epic #75): which capability / AI employee each section needs.
+  // Guards never apply inside the partner portal (its "/team" is not the company's team page).
+  const guardPath = isPartnerPage ? "" : cleanPath;
   const needsVera = ["/vera", "/vera-chat", "/chats", "/simulator"].some(
-    (p) => cleanPath === p || cleanPath.startsWith(p + "/")
+    (p) => guardPath === p || guardPath.startsWith(p + "/")
   );
-  const needsCap = cleanPath.startsWith("/settings")
+  const needsCap = guardPath.startsWith("/settings")
     ? "settings"
-    : cleanPath.startsWith("/knowledge")
+    : guardPath.startsWith("/knowledge")
     ? "instructions"
-    : cleanPath.startsWith("/team")
+    : guardPath.startsWith("/team")
     ? "manage_users"
     : null;
   const veraOk = hasEmployee("vera");
   // The Vera dashboard needs `dashboards`; without it the work with Vera starts in the chats (quiet redirect).
-  const isVeraDashboard = cleanPath === "/vera" || cleanPath.startsWith("/vera/");
+  const isVeraDashboard = guardPath === "/vera" || guardPath.startsWith("/vera/");
   const noDashboards = Boolean(user) && veraOk && isVeraDashboard && !can("dashboards");
   // «Тест клиентской Веры» (/simulator) is for superadmins only.
-  const needsAdmin = cleanPath === "/simulator" || cleanPath.startsWith("/simulator/");
+  const needsAdmin = guardPath === "/simulator" || guardPath.startsWith("/simulator/");
   const adminOk = Boolean(user?.is_admin);
   const denied =
     Boolean(user) && ((needsVera && !veraOk) || (needsCap !== null && !can(needsCap)) || (needsAdmin && !adminOk) || noDashboards);
