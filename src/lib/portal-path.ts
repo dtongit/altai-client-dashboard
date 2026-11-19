@@ -39,12 +39,13 @@ export function usePortalHref(): (href: string) => string {
 }
 
 /**
- * Where a partner lands from the dashboard: on my.* the partner host (partner.*, clean paths), elsewhere (stage,
- * localhost, previews) the local /partner section.
+ * Where a partner lands from the dashboard: on my.* / stage.* the partner host (partner.* / stage-partner.*, clean
+ * paths), elsewhere (localhost, previews) the local /partner section. Same mapping as functions/_middleware.js.
  */
 export function partnerPortalUrl(): string {
   if (typeof window === "undefined") return "/partner";
   const { protocol, hostname, port } = window.location;
-  if (!/^my\./.test(hostname)) return "/partner";
-  return `${protocol}//${hostname.replace(/^my\./, "partner.")}${port ? `:${port}` : ""}/`;
+  const m = /^(my|stage)\.(.+)$/.exec(hostname);
+  if (!m) return "/partner";
+  return `${protocol}//${m[1] === "stage" ? "stage-partner" : "partner"}.${m[2]}${port ? `:${port}` : ""}/`;
 }
