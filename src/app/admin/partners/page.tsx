@@ -39,22 +39,28 @@ function prevPeriod(): string {
 
 function CreateModal({ onClose, onDone, toast }: { onClose: () => void; onDone: () => void; toast: ReturnType<typeof useToastLocal> }) {
   const [f, setF] = useState({ username: "", email: "", password: "", display_name: "", inviter_ref_code: "", default_deal_type: "rep" as PartnerDealType, contact: "" });
+  // "new": a separate partner account; "existing": a partner profile for an account that already exists (it keeps
+  // its companies and password).
+  const [mode, setMode] = useState<"new" | "existing">("new");
   const [busy, setBusy] = useState(false);
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
-      await api.adminCreatePartner({
-        username: f.username.trim(),
-        email: f.email.trim(),
-        password: f.password,
+      const extra = {
         display_name: f.display_name.trim(),
         default_deal_type: f.default_deal_type,
         ...(f.inviter_ref_code.trim() ? { inviter_ref_code: f.inviter_ref_code.trim().toLowerCase() } : {}),
         ...(f.contact.trim() ? { contact: f.contact.trim() } : {}),
-      });
-      toast.show("success", "Партнёр создан");
+      };
+      if (mode === "existing") {
+        await api.adminEnableExistingPartner({ login: f.username.trim(), ...extra });
+        toast.show("success", "Аккаунт подключён к программе");
+      } else {
+        await api.adminCreatePartner({ username: f.username.trim(), email: f.email.trim(), password: f.password, ...extra });
+        toast.show("success", "Партнёр создан");
+      }
       onDone();
     } catch (err) {
       toast.fail(err);
@@ -65,10 +71,33 @@ function CreateModal({ onClose, onDone, toast }: { onClose: () => void; onDone: 
   return (
     <Modal title="Новый партнёр" onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
+        <div className="flex gap-2 text-sm">
+          {([["new", "Новый аккаунт"], ["existing", "Существующий аккаунт"]] as const).map(([m, label]) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMode(m)}
+              className={`rounded-lg border px-3 py-1.5 ${mode === m ? "border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400" : "border-zinc-200 text-zinc-600 dark:border-zinc-700 dark:text-zinc-400"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {mode === "existing" && (
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Аккаунт сохранит свои компании, права и пароль; кабинет партнёра откроется под тем же логином.
+          </p>
+        )}
         <div className="grid sm:grid-cols-2 gap-3">
-          <F label="Логин"><input required className={aInput} value={f.username} onChange={(e) => set("username", e.target.value)} /></F>
-          <F label="Email"><input required type="email" className={aInput} value={f.email} onChange={(e) => set("email", e.target.value)} /></F>
-          <F label="Пароль"><input required type="text" autoComplete="off" className={aInput} value={f.password} onChange={(e) => set("password", e.target.value)} /></F>
+          {mode === "existing" ? (
+            <F label="Логин или email"><input required className={aInput} value={f.username} onChange={(e) => set("username", e.target.value)} /></F>
+          ) : (
+            <>
+              <F label="Логин"><input required className={aInput} value={f.username} onChange={(e) => set("username", e.target.value)} /></F>
+              <F label="Email"><input required type="email" className={aInput} value={f.email} onChange={(e) => set("email", e.target.value)} /></F>
+              <F label="Пароль"><input required type="text" autoComplete="off" className={aInput} value={f.password} onChange={(e) => set("password", e.target.value)} /></F>
+            </>
+          )}
           <F label="Имя в программе"><input required className={aInput} value={f.display_name} onChange={(e) => set("display_name", e.target.value)} /></F>
           <F label="Код пригласившего" hint="Пусто: партнёр без пригласившего"><input className={aInput} value={f.inviter_ref_code} onChange={(e) => set("inviter_ref_code", e.target.value)} /></F>
           <F label="Роль по умолчанию">
@@ -79,7 +108,7 @@ function CreateModal({ onClose, onDone, toast }: { onClose: () => void; onDone: 
           </F>
         </div>
         <F label="Контакт"><input className={aInput} value={f.contact} onChange={(e) => set("contact", e.target.value)} /></F>
-        <button type="submit" disabled={busy} className={aBtn}>{busy ? "Создаём..." : "Создать"}</button>
+        <button type="submit" disabled={busy} className={aBtn}>{busy ? "Сохраняем..." : mode === "existing" ? "Подключить" : "Создать"}</button>
       </form>
     </Modal>
   );

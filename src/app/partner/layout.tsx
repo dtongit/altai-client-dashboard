@@ -19,6 +19,17 @@ const NAV = [
   { href: "/partner/profile", label: "Профиль", icon: UserRound },
 ];
 
+/** The client dashboard's start page. On partner.* / stage-partner.* the root "/" is the partner portal itself, so
+ * go to the dashboard host of the same environment (my. / stage.); the cookie session is shared (#440). */
+function dashboardHomeUrl(): string {
+  if (typeof window === "undefined") return "/";
+  const { protocol, hostname, port } = window.location;
+  const m = /^(stage-)?partner\.(.+)$/.exec(hostname);
+  if (!m) return "/";
+  const host = `${m[1] ? "stage" : "my"}.${m[2]}`;
+  return `${protocol}//${host}${port ? `:${port}` : ""}/`;
+}
+
 export default function PartnerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || "/partner";
   const clean = pathname.replace(/\/+$/, "") || "/partner";
@@ -57,9 +68,9 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
           <p className="text-sm text-[var(--pp-muted)]">
             У этой учётной записи нет профиля партнёра. Если вы участник программы «Устрой Веру на работу», войдите под логином, который мы вам выдали.
           </p>
-          <Link href="/" className="inline-block text-sm font-semibold text-[var(--pp-accent)]">
+          <a href={dashboardHomeUrl()} className="inline-block text-sm font-semibold text-[var(--pp-accent)]">
             На главную
-          </Link>
+          </a>
         </div>
       </div>
     );

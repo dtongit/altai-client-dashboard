@@ -1232,6 +1232,10 @@ export const api = {
   async adminCreatePartner(body: AdminPartnerCreate) {
     return adminRequest<unknown>("/partners", { method: "POST", ...jsonBody(body) });
   },
+  /** An approved partner profile for an account that already exists (keeps its companies and password). */
+  async adminEnableExistingPartner(body: Omit<AdminPartnerCreate, "username" | "email" | "password"> & { login: string }) {
+    return adminRequest<unknown>("/partners/existing", { method: "POST", ...jsonBody(body) });
+  },
   async adminUpdatePartner(userId: string, body: AdminPartnerPatch) {
     return adminRequest<unknown>(`/partners/${encodeURIComponent(userId)}`, { method: "PATCH", ...jsonBody(body) });
   },
