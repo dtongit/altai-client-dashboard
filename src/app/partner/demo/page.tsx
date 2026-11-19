@@ -1,18 +1,21 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, Copy, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Check, ChevronDown, Copy, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { api, API_BASE_URL } from "@/lib/api";
 import { Card, ErrorBox, Label, PageTitle, Spinner, btnGhost, useLoad } from "@/components/partner/ui";
 
-/** Public S3 folder with the build-demo skill (source: private repo dtongit/altai-demo-builder, `publish.py`). */
+/** Public S3 folder with the build-demo skill (source: root repo `demo-builder/`, `publish.py`). */
 const SKILL_START = "https://altai-optima-media.s3.eu-north-1.amazonaws.com/partners/demo-builder/START.md";
 const TELEGRAM = "https://t.me/altaioptima";
 /** A demo key works only on the environment that issued it; the skill scripts take `--env stage` for stage. */
 const ENV = /stage-api\./.test(API_BASE_URL) ? "stage" : "prod";
+/** The MCP connector of the same API host (#463): `POST /mcp`, key in the `Authorization` header. */
+const MCP_URL = API_BASE_URL.replace(/\/api\/v1\/client\/?$/, "/mcp");
+const CONNECTOR_NAME = "ALTAI Optima";
 
 const AGENTS = [
-  { name: "Claude Code", href: "https://claude.com/claude-code", note: "в приложении Claude откройте вкладку Code и выберите папку на своём компьютере (Local, не облако); обычный чат и Cowork не подойдут" },
+  { name: "Claude Code", href: "https://claude.com/claude-code", note: "в приложении Claude откройте вкладку Code и выберите папку на своём компьютере (Local, не облако)" },
   { name: "Codex", href: "https://openai.com/codex", note: "приложение Codex или Codex CLI, не обычный чат ChatGPT" },
   { name: "Antigravity", href: "https://antigravity.google", note: "агент в редакторе Antigravity" },
 ];
@@ -31,19 +34,38 @@ function useCopy() {
   return { copied, copy };
 }
 
-function CopyBlock({ code, display }: { code: string; display?: string }) {
+function CopyButton({ text }: { text: string }) {
   const { copied, copy } = useCopy();
+  return (
+    <button
+      type="button"
+      onClick={() => copy(text)}
+      aria-label="Скопировать"
+      className="shrink-0 rounded-lg p-1.5 text-[var(--pp-muted)] hover:bg-[var(--pp-accent-soft)] hover:text-[var(--pp-accent)]"
+    >
+      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+    </button>
+  );
+}
+
+function CopyBlock({ code, display }: { code: string; display?: string }) {
   return (
     <div className="relative mt-2 rounded-xl border border-[var(--pp-line)] bg-[var(--pp-bg)]">
       <pre className="overflow-x-auto px-3 py-2.5 pr-11 text-[12px] leading-relaxed font-mono text-[var(--pp-text)] whitespace-pre-wrap break-words">{display ?? code}</pre>
-      <button
-        type="button"
-        onClick={() => copy(code)}
-        aria-label="Скопировать"
-        className="absolute right-1.5 top-1.5 rounded-lg p-1.5 text-[var(--pp-muted)] hover:bg-[var(--pp-accent-soft)] hover:text-[var(--pp-accent)]"
-      >
-        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-      </button>
+      <div className="absolute right-1.5 top-1.5">
+        <CopyButton text={code} />
+      </div>
+    </div>
+  );
+}
+
+/** One field of Claude's «Add custom connector» form: what to type there, with a copy button. */
+function Field({ label, value, display }: { label: string; value: string; display?: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-[var(--pp-line)] bg-[var(--pp-bg)] py-1.5 pl-3 pr-1.5">
+      <span className="w-24 shrink-0 text-xs text-[var(--pp-muted)] sm:w-28">{label}</span>
+      <code className="min-w-0 flex-1 truncate font-mono text-[12px] text-[var(--pp-text)]">{display ?? value}</code>
+      <CopyButton text={value} />
     </div>
   );
 }
@@ -73,23 +95,20 @@ function teachText(key: string) {
   ].join("\n");
 }
 
-const EXAMPLE = `Сделай демо для кофейни «Зерно»:
+const EXAMPLE = `Сделай демо Веры через ${CONNECTOR_NAME} для кофейни «Зерно»:
 - сайт: https://zerno-coffee.ru
 - меню и цены: https://zerno-coffee.ru/menu
 - доставка: https://zerno-coffee.ru/delivery
 Прайс на зерно и условия для офисов в приложенном файле.`;
 
-function KeyPanel() {
+/** The partner's demo key with show / copy / regenerate; children get the current key. */
+function useDemoKey() {
   const { data, error, loading, reload } = useLoad(() => api.partnerDemoKey());
   const [key, setKey] = useState<string | null>(null);
-  const [shown, setShown] = useState(false);
   const [busy, setBusy] = useState(false);
   const [regenError, setRegenError] = useState<string | null>(null);
-  const { copied, copy } = useCopy();
-  const current = key ?? data?.key ?? null;
-
   const regenerate = async () => {
-    if (!window.confirm("Старый ключ перестанет работать сразу. Агенту нужно будет заново вставить текст из шага 2. Продолжить?")) return;
+    if (!window.confirm("Старый ключ перестанет работать сразу. В коннекторе Claude нужно будет заменить заголовок Authorization на новый. Продолжить?")) return;
     setBusy(true);
     setRegenError(null);
     try {
@@ -100,45 +119,97 @@ function KeyPanel() {
       setBusy(false);
     }
   };
+  return { current: key ?? data?.key ?? null, error, loading, reload, busy, regenError, regenerate };
+}
 
+function ConnectorStep({ demoKey }: { demoKey: ReturnType<typeof useDemoKey> }) {
+  const [shown, setShown] = useState(false);
+  const { current, error, loading, reload, busy, regenError, regenerate } = demoKey;
   if (loading && !current) return <Spinner />;
   if (error && !current) return <ErrorBox text={error} onRetry={reload} />;
   if (!current) return null;
+  const header = `Bearer ${current}`;
   return (
     <>
-      <div>
-        <Label>Ваш ключ демо</Label>
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-xl border border-[var(--pp-line)] bg-[var(--pp-bg)] px-3 py-2 font-mono text-[12px]">
-            {shown ? current : mask(current)}
-          </code>
-          <button type="button" onClick={() => setShown((s) => !s)} aria-label={shown ? "Скрыть ключ" : "Показать ключ"} className={btnGhost + " !px-3"}>
-            {shown ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-          <button type="button" onClick={() => copy(current)} className={btnGhost + " !px-3"}>
-            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            <span className="hidden sm:inline">Скопировать</span>
-          </button>
-          <button type="button" onClick={regenerate} disabled={busy} className={btnGhost + " !px-3"}>
-            <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Новый ключ</span>
-          </button>
-        </div>
-        {regenError && <p className="mt-1 text-xs text-red-500">{regenError}</p>}
+      <p>Это делается один раз. Подойдёт любой тариф Claude: на бесплатном можно добавить один такой коннектор.</p>
+      <ol className="list-decimal space-y-2 pl-5">
+        <li>
+          Откройте Claude (сайт claude.ai или приложение на компьютере) и перейдите в <b>Customize → Connectors</b>, затем нажмите{" "}
+          <b>Add custom connector</b>. В русском интерфейсе пункты могут называться «Настроить» и «Коннекторы».
+        </li>
+        <li>
+          Заполните поля:
+          <div className="mt-2 space-y-1.5">
+            <Field label="Название" value={CONNECTOR_NAME} />
+            <Field label="URL" value={MCP_URL} />
+          </div>
+        </li>
+        <li>
+          Вход: выберите <b>No sign in</b> («Без входа»). В разделе <b>Request headers</b> добавьте заголовок:
+          <div className="mt-2 space-y-1.5">
+            <Field label="Имя" value="Authorization" />
+            <Field label="Значение" value={header} display={`Bearer ${shown ? current : mask(current)}`} />
+          </div>
+        </li>
+        <li>
+          Нажмите <b>Add</b>, затем <b>Connect</b>. В списке коннекторов появится {CONNECTOR_NAME}.
+        </li>
+      </ol>
+      <div className="flex flex-wrap items-center gap-2 pt-1">
+        <button type="button" onClick={() => setShown((s) => !s)} className={btnGhost + " !px-3"}>
+          {shown ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          <span>{shown ? "Скрыть ключ" : "Показать ключ"}</span>
+        </button>
+        <button type="button" onClick={regenerate} disabled={busy} className={btnGhost + " !px-3"}>
+          <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
+          <span>Новый ключ</span>
+        </button>
       </div>
-      <p>Вставьте этот текст в чат с агентом и отправьте:</p>
-      <CopyBlock code={teachText(current)} display={teachText(shown ? current : mask(current))} />
+      {regenError && <p className="text-xs text-red-500">{regenError}</p>}
       <p className="text-[var(--pp-muted)]">
-        В тексте ваш личный ключ: не пересылайте его другим людям. Ключ видит и меняет только ваши демо. Если ключ попал не туда, нажмите «Новый ключ»: старый сразу перестанет работать.
+        В значении заголовка ваш личный ключ демо: не пересылайте его другим людям. Ключ видит и меняет только ваши демо. Если ключ попал не туда, нажмите «Новый ключ» и замените значение в коннекторе.
       </p>
     </>
   );
 }
 
+function TerminalOption({ current }: { current: string | null }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Card>
+      <button type="button" onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between gap-3 text-left" aria-expanded={open}>
+        <span>
+          <span className="pp-head block text-[13px] sm:text-sm text-[var(--pp-text)]">Другой способ: агент с терминалом</span>
+          <span className="mt-1 block text-sm text-[var(--pp-muted)]">Claude Code, Codex или Antigravity на вашем компьютере, если вы уже работаете в них.</span>
+        </span>
+        <ChevronDown className={`h-5 w-5 shrink-0 text-[var(--pp-muted)] transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="mt-3 space-y-2 text-sm leading-relaxed">
+          <ul className="list-disc space-y-1 pl-5">
+            {AGENTS.map((a) => (
+              <li key={a.name}>
+                <a href={a.href} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--pp-accent)]">
+                  {a.name}
+                </a>{" "}
+                <span className="text-[var(--pp-muted)]">({a.note})</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-[var(--pp-muted)]">Агенту нужен терминал и Python 3 (на macOS и Linux он обычно уже есть). Вставьте этот текст в чат с агентом один раз:</p>
+          {current && <CopyBlock code={teachText(current)} display={teachText(mask(current))} />}
+          <p className="text-[var(--pp-muted)]">Дальше пишите агенту так же, как в шаге 2, только без «через {CONNECTOR_NAME}».</p>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export default function PartnerDemoPage() {
+  const demoKey = useDemoKey();
   return (
     <div className="space-y-4">
-      <PageTitle hint="Соберите Веру на сайте вашего клиента и отправьте ему ссылку: он увидит, как Вера отвечает про его бизнес.">Демо для клиента</PageTitle>
+      <PageTitle hint="Соберите Веру по сайту вашего клиента и отправьте ему ссылку: он увидит, как Вера отвечает про его бизнес.">Демо для клиента</PageTitle>
 
       <section
         className="relative overflow-hidden rounded-2xl p-5 sm:p-6 text-white"
@@ -148,7 +219,7 @@ export default function PartnerDemoPage() {
           <span className="pp-head inline-block rounded-full bg-white/15 px-3 py-1 text-[10px]">Демо по сайту клиента</span>
           <p className="pp-head mt-4 text-lg sm:text-2xl leading-snug">Покажите клиенту Веру, которая уже знает его бизнес</p>
           <p className="mt-3 text-sm text-white/85 leading-relaxed">
-            ИИ-агент на вашем компьютере читает сайт клиента, пишет для Веры базу знаний, проверяет её и присылает готовую ссылку. Клиент пишет Вере сам и видит ответы о своих товарах и услугах.
+            Вы пишете в обычном чате Claude, для кого нужно демо. Claude читает сайт клиента, пишет для Веры базу знаний, ALTAI проверяет каждый факт, и вы получаете готовую ссылку. Клиент пишет Вере сам и видит ответы о своих товарах и услугах.
           </p>
         </div>
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -160,39 +231,28 @@ export default function PartnerDemoPage() {
         />
       </section>
 
-      <Step n={1} title="Установите ИИ-агента">
-        <p>Подойдёт любой из трёх. Подписку на него оплачиваете вы.</p>
-        <ul className="list-disc space-y-1 pl-5">
-          {AGENTS.map((a) => (
-            <li key={a.name}>
-              <a href={a.href} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--pp-accent)]">
-                {a.name}
-              </a>{" "}
-              <span className="text-[var(--pp-muted)]">({a.note})</span>
-            </li>
-          ))}
-        </ul>
-        <p className="text-[var(--pp-muted)]">
-          Агенту нужен доступ к терминалу: он запускает наши скрипты на Python 3 (на macOS и Linux он обычно уже есть). Обычный чат с ИИ так не умеет.
-        </p>
+      <Step n={1} title={`Подключите ${CONNECTOR_NAME} к Claude`}>
+        <ConnectorStep demoKey={demoKey} />
       </Step>
 
-      <Step n={2} title="Научите агента собирать демо">
-        <KeyPanel />
-        <p className="text-[var(--pp-muted)]">
-          Это делается один раз. Агент сохранит ключ и инструкцию и перед каждым новым демо сам проверит, нет ли новой версии.
+      <Step n={2} title="Создайте демо">
+        <p>
+          Откройте новый чат в Claude. Проверьте, что {CONNECTOR_NAME} включён: кнопка «+» или меню инструментов в поле ввода. Напишите, для кого демо, и дайте ссылки. Прайс, меню или описание услуг можно приложить файлом: это тоже источник фактов.
         </p>
-      </Step>
-
-      <Step n={3} title="Создайте демо">
-        <p>Напишите агенту, для кого демо, и дайте ссылки. Прайс, меню или описание услуг можно приложить файлом: это тоже источник фактов.</p>
         <CopyBlock code={EXAMPLE} />
         <p>
-          Агент прочитает сайт, напишет базу знаний только по фактам (чего нет, Вера передаст менеджеру), проверит её, задаст Вере проверочные вопросы и пришлёт ссылку вида{" "}
+          Слова «через {CONNECTOR_NAME}» важны: без них Claude может начать рисовать свою страницу вместо демо. Если так случилось, напишите ему: «Используй коннектор {CONNECTOR_NAME}».
+        </p>
+        <p>
+          Claude прочитает сайт, напишет базу знаний только по фактам (чего нет, Вера передаст менеджеру), проверит её, задаст Вере проверочные вопросы и пришлёт ссылку вида{" "}
           <span className="font-mono text-[13px] break-all">https://optima.altaiweb.online/demo/?t=название</span>. Её можно сразу переслать клиенту.
         </p>
-        <p className="text-[var(--pp-muted)]">Поправить демо: «Обнови демо название: добавь …». Список ваших демо: «Покажи мои демо».</p>
+        <p className="text-[var(--pp-muted)]">
+          Поправить демо: «Обнови демо название через {CONNECTOR_NAME}: добавь …». Список ваших демо: «Покажи мои демо в {CONNECTOR_NAME}».
+        </p>
       </Step>
+
+      <TerminalOption current={demoKey.current} />
 
       <Card className="flex items-center gap-4 !bg-[var(--pp-accent-soft)]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
