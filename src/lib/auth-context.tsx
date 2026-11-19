@@ -35,6 +35,8 @@ interface AuthContextType {
   singleEmployee: boolean;
   /** Signed in without a tenant and with a partner profile (`GET /partner/me` answered): lands on /partner. */
   partnerOnly: boolean;
+  /** The account has a partner profile (also with companies or as superadmin): shows the «Кабинет партнёра» link. */
+  hasPartnerProfile: boolean;
 }
 
 interface AuthPayload {
@@ -56,6 +58,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [allowedEmployees, setAllowedEmployees] = useState<string[]>([]);
   const [employeeScope, setEmployeeScope] = useState<"all" | "selected">("all");
   const [partnerOnly, setPartnerOnly] = useState(false);
+  const [hasPartnerProfile, setHasPartnerProfile] = useState(false);
+  // An account with companies may also be a partner: one /partner/me call decides (403 = no profile).
+  const checkPartnerProfile = () => {
+    api.partnerMe().then(() => setHasPartnerProfile(true), () => setHasPartnerProfile(false));
+  };
 
   // Old backends send neither field: derive from the role and open every AI employee.
   const applyPayload = (res: AuthPayload) => {
@@ -91,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setPermissions([]);
       setAllowedEmployees([]);
       setPartnerOnly(true);
+      setHasPartnerProfile(true);
       return true;
     } catch {
       return false;
@@ -146,6 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (res.available_tenants) {
             setAvailableTenants(res.available_tenants);
           }
+          checkPartnerProfile();
         } else if (res.ok && res.user && (await adoptPartner(res.user))) {
           // Partner account: no tenant, only a partner profile.
         } else {
@@ -173,6 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (res.available_tenants) {
           setAvailableTenants(res.available_tenants);
         }
+        checkPartnerProfile();
         return true;
       }
       if (res.ok && res.user && !res.tenant) {
@@ -192,6 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setTenant(null);
       setAvailableTenants([]);
       setPartnerOnly(false);
+      setHasPartnerProfile(false);
       if (typeof window !== "undefined") {
         window.location.href = "/login";
       }
@@ -264,6 +275,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         homePath,
         singleEmployee,
         partnerOnly,
+        hasPartnerProfile,
       }}
     >
       {children}

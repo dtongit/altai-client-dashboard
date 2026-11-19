@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { partnerPortalUrl } from "@/lib/portal-path";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ROLE_LABELS } from "@/lib/permissions";
 import {
@@ -11,11 +12,12 @@ import {
   HelpCircle,
   Database,
   ChevronDown,
+  Handshake,
 } from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, tenant, availableTenants, switchTenant, logout, role } = useAuth();
+  const { user, tenant, availableTenants, switchTenant, logout, role, hasPartnerProfile } = useAuth();
   // The header shows only on the AI staff list and the superadmin console (layout-shell); the master switch, which
   // belongs to a selected AI employee, lives in the sidebar footer and the phone «Ещё» sheet.
   return (
@@ -126,6 +128,16 @@ export function Navbar() {
                     {role ? ROLE_LABELS[role] : ""}
                   </div>
                 </Link>
+                {hasPartnerProfile && (
+                  <a
+                    href={partnerPortalUrl()}
+                    className="p-2 rounded-xl text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+                    title="Кабинет партнёра"
+                    aria-label="Кабинет партнёра"
+                  >
+                    <Handshake className="h-4 w-4" />
+                  </a>
+                )}
                 <button
                   onClick={logout}
                   className="p-2 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"

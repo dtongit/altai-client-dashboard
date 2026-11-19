@@ -16,8 +16,10 @@ import {
   LogOut,
   ChevronDown,
   KeyRound,
+  Handshake,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { partnerPortalUrl } from "@/lib/portal-path";
 import { useAttentionCount } from "@/lib/use-attention-count";
 import { Sheet } from "@/components/ui/Sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -26,7 +28,7 @@ import { VeraFace } from "@/components/vera-face";
 export function BottomNav() {
   const pathname = usePathname();
   const cleanPath = (pathname || "").replace(/\/+$/, "") || "/";
-  const { user, tenant, availableTenants, switchTenant, toggleActive, logout, can, hasEmployee, singleEmployee } = useAuth();
+  const { user, tenant, availableTenants, switchTenant, toggleActive, logout, can, hasEmployee, singleEmployee, hasPartnerProfile } = useAuth();
   const attentionCount = useAttentionCount();
 
   const [moreOpen, setMoreOpen] = useState(false);
@@ -307,6 +309,16 @@ export function BottomNav() {
             </Link>
             )}
           </div>
+
+          {hasPartnerProfile && (
+            <a
+              href={partnerPortalUrl()}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-base font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              <Handshake className="h-5 w-5 text-zinc-500 shrink-0" />
+              <span>Кабинет партнёра</span>
+            </a>
+          )}
 
           {/* Theme & Logout */}
           <div className="pt-3 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
