@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
+import { partnerPortalUrl } from "@/lib/portal-path";
 import { AlertTriangle, Send } from "lucide-react";
 
 export default function AIStaffManagementPage() {
@@ -55,7 +56,9 @@ export default function AIStaffManagementPage() {
       return;
     }
     if (user && goPartner) {
-      router.replace("/partner");
+      const target = partnerPortalUrl();
+      if (target.startsWith("/")) router.replace(target);
+      else window.location.replace(target);
       return;
     }
     // A user with only one AI employee skips the AI staff list and starts on that employee's page.

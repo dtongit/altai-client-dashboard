@@ -37,3 +37,14 @@ export function usePortalHref(): (href: string) => string {
   useEffect(() => setPartnerHost(isPartnerHost()), []);
   return (href: string) => cleanPortalHref(href, partnerHost);
 }
+
+/**
+ * Where a partner lands from the dashboard: on my.* the partner host (partner.*, clean paths), elsewhere (stage,
+ * localhost, previews) the local /partner section.
+ */
+export function partnerPortalUrl(): string {
+  if (typeof window === "undefined") return "/partner";
+  const { protocol, hostname, port } = window.location;
+  if (!/^my\./.test(hostname)) return "/partner";
+  return `${protocol}//${hostname.replace(/^my\./, "partner.")}${port ? `:${port}` : ""}/`;
+}
