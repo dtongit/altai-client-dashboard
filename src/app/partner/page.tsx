@@ -6,7 +6,7 @@ import { Check, Copy } from "lucide-react";
 import { api } from "@/lib/api";
 import { PartnerEvent, PartnerChartPoint } from "@/types";
 import { formatDayMonth, formatRub, shortMonth, PAYMENT_KIND_LABELS } from "@/lib/partner-format";
-import { Card, CountUp, Empty, ErrorBox, Label, Money, Spinner, btnPrimary, useLoad, usePartner } from "@/components/partner/ui";
+import { Card, CountUp, ErrorBox, Label, Money, Spinner, btnPrimary, useLoad, usePartner } from "@/components/partner/ui";
 
 function RefCodeCard({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
@@ -165,9 +165,16 @@ export default function PartnerHome() {
       </div>
 
       {empty ? (
-        <Empty title="Пока пусто">
-          Здесь появится ваш первый клиент. Передайте ваш код тем, кому нужна Вера, и мы закрепим клиента за вами. Ваш доход, выплаты и график начнут заполняться после его первой оплаты.
-        </Empty>
+        <Card className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/partner/vera-smile.webp" alt="Вера" className="h-40 w-auto shrink-0 object-contain" />
+          <div>
+            <div className="pp-head text-sm mb-2">Пока пусто</div>
+            <p className="text-sm text-[var(--pp-muted)] leading-relaxed">
+              Здесь появится ваш первый клиент. Передайте ваш код тем, кому нужна Вера, и мы закрепим клиента за вами. Ваш доход, выплаты и график начнут заполняться после его первой оплаты.
+            </p>
+          </div>
+        </Card>
       ) : (
         <>
           <Card>
@@ -199,6 +206,17 @@ export default function PartnerHome() {
         <Label>Следующий шаг</Label>
         <p className="text-sm">{hint}</p>
       </Card>
+
+      <Link href="/partner/demo" className="block">
+        <Card className="flex items-center gap-4 transition hover:border-[var(--pp-accent)]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/partner/vera-laptop-side.webp" alt="Вера за ноутбуком" className="h-20 w-20 shrink-0 rounded-2xl object-cover" />
+          <div className="min-w-0">
+            <Label>Демо для клиента</Label>
+            <p className="text-sm">Соберите Веру на сайте клиента с помощью Claude Code, Codex или Antigravity и отправьте ему ссылку.</p>
+          </div>
+        </Card>
+      </Link>
     </div>
   );
 }

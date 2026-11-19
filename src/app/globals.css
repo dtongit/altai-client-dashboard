@@ -91,6 +91,21 @@ select,
 }
 
 /* ---------- Partner portal (/partner): own palette, not the amber dashboard look ---------- */
+/* Fonts of the optima landing: Benzin for uppercase headings, Inter (next/font in app/partner/layout.tsx) for text. */
+@font-face {
+  font-family: "Benzin";
+  src: url("/fonts/Benzin-Semibold.woff2") format("woff2");
+  font-weight: 600 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Benzin";
+  src: url("/fonts/Benzin-Medium.woff2") format("woff2");
+  font-weight: 400 500;
+  font-style: normal;
+  font-display: swap;
+}
 .pp {
   --pp-bg: #eef4f9;
   --pp-surface: #ffffff;
@@ -101,9 +116,12 @@ select,
   --pp-accent: #0284c7;
   --pp-accent-soft: rgba(2, 132, 199, 0.1);
   --pp-money: #059669;
+  --pp-gold: #b7791f;
+  --pp-hero-from: #0b3a63;
+  --pp-hero-to: #0284c7;
   background: var(--pp-bg);
   color: var(--pp-text);
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: var(--font-pp-inter), "Inter", system-ui, sans-serif;
 }
 .dark .pp {
   --pp-bg: #07172c;
@@ -114,16 +132,19 @@ select,
   --pp-muted: #86a3b8;
   --pp-accent-soft: rgba(2, 132, 199, 0.18);
   --pp-money: #34d399;
+  --pp-gold: #f0b54a;
+  --pp-hero-from: #0a2a4a;
+  --pp-hero-to: #0369a1;
 }
-/* Uppercase headings: Benzin is not shipped with the app, so a heavy uppercase Manrope stands in. */
+/* Uppercase headings in Benzin, as on the landing. */
 .pp-head {
-  font-family: "Manrope", "Inter", system-ui, sans-serif;
-  font-weight: 800;
+  font-family: "Benzin", var(--font-pp-inter), system-ui, sans-serif;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
 }
 .pp-num {
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: var(--font-pp-inter), "Inter", system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
 .pp input,

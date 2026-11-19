@@ -3,21 +3,28 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, UsersRound, Target, Wallet, UserRound, LogOut } from "lucide-react";
+import { Inter } from "next/font/google";
+import { LayoutDashboard, Briefcase, UsersRound, Target, Wallet, UserRound, LogOut, Presentation } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { PartnerMe } from "@/types";
 import { PartnerContext, Spinner } from "@/components/partner/ui";
 import { ThemeToggle } from "@/components/theme-toggle";
 
+// The landing's text font; headings use Benzin (globals.css).
+const inter = Inter({ subsets: ["latin", "cyrillic"], weight: ["400", "500", "600", "700", "800"], variable: "--font-pp-inter", display: "swap" });
+
 const NAV = [
   { href: "/partner", label: "Главная", icon: LayoutDashboard },
   { href: "/partner/clients", label: "Клиенты", icon: Briefcase },
+  { href: "/partner/demo", label: "Демо", icon: Presentation },
   { href: "/partner/team", label: "Команда", icon: UsersRound },
   { href: "/partner/goal", label: "Моя цель", icon: Target },
   { href: "/partner/payouts", label: "Выплаты", icon: Wallet },
   { href: "/partner/profile", label: "Профиль", icon: UserRound },
 ];
+/** Phone bottom bar: Профиль lives in the top bar there, so six items fit at 360 px. */
+const PHONE_NAV = NAV.filter((n) => n.href !== "/partner/profile");
 
 /** The client dashboard's start page. On partner.* / stage-partner.* the root "/" is the partner portal itself, so
  * go to the dashboard host of the same environment (my. / stage.); the cookie session is shared (#440). */
@@ -50,7 +57,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
     if (!loading && user) void refresh();
   }, [loading, user, refresh]);
 
-  const shell = "pp min-h-dvh";
+  const shell = `pp ${inter.variable} min-h-dvh`;
 
   if (loading || !user || state === "loading") {
     return (
@@ -102,9 +109,13 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
       <div className={`${shell} md:flex`}>
         {/* Desktop: left nav */}
         <aside className="hidden md:flex md:w-60 shrink-0 flex-col border-r border-[var(--pp-line)] bg-[var(--pp-surface)] h-dvh sticky top-0 p-4">
-          <div className="mb-6">
-            <div className="pp-head text-sm leading-snug text-[var(--pp-accent)]">Устрой Веру на работу</div>
-            <div className="mt-1 text-xs text-[var(--pp-muted)] truncate">{name}</div>
+          <div className="mb-6 flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/partner/vera-face.webp" alt="Вера" width={44} height={44} className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-[var(--pp-accent-soft)]" />
+            <div className="min-w-0">
+              <div className="pp-head text-[11px] leading-snug text-[var(--pp-accent)]">Устрой Веру на работу</div>
+              <div className="mt-1 text-xs text-[var(--pp-muted)] truncate">{name}</div>
+            </div>
           </div>
           <nav className="flex-1 space-y-1">
             {NAV.map((n) => {
@@ -136,8 +147,15 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
         <div className="flex-1 min-w-0">
           {/* Phone: top bar */}
           <header className="md:hidden sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-[var(--pp-line)] bg-[var(--pp-surface)] px-4 py-2.5">
-            <span className="pp-head text-xs text-[var(--pp-accent)] truncate">Устрой Веру на работу</span>
-            <div className="flex items-center gap-2">
+            <span className="flex min-w-0 items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/partner/vera-face.webp" alt="Вера" width={28} height={28} className="h-7 w-7 shrink-0 rounded-full object-cover" />
+              <span className="pp-head text-[10px] text-[var(--pp-accent)] truncate">Устрой Веру на работу</span>
+            </span>
+            <div className="flex items-center gap-1">
+              <Link href="/partner/profile" aria-label="Профиль" className={`p-2 ${isActive("/partner/profile") ? "text-[var(--pp-accent)]" : "text-[var(--pp-muted)]"}`}>
+                <UserRound className="h-4 w-4" />
+              </Link>
               <ThemeToggle align="right" />
               <button type="button" onClick={logout} aria-label="Выйти" className="p-2 text-[var(--pp-muted)]">
                 <LogOut className="h-4 w-4" />
@@ -149,7 +167,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
 
         {/* Phone: bottom nav */}
         <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 grid grid-cols-6 border-t border-[var(--pp-line)] bg-[var(--pp-surface)] pb-[env(safe-area-inset-bottom)]">
-          {NAV.map((n) => {
+          {PHONE_NAV.map((n) => {
             const Icon = n.icon;
             const on = isActive(n.href);
             return (
