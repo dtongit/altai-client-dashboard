@@ -65,6 +65,15 @@ export function currentPeriod(): string {
 }
 
 export const DEAL_TYPE_LABELS: Record<string, string> = { rep: "Рекрутер", manager: "Хедхантер" };
+
+/** Roles a partner worked in during the last closed month (`roles` from the API), set on the close day each month. */
+export const ROLE_LABELS: Record<string, string> = { recruiter: "Рекрутер", headhunter: "Хедхантер", agency: "Кадровое агентство" };
+
+/** «Рекрутер · Кадровое агентство», or «Партнёр» before anyone paid. */
+export function roleLabel(roles: readonly string[] | null | undefined): string {
+  const named = (roles ?? []).map((r) => ROLE_LABELS[r]).filter(Boolean);
+  return named.length ? named.join(" · ") : "Партнёр";
+}
 export const DEAL_TYPE_HINTS: Record<string, string> = {
   rep: "передали контакт, продаём мы",
   manager: "показали Веру и договорились о тарифе",

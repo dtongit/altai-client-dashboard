@@ -1277,6 +1277,8 @@ export interface PartnerAccrualRow {
   layer: number;
   depth: number;
   kind: string;
+  /** The client's deal type when the payment was recorded. */
+  deal_type: PartnerDealType | null;
   period: string;
   base_kop: number;
   rate_bp: number;
@@ -1384,6 +1386,10 @@ export interface PartnerMe {
   profile: PartnerProfile;
   username: string;
   is_agency: boolean;
+  /** Roles in the last closed month: recruiter | headhunter | agency; empty = «Партнёр». */
+  roles?: string[];
+  /** The month `roles` come from (YYYY-MM); null before the first close. */
+  roles_period?: string | null;
   min_payout_kop: number;
   payout_day: number;
 }
@@ -1540,6 +1546,8 @@ export interface AdminPartner {
   inviter_name?: string | null;
   inviter_ref_code?: string | null;
   default_deal_type?: PartnerDealType | null;
+  /** Roles in the last closed month (see PartnerMe.roles). */
+  roles?: string[];
   contact?: string | null;
   legal_status?: PartnerLegalStatus | null;
   inn?: string | null;
@@ -1628,6 +1636,10 @@ export interface BillingSettings {
   split_rates: SplitRates;
   min_payout_kop: number;
   payout_day: number;
+  /** Clients pay until this day; on its morning the previous month closes (default 11). */
+  close_day: number;
+  /** max(payout_day, close_day): the day payouts are really due. Read-only. */
+  effective_payout_day?: number;
   seller: SellerRequisites;
 }
 

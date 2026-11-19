@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-import { DEAL_TYPE_HINTS, DEAL_TYPE_LABELS, LEGAL_STATUS_LABELS } from "@/lib/partner-format";
-import { PartnerDealType, PartnerLegalStatus } from "@/types";
+import { LEGAL_STATUS_LABELS, roleLabel } from "@/lib/partner-format";
+import { PartnerLegalStatus } from "@/types";
 import { Card, Chip, ErrorBox, Label, PageTitle, btnGhost, btnPrimary, inputCls, usePartner } from "@/components/partner/ui";
 
 export default function PartnerProfilePage() {
@@ -16,7 +16,6 @@ export default function PartnerProfilePage() {
   const [legal, setLegal] = useState<PartnerLegalStatus | "">(p.legal_status ?? "");
   const [inn, setInn] = useState(p.inn ?? "");
   const [details, setDetails] = useState(p.payout_details ?? "");
-  const [deal, setDeal] = useState<PartnerDealType>(p.default_deal_type ?? "rep");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -38,7 +37,6 @@ export default function PartnerProfilePage() {
           legal_status: legal || null,
           inn: inn.trim(),
           payout_details: details.trim(),
-          default_deal_type: deal,
         })
       );
       setMsg("Сохранено");
@@ -78,7 +76,7 @@ export default function PartnerProfilePage() {
           <Label>Логин</Label>
           <div className="text-sm truncate">{me.username}</div>
         </div>
-        {me.is_agency && <Chip tone="info">Кадровое агентство</Chip>}
+        <Chip tone="info">{roleLabel(me.roles)}</Chip>
       </Card>
 
       <form onSubmit={save}>
@@ -90,16 +88,6 @@ export default function PartnerProfilePage() {
           <label className="block">
             <Label>Контакт для связи</Label>
             <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Телеграм или телефон" className={inputCls} />
-          </label>
-          <label className="block">
-            <Label>Ваша роль по умолчанию</Label>
-            <select value={deal} onChange={(e) => setDeal(e.target.value as PartnerDealType)} className={inputCls}>
-              {(["rep", "manager"] as const).map((d) => (
-                <option key={d} value={d}>
-                  {DEAL_TYPE_LABELS[d]}: {DEAL_TYPE_HINTS[d]}
-                </option>
-              ))}
-            </select>
           </label>
           <div className="grid sm:grid-cols-2 gap-4">
             <label className="block">

@@ -29,7 +29,9 @@ export default function PartnerGoalPage() {
   const { data, error, loading, reload } = useLoad(() => api.partnerForecast());
 
   const [tariffCode, setTariffCode] = useState("");
-  const [dealType, setDealType] = useState<PartnerDealType>(me.profile.default_deal_type ?? "rep");
+  // The calculator starts from how the partner worked last month (a head-hunter if any client of theirs was).
+  const startDeal: PartnerDealType = me.roles?.includes("headhunter") ? "manager" : "rep";
+  const [dealType, setDealType] = useState<PartnerDealType>(startDeal);
   const [goal, setGoal] = useState("");
   const [perMonth, setPerMonth] = useState("2");
   const [l1, setL1] = useState("0");
@@ -41,7 +43,6 @@ export default function PartnerGoalPage() {
   useEffect(() => {
     if (!data) return;
     setTariffCode((c) => c || data.tariffs[0]?.code || "");
-    setDealType(data.default_deal_type ?? me.profile.default_deal_type ?? "rep");
     setGoal(String(Math.round((data.goal_kop ?? 0) / 100) || 100000));
     setL1(String(data.team.layer1_clients));
     setL2(String(data.team.layer2_clients));
@@ -99,7 +100,7 @@ export default function PartnerGoalPage() {
           </select>
         </label>
         <label className="block">
-          <Label>Ваша роль</Label>
+          <Label>Как вы работаете</Label>
           <select value={dealType} onChange={(e) => setDealType(e.target.value as PartnerDealType)} className={inputCls}>
             {(["rep", "manager"] as const).map((d) => (
               <option key={d} value={d}>

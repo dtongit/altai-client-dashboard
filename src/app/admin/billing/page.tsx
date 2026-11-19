@@ -469,7 +469,8 @@ function SettingsTab({ toast }: { toast: T }) {
   const rowsOk = (["rep", "manager"] as const).every((d) =>
     (["launch", "monthly"] as const).every((m) => s.split_rates[d][m].every((r) => r.reduce((a, b) => a + b, 0) <= 10000))
   );
-  const dayOk = Number.isInteger(s.payout_day) && s.payout_day >= 1 && s.payout_day <= 28;
+  const day = (n: number) => Number.isInteger(n) && n >= 1 && n <= 28;
+  const dayOk = day(s.payout_day) && day(s.close_day ?? 11);
   const save = async () => {
     setBusy(true);
     try {
@@ -487,7 +488,10 @@ function SettingsTab({ toast }: { toast: T }) {
       <SplitEditor value={s.split_rates} onChange={(v) => setS({ ...s, split_rates: v })} />
       <div className="grid sm:grid-cols-2 gap-3 max-w-xl">
         <F label="Минимальная выплата, ₽"><RubInput kop={s.min_payout_kop} onChange={(k) => setS({ ...s, min_payout_kop: k })} /></F>
-        <F label="День выплаты (1-28)">
+        <F label="День закрытия месяца (1-28)" hint="Клиенты оплачивают счёт до этого дня; утром этого дня прошлый месяц закрывается сам, роли партнёров пересчитываются. Оплата позже попадает в следующий месяц">
+          <input inputMode="numeric" className={aInput} value={s.close_day ?? 11} onChange={(e) => setS({ ...s, close_day: Math.floor(Number(e.target.value) || 0) })} />
+        </F>
+        <F label="День выплаты (1-28)" hint={`Не раньше дня закрытия: сейчас выплаты ${Math.max(s.payout_day, s.close_day ?? 11)}-го числа`}>
           <input inputMode="numeric" className={aInput} value={s.payout_day} onChange={(e) => setS({ ...s, payout_day: Math.floor(Number(e.target.value) || 0) })} />
         </F>
       </div>
@@ -502,7 +506,7 @@ function SettingsTab({ toast }: { toast: T }) {
         </div>
       </div>
       {!rowsOk && <div className="text-xs font-semibold text-red-600">В одной из строк сумма долей больше 100%: сохранить нельзя.</div>}
-      {!dayOk && <div className="text-xs font-semibold text-red-600">День выплаты: число от 1 до 28.</div>}
+      {!dayOk && <div className="text-xs font-semibold text-red-600">Дни закрытия и выплаты: числа от 1 до 28.</div>}
       <button className={aBtn} disabled={busy || !rowsOk || !dayOk} onClick={save}>Сохранить настройки</button>
     </div>
   );

@@ -13,6 +13,7 @@ import {
   formatDate,
   formatPeriod,
   formatRub,
+  roleLabel,
 } from "@/lib/partner-format";
 import {
   AdminFrame,
@@ -38,7 +39,7 @@ function prevPeriod(): string {
 }
 
 function CreateModal({ onClose, onDone, toast }: { onClose: () => void; onDone: () => void; toast: ReturnType<typeof useToastLocal> }) {
-  const [f, setF] = useState({ username: "", email: "", password: "", display_name: "", inviter_ref_code: "", default_deal_type: "rep" as PartnerDealType, contact: "" });
+  const [f, setF] = useState({ username: "", email: "", password: "", display_name: "", inviter_ref_code: "", contact: "" });
   // "new": a separate partner account; "existing": a partner profile for an account that already exists (it keeps
   // its companies and password).
   const [mode, setMode] = useState<"new" | "existing">("new");
@@ -50,7 +51,6 @@ function CreateModal({ onClose, onDone, toast }: { onClose: () => void; onDone: 
     try {
       const extra = {
         display_name: f.display_name.trim(),
-        default_deal_type: f.default_deal_type,
         ...(f.inviter_ref_code.trim() ? { inviter_ref_code: f.inviter_ref_code.trim().toLowerCase() } : {}),
         ...(f.contact.trim() ? { contact: f.contact.trim() } : {}),
       };
@@ -100,13 +100,11 @@ function CreateModal({ onClose, onDone, toast }: { onClose: () => void; onDone: 
           )}
           <F label="Имя в программе"><input required className={aInput} value={f.display_name} onChange={(e) => set("display_name", e.target.value)} /></F>
           <F label="Код пригласившего" hint="Пусто: партнёр без пригласившего"><input className={aInput} value={f.inviter_ref_code} onChange={(e) => set("inviter_ref_code", e.target.value)} /></F>
-          <F label="Роль по умолчанию">
-            <select className={aInput} value={f.default_deal_type} onChange={(e) => set("default_deal_type", e.target.value)}>
-              <option value="rep">{DEAL_TYPE_LABELS.rep}</option>
-              <option value="manager">{DEAL_TYPE_LABELS.manager}</option>
-            </select>
-          </F>
         </div>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Роль задаётся у каждого клиента при закреплении (Рекрутер или Хедхантер). Роль партнёра в кабинете считается {""}
+          сама после закрытия месяца по тем, кто заплатил; до первой оплаты он «Партнёр».
+        </p>
         <F label="Контакт"><input className={aInput} value={f.contact} onChange={(e) => set("contact", e.target.value)} /></F>
         <button type="submit" disabled={busy} className={aBtn}>{busy ? "Сохраняем..." : mode === "existing" ? "Подключить" : "Создать"}</button>
       </form>
@@ -117,7 +115,6 @@ function CreateModal({ onClose, onDone, toast }: { onClose: () => void; onDone: 
 function EditModal({ p, onClose, onDone, toast }: { p: AdminPartner; onClose: () => void; onDone: () => void; toast: ReturnType<typeof useToastLocal> }) {
   const [name, setName] = useState(p.display_name ?? "");
   const [inviter, setInviter] = useState(p.inviter_ref_code ?? "");
-  const [deal, setDeal] = useState<PartnerDealType>(p.default_deal_type ?? "rep");
   const [contact, setContact] = useState(p.contact ?? "");
   const [legal, setLegal] = useState<PartnerLegalStatus | "">(p.legal_status ?? "");
   const [inn, setInn] = useState(p.inn ?? "");
@@ -140,7 +137,6 @@ function EditModal({ p, onClose, onDone, toast }: { p: AdminPartner; onClose: ()
     e.preventDefault();
     const patch: Parameters<typeof api.adminUpdatePartner>[1] = {
       display_name: name.trim(),
-      default_deal_type: deal,
       contact: contact.trim(),
       legal_status: legal || null,
       inn: inn.trim(),
@@ -160,12 +156,6 @@ function EditModal({ p, onClose, onDone, toast }: { p: AdminPartner; onClose: ()
         <div className="grid sm:grid-cols-2 gap-3">
           <F label="Имя в программе"><input className={aInput} value={name} onChange={(e) => setName(e.target.value)} /></F>
           <F label="Код пригласившего" hint="Смена попадает в журнал. Пусто: открепить"><input className={aInput} value={inviter} onChange={(e) => setInviter(e.target.value)} /></F>
-          <F label="Роль по умолчанию">
-            <select className={aInput} value={deal} onChange={(e) => setDeal(e.target.value as PartnerDealType)}>
-              <option value="rep">{DEAL_TYPE_LABELS.rep}</option>
-              <option value="manager">{DEAL_TYPE_LABELS.manager}</option>
-            </select>
-          </F>
           <F label="Контакт"><input className={aInput} value={contact} onChange={(e) => setContact(e.target.value)} /></F>
           <F label="Статус для выплат">
             <select className={aInput} value={legal} onChange={(e) => setLegal(e.target.value as PartnerLegalStatus | "")}>
@@ -196,7 +186,7 @@ function EditModal({ p, onClose, onDone, toast }: { p: AdminPartner; onClose: ()
 function AttachModal({ partner, clients, onClose, onDone, toast }: { partner: AdminPartner | null; clients: BillingClient[]; onClose: () => void; onDone: () => void; toast: ReturnType<typeof useToastLocal> }) {
   const [tenant, setTenant] = useState("");
   const [ref, setRef] = useState(partner?.ref_code ?? "");
-  const [deal, setDeal] = useState<PartnerDealType>(partner?.default_deal_type ?? "rep");
+  const [deal, setDeal] = useState<PartnerDealType>("rep");
   const [busy, setBusy] = useState(false);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,10 +215,10 @@ function AttachModal({ partner, clients, onClose, onDone, toast }: { partner: Ad
           </select>
         </F>
         <F label="Код партнёра"><input required className={aInput} value={ref} onChange={(e) => setRef(e.target.value)} /></F>
-        <F label="Роль в сделке" hint="Влияет только на следующие оплаты клиента">
+        <F label="Роль по этому клиенту" hint="Ставки в настройках биллинга. Смена влияет только на следующие оплаты клиента">
           <select className={aInput} value={deal} onChange={(e) => setDeal(e.target.value as PartnerDealType)}>
-            <option value="rep">{DEAL_TYPE_LABELS.rep}: пул 20% запуск, 10% в месяц</option>
-            <option value="manager">{DEAL_TYPE_LABELS.manager}: пул 30% запуск, 20% в месяц</option>
+            <option value="rep">{DEAL_TYPE_LABELS.rep}: передал контакт, продаём мы</option>
+            <option value="manager">{DEAL_TYPE_LABELS.manager}: сам показал Веру и согласовал тариф</option>
           </select>
         </F>
         <button type="submit" disabled={busy || !tenant} className={aBtn}>{busy ? "Закрепляем..." : "Закрепить"}</button>
@@ -320,7 +310,7 @@ export default function AdminPartnersPage() {
           <TableWrap>
             <thead>
               <tr>
-                {["Партнёр", "Код", "Статус", "Пригласил", "Клиентов", "Платящих", "К выплате", "Реквизиты", ""].map((h) => <th key={h} className={aTh}>{h}</th>)}
+                {["Партнёр", "Код", "Статус", "Роль", "Пригласил", "Клиентов", "Платящих", "К выплате", "Реквизиты", ""].map((h) => <th key={h} className={aTh}>{h}</th>)}
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -332,6 +322,7 @@ export default function AdminPartnersPage() {
                   </td>
                   <td className={`${aTd} font-mono`}>{p.ref_code}</td>
                   <td className={aTd}><Pill tone={p.status === "approved" ? "good" : p.status === "blocked" ? "bad" : "warn"}>{PARTNER_STATUS_LABELS[p.status] ?? p.status}</Pill></td>
+                  <td className={aTd}>{roleLabel(p.roles)}</td>
                   <td className={aTd}>{p.inviter_name || "-"}</td>
                   <td className={aTd}>{p.clients}</td>
                   <td className={aTd}>{p.paying_clients}</td>
@@ -343,7 +334,7 @@ export default function AdminPartnersPage() {
                   </td>
                 </tr>
               ))}
-              {!loading && partners.length === 0 && <tr><td colSpan={9} className={`${aTd} text-center text-zinc-500 py-6`}>Партнёров нет</td></tr>}
+              {!loading && partners.length === 0 && <tr><td colSpan={10} className={`${aTd} text-center text-zinc-500 py-6`}>Партнёров нет</td></tr>}
             </tbody>
           </TableWrap>
         </div>
@@ -354,7 +345,7 @@ export default function AdminPartnersPage() {
           <div className="flex flex-wrap items-end gap-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-3">
             <F label="Закрыть период (ГГГГ-ММ)"><input className={`${aInput} !w-36`} value={closePeriod} onChange={(e) => setClosePeriod(e.target.value)} placeholder={currentPeriod()} /></F>
             <button className={aBtn} disabled={busy || !/^\d{4}-\d{2}$/.test(closePeriod)} onClick={closeIt}>Закрыть период</button>
-            <span className="text-[11px] text-zinc-500">Суммы выше минимума станут выплатами «К выплате», остальные переносятся.</span>
+            <span className="text-[11px] text-zinc-500">Прошлый месяц закрывается сам утром в день закрытия (настройки биллинга, по умолчанию 11-го). Суммы выше минимума станут выплатами «К выплате», остальные переносятся.</span>
           </div>
           <TableWrap>
             <thead>
