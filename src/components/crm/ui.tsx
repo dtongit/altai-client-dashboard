@@ -16,7 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { VeraFace } from "@/components/vera-face";
-import { useCrmMeta, actorLabel, findStage, fullDateTime, relativeTime } from "@/lib/crm";
+import { useCrmMeta, actorLabel, findStage, formatRub, fullDateTime, relativeTime } from "@/lib/crm";
 import type { CrmActivity, CrmField, CrmPipeline } from "@/types";
 
 export const inputCls =
@@ -193,7 +193,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 /** One timeline row. Payload keys are read tolerantly (see the assumptions in the report). */
-function ActivityBody({ a, pipelines }: { a: CrmActivity; pipelines: CrmPipeline[] }) {
+function ActivityBody({ a, pipelines, fields }: { a: CrmActivity; pipelines: CrmPipeline[]; fields: CrmField[] }) {
   const p = a.payload || {};
   const stageName = (v: unknown, nameKeyVal?: unknown) => {
     if (typeof nameKeyVal === "string" && nameKeyVal) return nameKeyVal;
@@ -216,10 +216,13 @@ function ActivityBody({ a, pipelines }: { a: CrmActivity; pipelines: CrmPipeline
     }
     case "field_changed": {
       const rawLabel = p.label ?? p.field ?? p.key ?? "Поле";
-      const label = typeof rawLabel === "string" ? FIELD_LABELS[rawLabel] ?? rawLabel : rawLabel;
+      const label =
+        typeof rawLabel === "string" ? FIELD_LABELS[rawLabel] ?? fields.find((f) => f.key === rawLabel)?.label ?? rawLabel : rawLabel;
+      const isAmount = rawLabel === "amount_rub";
+      const show = (v: unknown) => (isAmount && typeof v === "number" ? formatRub(v) : asText(v));
       return (
         <div className="text-sm text-zinc-800 dark:text-zinc-200">
-          {asText(label)}: <span className="text-zinc-500">{asText(p.old ?? p.from ?? p.before)}</span> → <span className="font-semibold">{asText(p.new ?? p.to ?? p.after)}</span>
+          {asText(label)}: <span className="text-zinc-500">{show(p.old ?? p.from ?? p.before)}</span> → <span className="font-semibold">{show(p.new ?? p.to ?? p.after)}</span>
         </div>
       );
     }
@@ -240,7 +243,7 @@ function ActivityBody({ a, pipelines }: { a: CrmActivity; pipelines: CrmPipeline
   }
 }
 
-export function Timeline({ activity, pipelines }: { activity: CrmActivity[]; pipelines: CrmPipeline[] }) {
+export function Timeline({ activity, pipelines, fields = [] }: { activity: CrmActivity[]; pipelines: CrmPipeline[]; fields?: CrmField[] }) {
   if (activity.length === 0) return <p className="text-sm text-zinc-500 dark:text-zinc-400">Событий пока нет.</p>;
   return (
     <ul className="space-y-3">
@@ -258,7 +261,7 @@ export function Timeline({ activity, pipelines }: { activity: CrmActivity[]; pip
                   {relativeTime(a.created_at)}
                 </span>
               </div>
-              <ActivityBody a={a} pipelines={pipelines} />
+              <ActivityBody a={a} pipelines={pipelines} fields={fields} />
             </div>
           </li>
         );

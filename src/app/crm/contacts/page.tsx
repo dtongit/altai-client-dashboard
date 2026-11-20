@@ -342,7 +342,7 @@ function ContactView({ id, fields, pipelines }: { id: string; fields: CrmField[]
 
           <div className={`${cardCls} p-4 space-y-3`}>
             <SectionTitle>История</SectionTitle>
-            <Timeline activity={data.activity} pipelines={pipelines} />
+            <Timeline activity={data.activity} pipelines={pipelines} fields={fields} />
           </div>
         </div>
 

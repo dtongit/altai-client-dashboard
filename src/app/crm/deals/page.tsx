@@ -165,7 +165,7 @@ function DealView({ id, fields, pipelines }: { id: string; fields: CrmField[]; p
                 </Button>
               </div>
             </div>
-            <Timeline activity={data.activity} pipelines={pipelines} />
+            <Timeline activity={data.activity} pipelines={pipelines} fields={fields} />
           </div>
         </div>
 

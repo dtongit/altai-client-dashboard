@@ -55,7 +55,8 @@ export function stageKindClasses(kind: CrmStage["kind"]): string {
 
 export function actorLabel(a: Pick<CrmActivity, "actor" | "actor_name">): string {
   if (a.actor === "vera") return "Вера";
-  if (a.actor === "boss_vera") return "Вера (руководитель)";
+  // Boss Vera acts on a team member's request: show who asked.
+  if (a.actor === "boss_vera") return a.actor_name ? `Вера по просьбе ${a.actor_name}` : "Вера (руководитель)";
   return a.actor_name || "Сотрудник";
 }
 
