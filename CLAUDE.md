@@ -19,7 +19,8 @@ NEXT_PUBLIC_API_URL="http://localhost:8000/api/v1/client" npm run dev
 - Deployed as a **static export** to Cloudflare Pages by `.github/workflows/deploy.yml`:
   push `main` -> project `altai-client-dashboard` (my.altaiweb.online, API `api.optima.altaiweb.online`);
   push `stage` -> `altai-stage-dashboard` (stage.altaiweb.online, API `stage-api.optima.altaiweb.online`).
-  `scripts/deploy.py` in the root repo pushes this repo's HEAD to those branches.
+  `scripts/deploy.py` in the root repo pushes this repo's HEAD (`main`) for prod and its local `stage` branch for stage:
+  merge work for a stage test into `stage`, never into `main` before its prod deploy.
 - The stale `Dockerfile`/`docker-compose.yml` were removed (2026-10-31); a static export can't run in them.
 - Static export => no server code, no middleware, no API routes, no runtime env. `NEXT_PUBLIC_*` are baked at build.
 - Home-screen app (iPhone/Android): `public/manifest.webmanifest` (short name «Optima», standalone), icons in `public/icons/` + `public/apple-touch-icon.png` + `src/app/favicon.ico`, all made from the root repo's `ai-logo.png` (512, white background, logo inside the middle 80% for Android masks); wired in `app/layout.tsx` `metadata`.
