@@ -1382,6 +1382,27 @@ export interface PartnerProfile {
   created_at: string;
 }
 
+/** One demo stand of the partner (`GET /partner/demos`): visitor chats only, Moscow days. */
+export interface PartnerDemo {
+  tenant_id: string;
+  business_name: string;
+  is_active: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+  link: string;
+  chats_total: number;
+  messages_total: number;
+  chats_period: number;
+  last_chat_at: string | null;
+  daily: { date: string; chats: number }[];
+}
+
+export interface PartnerDemos {
+  ok: boolean;
+  days: number;
+  items: PartnerDemo[];
+}
+
 export interface PartnerMe {
   profile: PartnerProfile;
   username: string;

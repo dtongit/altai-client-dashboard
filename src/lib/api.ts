@@ -54,6 +54,7 @@ import {
   PartnerAccruals,
   PartnerStatements,
   PartnerForecast,
+  PartnerDemos,
   AdminPartner,
   AdminPartnerCreate,
   AdminPartnerPatch,
@@ -1223,6 +1224,10 @@ export const api = {
   /** The partner's personal demo key (`dmk_...`, demo scope `own`); created on first read if missing. */
   async partnerDemoKey(): Promise<{ ok: boolean; key: string }> {
     return partnerRequest<{ ok: boolean; key: string }>("/demo-key");
+  },
+  /** The partner's demo stands with visitor chats per day over the last `days` days (default 30, at most 90). */
+  async partnerDemos(days = 30): Promise<PartnerDemos> {
+    return partnerRequest<PartnerDemos>(`/demos?days=${days}`);
   },
   /** Revokes the current demo key and returns a new one. */
   async partnerRegenerateDemoKey(): Promise<{ ok: boolean; key: string }> {
