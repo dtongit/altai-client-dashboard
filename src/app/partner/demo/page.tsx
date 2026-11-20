@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, ChevronDown, Copy, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Check, ChevronDown, Copy, ExternalLink, Eye, EyeOff, MessagesSquare, Plus, RefreshCw, X } from "lucide-react";
 import { api, API_BASE_URL } from "@/lib/api";
-import { Card, ErrorBox, Label, PageTitle, Spinner, btnGhost, useLoad } from "@/components/partner/ui";
+import { PartnerDemo } from "@/types";
+import { formatDate, formatDayMonth } from "@/lib/partner-format";
+import { safeHttpUrl } from "@/lib/safe-url";
+import { Card, Chip, Empty, ErrorBox, Label, PageTitle, Spinner, btnGhost, btnPrimary, useLoad } from "@/components/partner/ui";
 
 /** Public S3 folder with the build-demo skill (source: root repo `demo-builder/`, `publish.py`). */
 const SKILL_START = "https://altai-optima-media.s3.eu-north-1.amazonaws.com/partners/demo-builder/START.md";
@@ -205,11 +208,11 @@ function TerminalOption({ current }: { current: string | null }) {
   );
 }
 
-export default function PartnerDemoPage() {
+/** How to build a demo: the hero, the connector steps, the terminal option and «Клиенту понравилось?». */
+function DemoGuide() {
   const demoKey = useDemoKey();
   return (
-    <div className="space-y-4">
-      <PageTitle hint="Соберите Веру по сайту вашего клиента и отправьте ему ссылку: он увидит, как Вера отвечает про его бизнес.">Демо для клиента</PageTitle>
+    <div id="demo-guide" className="space-y-4">
 
       <section
         className="relative overflow-hidden rounded-2xl p-5 sm:p-6 text-white"
@@ -265,6 +268,192 @@ export default function PartnerDemoPage() {
           </a>
         </div>
       </Card>
+    </div>
+  );
+}
+
+// ---------- the partner's demo stands ----------
+
+const PERIODS = [7, 30, 90] as const;
+
+/** «1 чат», «2 чата», «5 чатов» */
+function chats(n: number): string {
+  const m10 = n % 10, m100 = n % 100;
+  const w = m10 === 1 && m100 !== 11 ? "чат" : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? "чата" : "чатов";
+  return `${n} ${w}`;
+}
+
+/** Chats per day as bars; every day of the period has a slot, the tooltip names the day. */
+function DailyBars({ daily, tall = false }: { daily: PartnerDemo["daily"]; tall?: boolean }) {
+  const max = Math.max(1, ...daily.map((d) => d.chats));
+  const step = daily.length > 31 ? 14 : daily.length > 10 ? 7 : 1;
+  return (
+    <div>
+      <div className={`flex items-end ${daily.length > 31 ? "gap-px" : "gap-0.5 sm:gap-1"} ${tall ? "h-32 sm:h-40" : "h-12"}`}>
+        {daily.map((d) => (
+          <div key={d.date} className="group relative flex h-full min-w-0 flex-1 flex-col justify-end" title={`${formatDayMonth(d.date)}: ${chats(d.chats)}`}>
+            <div
+              className={`w-full rounded-t-[3px] ${d.chats ? "bg-[var(--pp-accent)] group-hover:brightness-125" : "bg-[var(--pp-line)]"}`}
+              style={{ height: d.chats ? `${Math.max((d.chats / max) * 100, 6)}%` : "2px" }}
+            />
+          </div>
+        ))}
+      </div>
+      {tall && (
+        <div className="mt-1 flex text-[9px] sm:text-[10px] text-[var(--pp-muted)]">
+          {daily.map((d, i) => (
+            <div key={d.date} className="min-w-0 flex-1 overflow-visible whitespace-nowrap">
+              {(daily.length - 1 - i) % step === 0 ? d.date.slice(8, 10) + "." + d.date.slice(5, 7) : ""}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CopyLink({ link }: { link: string }) {
+  const { copied, copy } = useCopy();
+  return (
+    <button type="button" onClick={() => copy(link)} className={btnGhost + " !px-3 !py-2"}>
+      {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+      <span>{copied ? "Скопировано" : "Ссылка"}</span>
+    </button>
+  );
+}
+
+function DemoCard({ d, days }: { d: PartnerDemo; days: number }) {
+  const href = safeHttpUrl(d.link);
+  return (
+    <Card>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="pp-head truncate text-[13px] sm:text-sm text-[var(--pp-text)]">{d.business_name || d.tenant_id}</h3>
+            {d.is_active ? <Chip tone="good">Работает</Chip> : <Chip tone="mute">Выключено</Chip>}
+          </div>
+          <p className="mt-1 text-xs text-[var(--pp-muted)]">
+            Создано {formatDate(d.created_at)}
+            {d.last_chat_at ? ` · последний чат ${formatDayMonth(d.last_chat_at)}` : " · чатов пока не было"}
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <CopyLink link={d.link} />
+          {href && (
+            <a href={href} target="_blank" rel="noopener noreferrer" className={btnGhost + " !px-3 !py-2"} aria-label="Открыть демо">
+              <ExternalLink className="h-4 w-4" />
+              <span className="hidden sm:inline">Открыть</span>
+            </a>
+          )}
+        </div>
+      </div>
+      <div className="mt-4 grid grid-cols-[auto_1fr] items-end gap-4">
+        <div className="space-y-2">
+          <div>
+            <div className="pp-num text-xl font-bold text-[var(--pp-text)]">{d.chats_period}</div>
+            <div className="text-[11px] text-[var(--pp-muted)]">за {days} дн.</div>
+          </div>
+          <div className="text-[11px] text-[var(--pp-muted)]">
+            всего <span className="pp-num font-semibold text-[var(--pp-text)]">{d.chats_total}</span>
+          </div>
+        </div>
+        <DailyBars daily={d.daily} />
+      </div>
+    </Card>
+  );
+}
+
+function DemoStands({ onEmpty }: { onEmpty: (empty: boolean) => void }) {
+  const [days, setDays] = useState<number>(30);
+  const { data, error, loading, reload } = useLoad(() => api.partnerDemos(days), [days]);
+  const items = data?.items;
+  React.useEffect(() => {
+    if (items) onEmpty(items.length === 0);
+  }, [items, onEmpty]);
+  if (loading && !data) return <Spinner label="Загружаем ваши демо" />;
+  if (error && !data) return <ErrorBox text={error} onRetry={reload} />;
+  if (!items) return null;
+  if (items.length === 0)
+    return (
+      <Empty title="Демо пока нет">
+        Соберите первое демо по сайту клиента: инструкция ниже. Здесь появятся все ваши демо и сколько чатов с Верой в каждом.
+      </Empty>
+    );
+  const total = items[0].daily.map((d, i) => ({ date: d.date, chats: items.reduce((s, x) => s + (x.daily[i]?.chats ?? 0), 0) }));
+  const totalPeriod = items.reduce((s, x) => s + x.chats_period, 0);
+  const active = items.filter((x) => x.is_active).length;
+  return (
+    <div className="space-y-4">
+      <Card>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <Label>Чаты с Верой во всех демо</Label>
+            <div className="flex items-baseline gap-2">
+              <span className="pp-num text-2xl sm:text-3xl font-bold text-[var(--pp-text)]">{totalPeriod}</span>
+              <span className="text-xs text-[var(--pp-muted)]">за {days} дн. · демо: {items.length}{active !== items.length ? `, работают ${active}` : ""}</span>
+            </div>
+          </div>
+          <div className="flex rounded-xl border border-[var(--pp-line)] p-0.5 text-xs font-semibold" role="group" aria-label="Период">
+            {PERIODS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setDays(p)}
+                aria-pressed={days === p}
+                className={`rounded-lg px-3 py-1.5 transition ${days === p ? "bg-[var(--pp-accent)] text-white" : "text-[var(--pp-muted)] hover:text-[var(--pp-text)]"}`}
+              >
+                {p} дн.
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className={`mt-4 ${loading ? "opacity-50" : ""}`}>
+          <DailyBars daily={total} tall />
+        </div>
+        <p className="mt-3 text-[11px] text-[var(--pp-muted)]">
+          Чат = посетитель демо, который написал Вере хотя бы одно сообщение в этот день. Проверочные вопросы при сборке демо не считаются. Дни по московскому времени.
+        </p>
+      </Card>
+      <div className={`space-y-3 ${loading ? "opacity-50" : ""}`}>
+        {items.map((d) => (
+          <DemoCard key={d.tenant_id} d={d} days={days} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function PartnerDemoPage() {
+  // null until the list answers: then the guide opens by itself only when there are no demos yet.
+  const [guideOpen, setGuideOpen] = useState<boolean | null>(null);
+  const onEmpty = React.useCallback((empty: boolean) => setGuideOpen((o) => (o === null ? empty : o)), []);
+  const open = guideOpen === true;
+  const toggle = () => {
+    const next = !open;
+    setGuideOpen(next);
+    if (next) setTimeout(() => document.getElementById("demo-guide")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  };
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <PageTitle hint="Ваши демо Веры и сколько чатов в каждом. Новое демо собирается в чате Claude по сайту клиента.">Мои демо</PageTitle>
+        <button type="button" onClick={toggle} className={(open ? btnGhost : btnPrimary) + " shrink-0"} aria-expanded={open} aria-controls="demo-guide">
+          {open ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          <span>{open ? "Скрыть инструкцию" : "Как создать демо"}</span>
+        </button>
+      </div>
+      <DemoStands onEmpty={onEmpty} />
+      {open && <DemoGuide />}
+      {!open && (
+        <p className="flex items-center gap-2 text-xs text-[var(--pp-muted)]">
+          <MessagesSquare className="h-4 w-4 shrink-0" />
+          Клиенту понравилось демо? Напишите нам в{" "}
+          <a href={TELEGRAM} target="_blank" rel="noopener noreferrer" className="font-semibold text-[var(--pp-accent)]">
+            Telegram
+          </a>
+          : закрепим клиента за вами.
+        </p>
+      )}
     </div>
   );
 }
