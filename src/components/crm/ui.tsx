@@ -202,13 +202,19 @@ function ActivityBody({ a, pipelines, fields }: { a: CrmActivity; pipelines: Crm
   };
   switch (a.kind) {
     case "stage_changed": {
-      const from = stageName(p.from_stage_id ?? p.from_stage ?? p.from, p.from_name ?? p.from_stage_name);
-      const to = stageName(p.to_stage_id ?? p.to_stage ?? p.to, p.to_name ?? p.to_stage_name);
+      // The stored names win: the stage may since have been deleted or its pipeline archived (ids no longer resolve).
+      const from = stageName(p.from_stage_id ?? p.from, p.from_stage ?? p.from_name ?? p.from_stage_name);
+      const to = stageName(p.to_stage_id ?? p.to, p.to_stage ?? p.to_name ?? p.to_stage_name);
       const evidence = p.evidence ?? p.reason;
+      const pipelineMove =
+        typeof p.from_pipeline === "string" && typeof p.to_pipeline === "string" && p.from_pipeline !== p.to_pipeline
+          ? ` (воронка: ${p.from_pipeline} → ${p.to_pipeline})`
+          : "";
       return (
         <>
           <div className="text-sm text-zinc-800 dark:text-zinc-200">
             Этап: <span className="text-zinc-500">{from}</span> → <span className="font-semibold">{to}</span>
+            {pipelineMove && <span className="text-zinc-500">{pipelineMove}</span>}
           </div>
           {evidence ? <blockquote className="mt-1 border-l-2 border-amber-500/50 pl-2 text-xs text-zinc-500 dark:text-zinc-400 italic">{asText(evidence)}</blockquote> : null}
         </>
