@@ -69,6 +69,21 @@ import {
   ClientInvoice,
   InvoiceCreate,
   InvoiceStatus,
+  CrmMeta,
+  CrmPipeline,
+  CrmField,
+  CrmSettings,
+  CrmDeal,
+  CrmDealRow,
+  CrmDealDetail,
+  CrmDealFilters,
+  CrmActivity,
+  CrmContact,
+  CrmContactRow,
+  CrmContactDetail,
+  CrmImportHeaders,
+  CrmImportMapping,
+  CrmImportResult,
 } from "@/types";
 
 const rawApiUrl =
@@ -411,13 +426,164 @@ export const api = {
     );
   },
 
-  async getChatCrm(sessionId: string, refresh?: boolean): Promise<ChatCrm | null> {
+  async getChatCrm(sessionId: string, refresh?: boolean): Promise<ChatCrm | null> {  // for crm_type "vera" the answer is a ChatCrmVera (see CrmBlock)
     try {
       const q = refresh ? "?refresh=1" : "";
       return await request<ChatCrm>(`/chats/${encodeURIComponent(sessionId)}/crm${q}`);
     } catch {
       return null;
     }
+  },
+
+  // ---- CRM Веры (design/vera-crm.md, section API). The company goes in the X-Tenant-ID header like every call. ----
+
+  /** `enabled: false` also when the call fails (old backend, no `crm` cap): the CRM item stays hidden. */
+  async getCrmMeta(): Promise<CrmMeta> {
+    try {
+      return await request<CrmMeta>("/crm/meta");
+    } catch {
+      return { ok: false, enabled: false };
+    }
+  },
+
+  async getCrmDeals(f: CrmDealFilters = {}) {
+    const q = new URLSearchParams();
+    if (f.pipeline_id) q.set("pipeline_id", f.pipeline_id);
+    if (f.stage_id) q.set("stage_id", f.stage_id);
+    if (f.q) q.set("q", f.q);
+    if (f.since) q.set("since", f.since);
+    if (f.sandbox !== undefined) q.set("sandbox", f.sandbox ? "1" : "0");
+    if (f.open !== undefined) q.set("open", f.open ? "1" : "0");
+    if (f.limit) q.set("limit", String(f.limit));
+    const qs = q.toString() ? `?${q.toString()}` : "";
+    return request<{ ok: boolean; deals: CrmDealRow[] }>(`/crm/deals${qs}`);
+  },
+
+  async getCrmDeal(id: string) {
+    return request<CrmDealDetail>(`/crm/deals/${encodeURIComponent(id)}`);
+  },
+
+  async patchCrmDeal(id: string, body: { title?: string; amount_rub?: number | null; summary?: string; custom?: Record<string, unknown> }) {
+    return request<{ ok: boolean; deal: CrmDeal }>(`/crm/deals/${encodeURIComponent(id)}`, { method: "PATCH", ...jsonBody(body) });
+  },
+
+  async moveCrmDeal(id: string, stage_id: string) {
+    return request<{ ok: boolean; deal: CrmDeal }>(`/crm/deals/${encodeURIComponent(id)}/move`, { method: "POST", ...jsonBody({ stage_id }) });
+  },
+
+  async addCrmDealNote(id: string, text: string) {
+    return request<{ ok: boolean; activity: CrmActivity }>(`/crm/deals/${encodeURIComponent(id)}/notes`, { method: "POST", ...jsonBody({ text }) });
+  },
+
+  async createCrmPipeline(body: { name: string; description: string; is_default?: boolean }) {
+    return request<{ ok: boolean; pipeline: CrmPipeline }>("/crm/pipelines", { method: "POST", ...jsonBody(body) });
+  },
+
+  async patchCrmPipeline(id: string, body: { name?: string; description?: string; is_default?: boolean; position?: number }) {
+    return request<{ ok: boolean; pipeline: CrmPipeline }>(`/crm/pipelines/${encodeURIComponent(id)}`, { method: "PATCH", ...jsonBody(body) });
+  },
+
+  async archiveCrmPipeline(id: string, target_pipeline_id?: string) {
+    return request<{ ok: boolean }>(`/crm/pipelines/${encodeURIComponent(id)}/archive`, {
+      method: "POST",
+      ...jsonBody(target_pipeline_id ? { target_pipeline_id } : {}),
+    });
+  },
+
+  async addCrmStage(pipelineId: string, body: { name: string; description: string; position?: number }) {
+    return request<{ ok: boolean; pipeline: CrmPipeline }>(`/crm/pipelines/${encodeURIComponent(pipelineId)}/stages`, { method: "POST", ...jsonBody(body) });
+  },
+
+  async patchCrmStage(id: string, body: { name?: string; description?: string }) {
+    return request<{ ok: boolean; pipeline: CrmPipeline }>(`/crm/stages/${encodeURIComponent(id)}`, { method: "PATCH", ...jsonBody(body) });
+  },
+
+  async reorderCrmStages(pipeline_id: string, stage_ids: string[]) {
+    return request<{ ok: boolean; pipeline: CrmPipeline }>("/crm/stages/reorder", { method: "POST", ...jsonBody({ pipeline_id, stage_ids }) });
+  },
+
+  async deleteCrmStage(id: string, target_stage_id?: string) {
+    const qs = target_stage_id ? `?target_stage_id=${encodeURIComponent(target_stage_id)}` : "";
+    return request<{ ok: boolean; pipeline: CrmPipeline }>(`/crm/stages/${encodeURIComponent(id)}${qs}`, { method: "DELETE" });
+  },
+
+  async createCrmField(body: { entity: string; key: string; label: string; type: string; options?: string[] }) {
+    return request<{ ok: boolean; field: CrmField }>("/crm/fields", { method: "POST", ...jsonBody(body) });
+  },
+
+  async patchCrmField(id: string, body: { label?: string; options?: string[]; position?: number }) {
+    return request<{ ok: boolean; field: CrmField }>(`/crm/fields/${encodeURIComponent(id)}`, { method: "PATCH", ...jsonBody(body) });
+  },
+
+  async deleteCrmField(id: string) {
+    return request<{ ok: boolean }>(`/crm/fields/${encodeURIComponent(id)}`, { method: "DELETE" });
+  },
+
+  async patchCrmSettings(body: Partial<CrmSettings>) {
+    return request<{ ok: boolean; settings: CrmSettings }>("/crm/settings", { method: "PATCH", ...jsonBody(body) });
+  },
+
+  async getCrmContacts(p: { q?: string; sandbox?: boolean; limit?: number; offset?: number } = {}) {
+    const q = new URLSearchParams();
+    if (p.q) q.set("q", p.q);
+    if (p.sandbox !== undefined) q.set("sandbox", p.sandbox ? "1" : "0");
+    if (p.limit) q.set("limit", String(p.limit));
+    if (p.offset) q.set("offset", String(p.offset));
+    const qs = q.toString() ? `?${q.toString()}` : "";
+    return request<{ ok: boolean; contacts: CrmContactRow[]; total: number }>(`/crm/contacts${qs}`);
+  },
+
+  async getCrmContact(id: string) {
+    return request<CrmContactDetail>(`/crm/contacts/${encodeURIComponent(id)}`);
+  },
+
+  async patchCrmContact(id: string, body: { name?: string; phone?: string; email?: string; custom?: Record<string, unknown> }) {
+    return request<{ ok: boolean; contact: CrmContact }>(`/crm/contacts/${encodeURIComponent(id)}`, { method: "PATCH", ...jsonBody(body) });
+  },
+
+  async mergeCrmContacts(keep_id: string, merge_id: string) {
+    return request<{ ok: boolean; contact: CrmContact }>("/crm/contacts/merge", { method: "POST", ...jsonBody({ keep_id, merge_id }) });
+  },
+
+  /** CSV export through fetch with the session (a plain link would not carry the company header); saves a file. */
+  async downloadCrmCsv(entity: "contacts" | "deals", f: CrmDealFilters = {}, filename?: string) {
+    const q = new URLSearchParams({ entity });
+    if (entity === "deals") {
+      if (f.pipeline_id) q.set("pipeline_id", f.pipeline_id);
+      if (f.stage_id) q.set("stage_id", f.stage_id);
+      if (f.q) q.set("q", f.q);
+      if (f.since) q.set("since", f.since);
+      if (f.sandbox !== undefined) q.set("sandbox", f.sandbox ? "1" : "0");
+      if (f.open !== undefined) q.set("open", f.open ? "1" : "0");
+    }
+    const res = await fetch(`${API_BASE_URL}/crm/export.csv?${q.toString()}`, {
+      headers: sessionHeaders(),
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      const error: any = new Error(err.detail || `Ошибка сервера (${res.status})`);
+      error.detail = error.message;
+      error.status = res.status;
+      throw error;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || `crm-${entity}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
+
+  async crmImportHeaders(csv: string) {
+    return request<CrmImportHeaders>("/crm/import/headers", { method: "POST", ...jsonBody({ csv }) });
+  },
+
+  async crmImport(csv: string, mapping: CrmImportMapping, dryRun: boolean) {
+    return request<CrmImportResult>(`/crm/import${dryRun ? "?dry_run=1" : ""}`, { method: "POST", ...jsonBody({ csv, mapping }) });
   },
 
   async resetChat(sessionId: string) {

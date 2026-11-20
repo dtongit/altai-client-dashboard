@@ -28,7 +28,8 @@ export type Cap =
   | "manage_users"
   | "audit_log"
   | "alerts"
-  | "bot_changes";
+  | "bot_changes"
+  | "crm";
 
 /** `users.permissions`: per-user overrides on top of the role preset. */
 export interface UserPermissionOverrides {
@@ -412,6 +413,15 @@ export interface TeamBotConversation {
   last_message: string;
 }
 
+export interface OverviewCrmKpis {
+  new_deals: number;
+  open_deals: number;
+  open_amount_rub: number;
+  won_deals: number;
+  won_amount_rub: number;
+  lost_deals: number;
+}
+
 export interface OverviewData {
   ok: boolean;
   tenant_id: string;
@@ -419,6 +429,8 @@ export interface OverviewData {
   system_status: SystemStatus;
   telegram_bot?: TelegramBotInfo;
   kpis: OverviewKPIs;
+  /** Built-in CRM deal figures for the same period; only for `crm_type = vera`. */
+  crm?: OverviewCrmKpis | null;
   channel_breakdown: Record<string, number>;
   daily_timeline: Array<{
     date: string;
@@ -1706,3 +1718,187 @@ export interface InvoiceCreate {
   packs?: number;
   description?: string;
 }
+
+
+// ---------------------------------------------------------------------------
+// CRM Веры (root repo design/vera-crm.md, section API). Ids are opaque strings.
+// ---------------------------------------------------------------------------
+
+export type CrmStageKind = "open" | "won" | "lost";
+
+export interface CrmStage {
+  id: string;
+  pipeline_id: string;
+  name: string;
+  description: string;
+  position: number;
+  kind: CrmStageKind;
+}
+
+export interface CrmPipeline {
+  id: string;
+  name: string;
+  description: string;
+  position: number;
+  is_default: boolean;
+  archived: boolean;
+  stages: CrmStage[];
+}
+
+export type CrmFieldType = "text" | "number" | "date" | "list";
+export type CrmFieldEntity = "deal" | "contact";
+
+export interface CrmField {
+  id: string;
+  entity: CrmFieldEntity;
+  key: string;
+  label: string;
+  type: CrmFieldType;
+  options: string[] | null;
+  position: number;
+}
+
+export interface CrmSettings {
+  notify_new_deal: boolean;
+  notify_stage_change: boolean;
+}
+
+export interface CrmMeta {
+  ok: boolean;
+  enabled: boolean;
+  can_edit_settings?: boolean;
+  pipelines?: CrmPipeline[];
+  fields?: CrmField[];
+  settings?: CrmSettings;
+}
+
+export interface CrmContact {
+  id: string;
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+  custom: Record<string, unknown> | null;
+  is_sandbox: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmContactRow extends CrmContact {
+  deals_count: number;
+  chats_count: number;
+}
+
+export interface CrmDeal {
+  id: string;
+  contact_id: string;
+  pipeline_id: string;
+  stage_id: string;
+  title: string | null;
+  amount_rub: number | null;
+  summary: string | null;
+  custom: Record<string, unknown> | null;
+  source_session_id: string | null;
+  is_sandbox: boolean;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** A row of `GET /crm/deals`. */
+export interface CrmDealRow extends CrmDeal {
+  contact: { id: string; name: string | null; phone: string | null; email: string | null } | null;
+  channel: string | null;
+  last_activity_at: string | null;
+}
+
+export interface CrmChatLink {
+  session_id: string;
+  channel: string;
+  user_id: string;
+}
+
+export interface CrmActivity {
+  id: string;
+  deal_id: string | null;
+  contact_id: string | null;
+  /** `vera` | `boss_vera` | `user:{id}` */
+  actor: string;
+  actor_name: string | null;
+  kind: string;
+  payload: Record<string, any> | null;
+  created_at: string;
+}
+
+export interface CrmDealDetail {
+  ok: boolean;
+  deal: CrmDeal;
+  contact: CrmContact | null;
+  pipeline: CrmPipeline | null;
+  chats: CrmChatLink[];
+  activity: CrmActivity[];
+}
+
+export interface CrmContactDeal extends CrmDeal {
+  stage_name: string;
+  pipeline_name: string;
+}
+
+export interface CrmContactDetail {
+  ok: boolean;
+  contact: CrmContact;
+  deals: CrmContactDeal[];
+  chats: CrmChatLink[];
+  activity: CrmActivity[];
+}
+
+export interface CrmDealFilters {
+  pipeline_id?: string;
+  stage_id?: string;
+  q?: string;
+  since?: string;
+  sandbox?: boolean;
+  open?: boolean;
+  limit?: number;
+}
+
+export interface CrmImportHeaders {
+  ok: boolean;
+  headers: string[];
+  sample: string[][] | Record<string, string>[];
+}
+
+export interface CrmImportMapping {
+  name?: string;
+  phone?: string;
+  email?: string;
+  custom?: Record<string, string>;
+}
+
+export interface CrmImportResult {
+  ok: boolean;
+  dry_run: boolean;
+  total: number;
+  created: number;
+  matched: number;
+  skipped: number;
+  errors: Array<{ row: number; reason: string }>;
+}
+
+/** `GET /chats/{session_id}/crm` for a tenant with `crm_type = "vera"`. */
+export interface ChatCrmVera {
+  ok: boolean;
+  crm_type: "vera";
+  contact: { id: string; name: string | null; phone?: string | null; email?: string | null } | null;
+  deal: CrmDeal | null;
+  pipeline: CrmPipeline | null;
+  deals?: CrmDeal[];
+}
+
+/** Rows of the read-only `/admin` resources crm-* (category «CRM»). Schema-driven page, types for reference. */
+export interface CrmPipelineRow { id: string; tenant_id: string; name: string; description: string | null; position: number; is_default: boolean; archived_at: string | null }
+export interface CrmStageRow { id: string; tenant_id: string; pipeline_id: string; name: string; description: string | null; position: number; kind: CrmStageKind }
+export interface CrmContactAdminRow { id: string; tenant_id: string; name: string | null; phone: string | null; email: string | null; custom: unknown; created_at: string; updated_at: string }
+export interface CrmContactChatRow { id?: string; tenant_id: string; contact_id: string; session_id: string; channel: string; user_id: string }
+export interface CrmDealAdminRow { id: string; tenant_id: string; contact_id: string; pipeline_id: string; stage_id: string; title: string | null; amount_rub: number | null; summary: string | null; custom: unknown; source_session_id: string | null; closed_at: string | null; created_at: string; updated_at: string }
+export interface CrmCustomFieldRow { id: string; tenant_id: string; entity: CrmFieldEntity; key: string; label: string; type: CrmFieldType; options: unknown; position: number }
+export interface CrmActivityRow { id: string; tenant_id: string; deal_id: string | null; contact_id: string | null; actor: string; kind: string; payload: unknown; created_at: string }

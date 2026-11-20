@@ -20,6 +20,10 @@ import {
   Cpu,
   Send,
   AlertTriangle,
+  Briefcase,
+  Trophy,
+  Wallet,
+  XCircle,
 } from "lucide-react";
 import { formatCurrency, formatNumber } from "@/lib/utils";
 import {
@@ -212,6 +216,48 @@ export default function VeraOverviewPage() {
           accent="purple"
         />
       </div>
+
+      {/* Built-in CRM deals (crm_type = vera) */}
+      {data.crm && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-white">Сделки за 7 дней</h2>
+            <Link href="/crm" className="text-xs font-medium text-amber-700 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300">
+              Открыть CRM →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            <MetricCard
+              title="Новые сделки"
+              value={formatNumber(data.crm.new_deals)}
+              subtitle="Вера открыла за период"
+              icon={Briefcase}
+              accent="blue"
+            />
+            <MetricCard
+              title="В работе"
+              value={formatNumber(data.crm.open_deals)}
+              subtitle={data.crm.open_amount_rub > 0 ? `На сумму ${formatCurrency(data.crm.open_amount_rub)}` : "Открытые сделки сейчас"}
+              icon={Wallet}
+              accent="amber"
+            />
+            <MetricCard
+              title="Успешные"
+              value={formatNumber(data.crm.won_deals)}
+              subtitle={data.crm.won_amount_rub > 0 ? `На сумму ${formatCurrency(data.crm.won_amount_rub)}` : "Закрыты за период"}
+              icon={Trophy}
+              accent="emerald"
+            />
+            <MetricCard
+              title="Отказы"
+              value={formatNumber(data.crm.lost_deals)}
+              subtitle="Закрыты за период"
+              icon={XCircle}
+              accent="purple"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Analytics Charts & Channel Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

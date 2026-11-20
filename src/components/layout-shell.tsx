@@ -40,7 +40,7 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
   // Page guards (roles epic #75): which capability / AI employee each section needs.
   // Guards never apply inside the partner portal (its "/team" is not the company's team page).
   const guardPath = isPartnerPage ? "" : cleanPath;
-  const needsVera = ["/vera", "/vera-chat", "/chats", "/simulator"].some(
+  const needsVera = ["/vera", "/vera-chat", "/chats", "/simulator", "/crm"].some(
     (p) => guardPath === p || guardPath.startsWith(p + "/")
   );
   const needsCap = guardPath.startsWith("/settings")
@@ -49,6 +49,8 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     ? "instructions"
     : guardPath.startsWith("/team")
     ? "manage_users"
+    : guardPath === "/crm" || guardPath.startsWith("/crm/")
+    ? "crm"
     : null;
   const veraOk = hasEmployee("vera");
   // The Vera dashboard needs `dashboards`; without it the work with Vera starts in the chats (quiet redirect).

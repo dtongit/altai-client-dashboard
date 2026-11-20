@@ -13,16 +13,19 @@ import {
   ArrowLeft,
   Sparkles,
   UsersRound,
+  Kanban,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useCrmMeta } from "@/lib/crm";
 import { useAttentionCount } from "@/lib/use-attention-count";
 import { VeraFace } from "@/components/vera-face";
 import { SidebarFooter } from "@/components/sidebar-footer";
 
-const navigation: Array<{ name: string; href: string; icon: React.ComponentType<{ className?: string }>; vera?: boolean; cap?: string; admin?: boolean }> = [
+const navigation: Array<{ name: string; href: string; icon: React.ComponentType<{ className?: string }>; vera?: boolean; cap?: string; admin?: boolean; crm?: boolean }> = [
   { name: "Дашборд", href: "/vera", icon: BarChart3, vera: true, cap: "dashboards" },
   { name: "Чаты", href: "/chats", icon: MessageSquare, vera: true },
   { name: "Пообщаться с Верой", href: "/vera-chat", icon: VeraFace, vera: true },
+  { name: "CRM", href: "/crm", icon: Kanban, vera: true, cap: "crm", crm: true },
   { name: "Выключатели", href: "/settings", icon: Sliders, cap: "settings" },
   { name: "Инструкции для Веры", href: "/knowledge", icon: BookOpen, cap: "instructions" },
   { name: "Команда и доступы", href: "/team", icon: UsersRound, cap: "manage_users" },
@@ -34,6 +37,8 @@ export function Sidebar() {
   const pathname = usePathname();
   const { can, hasEmployee, user, singleEmployee } = useAuth();
   const attentionCount = useAttentionCount();
+  // «CRM» only for a company whose CRM is Vera's own (`GET /crm/meta` enabled) and a user with the `crm` cap.
+  const { meta: crmMeta } = useCrmMeta(can("crm") && hasEmployee("vera"));
   const cleanPath = (pathname || "").replace(/\/+$/, "") || "/";
 
   return (
@@ -87,7 +92,7 @@ export function Sidebar() {
           </p>
           <nav className="space-y-1">
             {navigation
-              .filter((item) => (!item.vera || hasEmployee("vera")) && (!item.cap || can(item.cap)) && (!item.admin || Boolean(user?.is_admin)))
+              .filter((item) => (!item.vera || hasEmployee("vera")) && (!item.cap || can(item.cap)) && (!item.admin || Boolean(user?.is_admin)) && (!item.crm || crmMeta?.enabled === true))
               .map((item) => {
               const isActive =
                 item.href === "/vera"

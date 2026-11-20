@@ -9,6 +9,7 @@ export const ALL_CAPS: Cap[] = [
   "audit_log",
   "alerts",
   "bot_changes",
+  "crm",
 ];
 
 export const CAP_LABELS: Record<Cap, { title: string; hint: string }> = {
@@ -20,6 +21,7 @@ export const CAP_LABELS: Record<Cap, { title: string; hint: string }> = {
   audit_log: { title: "Журнал действий", hint: "Просмотр журнала действий" },
   alerts: { title: "Уведомления в Telegram", hint: "Получает эскалации и вопросы Веры в Telegram" },
   bot_changes: { title: "Изменения через Telegram-бот", hint: "Просить Веру изменить базу знаний в Telegram" },
+  crm: { title: "CRM", hint: "Сделки и контакты Веры: доска, карточки, заметки, импорт и экспорт" },
 };
 
 /** Only global flags have a label: admin and demo manager. Per-company access is a list of permissions. */

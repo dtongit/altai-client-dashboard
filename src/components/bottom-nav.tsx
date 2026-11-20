@@ -17,9 +17,11 @@ import {
   ChevronDown,
   KeyRound,
   Handshake,
+  Kanban,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { partnerPortalUrl } from "@/lib/portal-path";
+import { useCrmMeta } from "@/lib/crm";
 import { useAttentionCount } from "@/lib/use-attention-count";
 import { Sheet } from "@/components/ui/Sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -30,6 +32,7 @@ export function BottomNav() {
   const cleanPath = (pathname || "").replace(/\/+$/, "") || "/";
   const { user, tenant, availableTenants, switchTenant, toggleActive, logout, can, hasEmployee, singleEmployee, hasPartnerProfile } = useAuth();
   const attentionCount = useAttentionCount();
+  const { meta: crmMeta } = useCrmMeta(can("crm") && hasEmployee("vera"));
 
   const [moreOpen, setMoreOpen] = useState(false);
   const [hasChatOpenOnPhone, setHasChatOpenOnPhone] = useState(false);
@@ -238,6 +241,21 @@ export function BottomNav() {
 
           {/* Section links */}
           <div className="space-y-1">
+            {can("crm") && isVeraAllowed && crmMeta?.enabled === true && (
+              <Link
+                href="/crm"
+                onClick={() => setMoreOpen(false)}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-base font-medium transition-colors ${
+                  cleanPath.startsWith("/crm")
+                    ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold"
+                    : "text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                }`}
+              >
+                <Kanban className="h-5 w-5 text-zinc-500 shrink-0" />
+                <span>CRM</span>
+              </Link>
+            )}
+
             {can("settings") && (
               <Link
                 href="/settings"

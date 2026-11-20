@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import type { ChatCrm, ChatCrmDeal } from "@/types";
+import Link from "next/link";
+import type { ChatCrm, ChatCrmDeal, ChatCrmVera, CrmDeal } from "@/types";
+import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { errText, formatRub as formatCrmRub } from "@/lib/crm";
 import { Button } from "@/components/ui/Button";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { safeHttpUrl } from "@/lib/safe-url";
@@ -41,7 +45,7 @@ function normalizeHex(color?: string | null): string | null {
   return /^#[0-9a-fA-F]{6}$/.test(c) ? c : null;
 }
 
-export function CrmBlock({ crm, loading, onRefresh }: CrmBlockProps) {
+function AmoCrmBlock({ crm, loading, onRefresh }: CrmBlockProps) {
   const [refreshing, setRefreshing] = useState(false);
 
   if (loading) {
@@ -205,4 +209,97 @@ export function CrmBlock({ crm, loading, onRefresh }: CrmBlockProps) {
       </div>
     </div>
   );
+}
+
+/** CRM Веры (`crm_type = "vera"`): the contact, the current deal and a stage select that moves it. */
+function VeraCrmBlock({ crm }: { crm: ChatCrmVera }) {
+  const { user, can } = useAuth();
+  // The public chat link page (/c) has no signed-in user: show the data, no actions.
+  const canAct = Boolean(user) && can("crm");
+  const [deal, setDeal] = useState<CrmDeal | null>(crm.deal);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const stages = crm.pipeline?.stages || [];
+
+  // A fresh answer (another chat, refresh) replaces the local copy.
+  React.useEffect(() => {
+    setDeal(crm.deal);
+  }, [crm.deal]);
+
+  const move = async (stageId: string) => {
+    if (!deal || stageId === deal.stage_id) return;
+    const prev = deal;
+    setDeal({ ...deal, stage_id: stageId });
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await api.moveCrmDeal(deal.id, stageId);
+      setDeal(res.deal || { ...deal, stage_id: stageId });
+    } catch (e) {
+      setDeal(prev);
+      setError(errText(e, "Не удалось переместить сделку"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const contact = crm.contact;
+  const amount = deal ? formatCrmRub(deal.amount_rub) : "";
+  return (
+    <div className="space-y-3">
+      <div className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">CRM</div>
+
+      {contact && (
+        <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200 dark:border-zinc-700/60">
+          <div className="text-sm font-bold text-zinc-900 dark:text-white truncate">{contact.name || "Контакт"}</div>
+          {contact.phone && <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">{contact.phone}</div>}
+          {contact.email && <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">{contact.email}</div>}
+        </div>
+      )}
+
+      {deal ? (
+        <div className="p-3 rounded-xl border bg-white dark:bg-zinc-800/60 border-zinc-200 dark:border-zinc-700 space-y-2">
+          <div className="flex items-start justify-between gap-2">
+            <div className="text-xs font-semibold text-zinc-900 dark:text-white">{deal.title || "Сделка"}</div>
+            {amount && <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 shrink-0">{amount}</span>}
+          </div>
+          {canAct ? (
+            <select
+              aria-label="Этап сделки"
+              value={deal.stage_id}
+              disabled={busy}
+              onChange={(e) => move(e.target.value)}
+              className="w-full px-2.5 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-base sm:text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+              {stages.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100">
+              {stages.find((st) => st.id === deal.stage_id)?.name || ""}
+            </span>
+          )}
+          {error && <div className="text-[11px] text-rose-600 dark:text-rose-400">{error}</div>}
+          {canAct && (
+            <Link href={`/crm/deals/?id=${encodeURIComponent(deal.id)}`} className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline">
+              Открыть сделку
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div className="text-xs text-zinc-400 dark:text-zinc-500 italic p-2">Сделки пока нет — Вера создаст её, когда клиент будет квалифицирован</div>
+      )}
+    </div>
+  );
+}
+
+export function CrmBlock(props: CrmBlockProps) {
+  if ((props.crm as { crm_type?: string } | null)?.crm_type === "vera") {
+    return <VeraCrmBlock crm={props.crm as unknown as ChatCrmVera} />;
+  }
+  return <AmoCrmBlock {...props} />;
 }
